@@ -1,0 +1,51 @@
+{
+  "mappings": {
+    "properties": {
+      "_class": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "activationHeight": {
+        "type": "long"
+      },
+      "blocksSignalling": {
+        "type": "long"
+      },
+      "lockedInHeight": {
+        "type": "long"
+      },
+      "name": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "previousCycles": {
+        "type": "long"
+      },
+      "signalBit": {
+        "type": "long"
+      },
+      "signalledToBlock": {
+        "type": "long"
+      },
+      "state": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      }
+    }
+  }
+}

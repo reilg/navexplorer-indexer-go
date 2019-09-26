@@ -1,0 +1,205 @@
+{
+  "mappings": {
+    "properties": {
+      "hex": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "txid": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "hash": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "size": {
+        "type": "long"
+      },
+      "vsize": {
+        "type": "long"
+      },
+      "version": {
+        "type": "long"
+      },
+      "locktime": {
+        "type": "long"
+      },
+      "anonDestination": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "vin": {
+        "type": "nested",
+        "properties": {
+          "coinbase": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "txid": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "vout": {
+            "type": "integer"
+          },
+          "scriptSig": {
+            "type": "nested",
+            "properties": {
+              "asm": {
+                "type": "text",
+                "fields": {
+                  "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                  }
+                }
+              },
+              "hex": {
+                "type": "text",
+                "fields": {
+                  "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                  }
+                }
+              }
+            }
+          },
+          "value": {
+            "type": "float"
+          },
+          "valuesat": {
+            "type": "long"
+          },
+          "address": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "sequence": {
+            "type": "long"
+          }
+        }
+      },
+      "vout": {
+        "type": "nested",
+        "properties": {
+          "value": {
+            "type": "float"
+          },
+          "valuesat": {
+            "type": "long"
+          },
+          "n": {
+            "type": "integer"
+          },
+          "scriptPubKey": {
+            "type": "nested",
+            "properties": {
+              "asm": {
+                "type": "text",
+                "fields": {
+                  "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                  }
+                }
+              },
+              "hex": {
+                "type": "text",
+                "fields": {
+                  "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                  }
+                }
+              },
+              "reqsigs": {
+                "type": "integer"
+              },
+              "type": {
+                "type": "text",
+                "fields": {
+                  "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                  }
+                }
+              },
+              "addresses": {
+                "type": "text",
+                "fields": {
+                  "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "blockHash": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "height": {
+        "type": "long"
+      },
+      "confirmations": {
+        "type": "long"
+      },
+      "time": {
+        "type": "date"
+      },
+      "blocktime": {
+        "type": "date"
+      }
+    }
+  },
+  "settings":{
+    "index":{
+      "max_result_window":"50000000"
+    }
+  }
+}

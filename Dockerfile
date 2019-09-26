@@ -17,6 +17,8 @@ WORKDIR /app
 
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /go/bin/indexer /app/indexer
-COPY .env /app/.env
+COPY .env.dist /app/.env
+
+COPY ./config/mappings /app/mappings
 
 ENTRYPOINT ["/app/indexer"]

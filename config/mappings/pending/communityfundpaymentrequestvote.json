@@ -1,0 +1,36 @@
+{
+  "mappings": {
+    "properties": {
+      "address": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "height": {
+        "type": "long"
+      },
+      "paymentRequest": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "vote": {
+        "type": "boolean"
+      }
+    }
+  },
+  "settings":{
+    "index":{
+      "max_result_window":"50000000"
+    }
+  }
+}
+

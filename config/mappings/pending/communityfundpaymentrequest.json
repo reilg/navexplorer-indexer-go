@@ -1,0 +1,101 @@
+{
+  "mappings": {
+    "properties": {
+      "blockHash": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "createdAt": {
+        "type": "date"
+      },
+      "description": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "hash": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "paidOnBlock": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "proposalHash": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "requestedAmount": {
+        "type": "long"
+      },
+      "state": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "stateChangedOnBlock": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "status": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "version": {
+        "type": "long"
+      },
+      "votesNo": {
+        "type": "long"
+      },
+      "votesYes": {
+        "type": "long"
+      },
+      "votingCycle": {
+        "type": "long"
+      }
+    }
+  },
+  "settings":{
+    "index":{
+      "max_result_window":"50000000"
+    }
+  }
+}

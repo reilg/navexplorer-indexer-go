@@ -1,0 +1,74 @@
+{
+  "mappings": {
+    "properties": {
+      "balance": {
+        "type": "long"
+      },
+      "blockIndex": {
+        "type": "long"
+      },
+      "coldStaked": {
+        "type": "long"
+      },
+      "coldStakedBalance": {
+        "type": "long"
+      },
+      "coldStakedCount": {
+        "type": "long"
+      },
+      "coldStakedReceived": {
+        "type": "long"
+      },
+      "coldStakedSent": {
+        "type": "long"
+      },
+      "hash": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "label": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "received": {
+        "type": "long"
+      },
+      "receivedCount": {
+        "type": "long"
+      },
+      "sent": {
+        "type": "long"
+      },
+      "sentCount": {
+        "type": "long"
+      },
+      "staked": {
+        "type": "long"
+      },
+      "stakedCount": {
+        "type": "long"
+      },
+      "stakedReceived": {
+        "type": "long"
+      },
+      "stakedSent": {
+        "type": "long"
+      }
+    }
+  },
+  "settings": {
+    "index": {
+      "max_result_window": "50000000"
+    }
+  }
+}

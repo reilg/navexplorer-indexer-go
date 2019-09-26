@@ -1,0 +1,131 @@
+{
+  "mappings": {
+    "properties": {
+      "hash": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "confirmations": {
+        "type": "long"
+      },
+      "strippedsize": {
+        "type": "long"
+      },
+      "size": {
+        "type": "long"
+      },
+      "weight": {
+        "type": "long"
+      },
+      "height": {
+        "type": "long"
+      },
+      "version": {
+        "type": "long"
+      },
+      "versionHex": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "merkleRoot": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "tx": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "time": {
+        "type": "date"
+      },
+      "mediantime": {
+        "type": "date"
+      },
+      "nonce": {
+        "type": "long"
+      },
+      "bits": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "difficulty": {
+        "type": "long"
+      },
+      "chainwork": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "previousblockhash": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "nextblockhash": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "stake": {
+        "type": "long"
+      },
+      "stakedBy": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "fees": {
+        "type": "long"
+      },
+      "spend": {
+        "type": "long"
+      }
+    }
+  },
+  "settings": {
+    "index": {
+      "max_result_window": "50000000"
+    }
+  }
+}

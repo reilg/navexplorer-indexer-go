@@ -1,0 +1,71 @@
+{
+  "mappings": {
+    "properties": {
+      "address": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "balance": {
+        "type": "long"
+      },
+      "coldStaking": {
+        "type": "boolean"
+      },
+      "coldStakingBalance": {
+        "type": "long"
+      },
+      "coldStakingReceived": {
+        "type": "long"
+      },
+      "coldStakingSent": {
+        "type": "long"
+      },
+      "delegateStake": {
+        "type": "long"
+      },
+      "height": {
+        "type": "long"
+      },
+      "received": {
+        "type": "long"
+      },
+      "sent": {
+        "type": "long"
+      },
+      "standard": {
+        "type": "boolean"
+      },
+      "time": {
+        "type": "date"
+      },
+      "transaction": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "type": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      }
+    }
+  },
+  "settings":{
+    "index":{
+      "max_result_window":"50000000"
+    }
+  }
+}
