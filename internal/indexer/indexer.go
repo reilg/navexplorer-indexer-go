@@ -4,9 +4,9 @@ import (
 	"errors"
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/events"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/lib/elastic"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/lib/redis"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/redis"
 	log "github.com/sirupsen/logrus"
 )
 
