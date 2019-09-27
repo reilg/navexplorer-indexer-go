@@ -20,9 +20,11 @@ type Block struct {
 	Previousblockhash string   `json:"previousblockhash"`
 	Nextblockhash     string   `json:"nextblockhash"`
 
-	Stake       uint64 `json:"stake"`
-	StakedBy    string `json:"stakedBy"`
-	Spend       uint64 `json:"spend"`
-	Fees        uint64 `json:"fees"`
-	CFundPayout uint64 `json:"cfundPayout"`
+	MetaData struct {
+		Stake       uint64 `json:"stake"`
+		StakedBy    string `json:"stakedBy"`
+		Spend       uint64 `json:"spend"`
+		Fees        uint64 `json:"fees"`
+		CFundPayout uint64 `json:"cfundPayout"`
+	}
 }

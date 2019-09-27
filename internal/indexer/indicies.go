@@ -5,8 +5,9 @@ import "fmt"
 type Index string
 
 var (
-	BlockIndex            Index = "block"
-	BlockTransactionIndex Index = "blocktransaction"
+	AddressTransactionIndex Index = "addresstransaction"
+	BlockIndex              Index = "block"
+	BlockTransactionIndex   Index = "blocktransaction"
 )
 
 // Sets the network and returns the full string

@@ -5,7 +5,6 @@ import (
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/events"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/redis"
 	log "github.com/sirupsen/logrus"
 )
@@ -14,7 +13,6 @@ type Indexer struct {
 	Navcoin *navcoind.Navcoind
 	Elastic *elastic.Elastic
 	Redis   *redis.Redis
-	Events  *events.Events
 
 	Debug      bool
 	Ready      bool
@@ -59,8 +57,6 @@ func New() *Indexer {
 	)
 
 	i.Redis = redis.New(config.Get().Redis.Host, config.Get().Redis.Password, config.Get().Redis.Db)
-
-	i.Events = events.New()
 
 	return i.init()
 }
