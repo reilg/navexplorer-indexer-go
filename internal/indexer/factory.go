@@ -50,18 +50,18 @@ func CreateBlockTransaction(tx navcoind.RawTransaction) entity.BlockTransaction 
 
 func createVin(vins []navcoind.Vin) []entity.Vin {
 	var inputs = make([]entity.Vin, 0)
-	for _, i := range vins {
+	for idx, _ := range vins {
 		input := entity.Vin{
-			Coinbase:  i.Coinbase,
-			ScriptSig: createScriptSig(i.ScriptSig),
-			Value:     i.Value,
-			ValueSat:  i.ValueSat,
-			Address:   i.Address,
-			Sequence:  i.Sequence,
+			Coinbase:  vins[idx].Coinbase,
+			ScriptSig: createScriptSig(vins[idx].ScriptSig),
+			Value:     vins[idx].Value,
+			ValueSat:  vins[idx].ValueSat,
+			Address:   vins[idx].Address,
+			Sequence:  vins[idx].Sequence,
 		}
-		if i.Txid != "" {
-			input.Txid = &i.Txid
-			input.Vout = &i.Vout
+		if vins[idx].Txid != "" {
+			input.Txid = &vins[idx].Txid
+			input.Vout = &vins[idx].Vout
 		}
 		inputs = append(inputs, input)
 	}

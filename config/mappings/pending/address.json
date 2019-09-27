@@ -1,15 +1,9 @@
 {
   "mappings": {
     "properties": {
-      "balance": {
-        "type": "long"
-      },
-      "blockIndex": {
-        "type": "long"
-      },
-      "coldStaked": {
-        "type": "long"
-      },
+      "balance": {"type": "long"},
+      "blockIndex": {"type": "long"},
+      "coldStaked": {"type": "long"},
       "coldStakedBalance": {
         "type": "long"
       },
