@@ -35,6 +35,7 @@ type ElasticSearchConfig struct {
 	Sniff       bool
 	HealthCheck bool
 	Debug       bool
+	MappingDir  string
 }
 
 type RedisConfig struct {
@@ -68,6 +69,7 @@ func Get() *Config {
 			Sniff:       getBool("ELASTIC_SEARCH_SNIFF", true),
 			HealthCheck: getBool("ELASTIC_SEARCH_HEALTH_CHECK", true),
 			Debug:       getBool("ELASTIC_SEARCH_DEBUG", false),
+			MappingDir:  getString("ELASTIC_SEARCH_MAPPING_DIR", "/data/mappings"),
 		},
 		Redis: RedisConfig{
 			Host:     getString("REDIS_HOST", ""),

@@ -1,9 +1,10 @@
-package indexer
+package block_indexer
 
 import (
 	"context"
 	"encoding/json"
 	"github.com/NavExplorer/navcoind-go"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	"log"
 )
@@ -13,8 +14,8 @@ func (i *Indexer) isOrphanBlock(block explorer.Block) (bool, error) {
 		return false, nil
 	}
 
-	previousBlockJson, err := i.Elastic.Client.Get().
-		Index(BlockTransactionIndex.Get(i.Network)).
+	previousBlockJson, err := i.elastic.Client.Get().
+		Index(index.BlockTransactionIndex.Get()).
 		Id(block.Previousblockhash).
 		Do(context.Background())
 	if err != nil {
@@ -28,7 +29,7 @@ func (i *Indexer) isOrphanBlock(block explorer.Block) (bool, error) {
 
 	orphan := previousBlock.Hash != block.Previousblockhash
 	if orphan == true {
-		log.Printf("INFO: Orphan block found: %s", block.Hash)
+		log.Printf("INFO: Orphan block_indexer found: %s", block.Hash)
 	}
 
 	return orphan, nil

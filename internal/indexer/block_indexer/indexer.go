@@ -1,40 +1,53 @@
-package indexer
+package block_indexer
 
 import (
-	"context"
-	"encoding/json"
 	"errors"
 	"github.com/NavExplorer/navcoind-go"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/events"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/redis"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
-	"github.com/gookit/event"
 	log "github.com/sirupsen/logrus"
 )
 
+type Indexer struct {
+	elastic *index.Index
+	cache   *redis.Redis
+	navcoin *navcoind.Navcoind
+}
+
 var (
-	ErrTransactionNotFound = errors.New("Transaction not found")
+	ErrOrphanBlockFound = errors.New("Orphan block_indexer found")
 )
+
+func New(elastic *index.Index, cache *redis.Redis, navcoin *navcoind.Navcoind) *Indexer {
+	return &Indexer{elastic: elastic, cache: cache, navcoin: navcoin}
+}
+
+func (i *Indexer) Close() error {
+	return nil
+}
 
 func (i *Indexer) IndexBlocks() error {
 	log.Info("Indexing all blocks")
-	if i.Debug {
+	if config.Get().Debug {
 		log.SetLevel(log.DebugLevel)
 	} else {
 		log.SetLevel(log.InfoLevel)
 	}
 
-	lastBlock, err := i.getLastBlock()
+	lastBlock, err := i.cache.GetLastBlockIndexed()
 	if err != nil {
-		log.WithError(err).Error("Get last block")
 		return err
 	}
 
 	if err := i.indexBlocks(lastBlock + 1); err != nil {
 		if err != ErrOrphanBlockFound {
-			log.WithError(err).Error("Orphan block found")
+			log.WithError(err).Error(err)
 			return err
 		}
-		if err := i.RewindBy(10); err != nil {
+		if err := i.cache.RewindBy(10); err != nil {
 			log.WithError(err).Error("Rewind blocks")
 			return err
 		}
@@ -51,7 +64,7 @@ func (i *Indexer) indexBlocks(height uint64) error {
 }
 
 func (i *Indexer) IndexBlock(height uint64) error {
-	hash, err := i.Navcoin.GetBlockHash(height)
+	hash, err := i.navcoin.GetBlockHash(height)
 	if err != nil {
 		log.WithFields(log.Fields{"hash": hash, "height": height}).
 			WithError(err).
@@ -59,14 +72,14 @@ func (i *Indexer) IndexBlock(height uint64) error {
 		return err
 	}
 
-	navBlock, err := i.Navcoin.GetBlock(hash)
+	navBlock, err := i.navcoin.GetBlock(hash)
 	if err != nil {
 		log.WithFields(log.Fields{"hash": hash, "height": height}).
 			WithError(err).
 			Error("Failed to GetBlock")
 		return err
 	}
-	block := CreateBlock(navBlock)
+	block := indexer.CreateBlock(navBlock)
 
 	orphan, err := i.isOrphanBlock(block)
 	if orphan == true {
@@ -75,7 +88,7 @@ func (i *Indexer) IndexBlock(height uint64) error {
 
 	var txs = make([]explorer.BlockTransaction, 0)
 	for _, txHash := range block.Tx {
-		rawTx, err := i.Navcoin.GetRawTransaction(txHash, true)
+		rawTx, err := i.navcoin.GetRawTransaction(txHash, true)
 		if err != nil {
 			log.WithFields(log.Fields{"hash": hash, "txHash": txHash, "height": height}).
 				WithError(err).
@@ -83,7 +96,7 @@ func (i *Indexer) IndexBlock(height uint64) error {
 			return err
 		}
 
-		txs = append(txs, CreateBlockTransaction(rawTx.(navcoind.RawTransaction)))
+		txs = append(txs, indexer.CreateBlockTransaction(rawTx.(navcoind.RawTransaction)))
 	}
 
 	if err := i.applyInputs(&txs); err != nil {
@@ -118,13 +131,11 @@ func (i *Indexer) applyInputs(txs *[]explorer.BlockTransaction) error {
 				continue
 			}
 
-			rawTx, err := i.Navcoin.GetRawTransaction(*vin[vdx].Txid, true)
+			rawTx, err := i.navcoin.GetRawTransaction(*vin[vdx].Txid, true)
 			if err != nil {
-				log.WithFields(log.Fields{"hash": *vin[vdx].Txid}).
-					WithError(ErrTransactionNotFound).
-					Fatal("Failed to get previous transaction")
+				log.WithFields(log.Fields{"hash": *vin[vdx].Txid}).WithError(err).Fatal("Failed to get previous transaction")
 			}
-			prevTx := CreateBlockTransaction(rawTx.(navcoind.RawTransaction))
+			prevTx := indexer.CreateBlockTransaction(rawTx.(navcoind.RawTransaction))
 
 			if len(prevTx.Vout) <= *vin[vdx].Vout {
 				log.WithFields(log.Fields{"index": vdx, "tx": prevTx.Hash}).Fatal("Vout does not exist")
@@ -187,7 +198,7 @@ func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
 		log.Debug("Transaction is staking")
 		if tx.Height >= 2761920 {
 			log.Debug("Fixed stake reward")
-			tx.MetaData.Stake = 2 // hard coded to 2 as static rewards arrived after block 2761920
+			tx.MetaData.Stake = 2 // hard coded to 2 as static rewards arrived after block_indexer 2761920
 			block.MetaData.Stake += tx.MetaData.Stake
 		} else {
 			log.Debug("Variable stake reward")
@@ -236,67 +247,4 @@ func applyCFundPayout(tx *explorer.BlockTransaction, block *explorer.Block) {
 		}
 	}
 	log.WithFields(log.Fields{"hash": tx.Hash, "payout": block.MetaData.CFundPayout}).Debug("Transaction cfund payout")
-}
-
-func (i *Indexer) persist(txs *[]explorer.BlockTransaction, block *explorer.Block) error {
-	if err := i.persistBlockTransactions(txs, block); err != nil {
-		log.WithError(err).Error("Failed to persist block transactions")
-		return err
-	}
-
-	if err := i.persistBlock(*block); err != nil {
-		log.WithError(err).Error("Failed to persist block")
-		return err
-	}
-
-	b, _ := json.Marshal(block)
-	log.Debug("")
-	log.Debug("BLOCK: %s", string(b))
-
-	t, _ := json.Marshal(txs)
-	log.Debug("")
-	log.Debug("TX: %s", string(t))
-	log.Debug("")
-	log.Debug("")
-
-	if err := i.setLastBlock(block.Height); err != nil {
-		log.WithError(err).Error("Failed to set last block indexed")
-		return err
-	}
-
-	i.Elastic.Flush([]string{
-		BlockIndex.Get(i.Network),
-		BlockTransactionIndex.Get(i.Network),
-	}...)
-
-	go event.MustFire(string(events.EventBlockIndexed), event.M{"hash": block.Hash})
-
-	log.WithFields(log.Fields{"height": block.Height}).Info("Block Indexed")
-	return nil
-}
-
-func (i *Indexer) persistBlockTransactions(txs *[]explorer.BlockTransaction, block *explorer.Block) error {
-	for _, tx := range *txs {
-		_, err := i.Elastic.Client.
-			Index().
-			Index(BlockTransactionIndex.Get(i.Network)).
-			Id(tx.Hash).
-			BodyJson(tx).
-			Do(context.Background())
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (i *Indexer) persistBlock(block explorer.Block) error {
-	_, err := i.Elastic.Client.
-		Index().
-		Index(BlockIndex.Get(i.Network)).
-		Id(block.Hash).
-		BodyJson(block).
-		Do(context.Background())
-	return err
 }

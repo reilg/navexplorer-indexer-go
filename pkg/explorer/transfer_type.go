@@ -3,9 +3,8 @@ package explorer
 type TransferType string
 
 var (
-	TransferSend    TransferType = "send"
-	TransferReceive TransferType = "receive"
-
+	TransferSend                TransferType = "send"
+	TransferReceive             TransferType = "receive"
 	TransferStake               TransferType = "stake"
 	TransferColdStake           TransferType = "cold_stake"
 	TransferPoolStake           TransferType = "pool_stake"
