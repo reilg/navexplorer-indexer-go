@@ -6,7 +6,7 @@ import (
 	"errors"
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/events"
-	"github.com/NavExplorer/navexplorer-indexer-go/pkg/entity"
+	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	"github.com/gookit/event"
 	log "github.com/sirupsen/logrus"
 )
@@ -73,7 +73,7 @@ func (i *Indexer) IndexBlock(height uint64) error {
 		return ErrOrphanBlockFound
 	}
 
-	var txs = make([]entity.BlockTransaction, 0)
+	var txs = make([]explorer.BlockTransaction, 0)
 	for _, txHash := range block.Tx {
 		rawTx, err := i.Navcoin.GetRawTransaction(txHash, true)
 		if err != nil {
@@ -102,7 +102,7 @@ func (i *Indexer) IndexBlock(height uint64) error {
 	return i.persist(&txs, &block)
 }
 
-func (i *Indexer) applyInputs(txs *[]entity.BlockTransaction) error {
+func (i *Indexer) applyInputs(txs *[]explorer.BlockTransaction) error {
 	log.Debug("*** APPLYING INPUTS ***")
 	if len(*txs) == 0 {
 		return nil
@@ -142,8 +142,8 @@ func (i *Indexer) applyInputs(txs *[]entity.BlockTransaction) error {
 	return nil
 }
 
-func applyType(tx *entity.BlockTransaction, txs *[]entity.BlockTransaction) {
-	var coinbase *entity.BlockTransaction
+func applyType(tx *explorer.BlockTransaction, txs *[]explorer.BlockTransaction) {
+	var coinbase *explorer.BlockTransaction
 	for _, tx := range *txs {
 		if tx.IsCoinbase() {
 			coinbase = &tx
@@ -151,24 +151,24 @@ func applyType(tx *entity.BlockTransaction, txs *[]entity.BlockTransaction) {
 	}
 	log.Debug("*** APPLYING TYPE ***")
 	if tx.IsCoinbase() {
-		tx.MetaData.Type = string(entity.TxCoinbase)
+		tx.MetaData.Type = string(explorer.TxCoinbase)
 	} else if tx.Vout.GetAmount() > tx.Vin.GetAmount() {
-		if coinbase != nil && coinbase.Vout.HasOutputOfType(entity.VoutPoolStaking) {
-			tx.MetaData.Type = string(entity.TxPoolStaking)
+		if coinbase != nil && coinbase.Vout.HasOutputOfType(explorer.VoutPoolStaking) {
+			tx.MetaData.Type = string(explorer.TxPoolStaking)
 		}
-		if tx.Vout.HasOutputOfType(entity.VoutColdStaking) {
-			tx.MetaData.Type = string(entity.TxColdStaking)
+		if tx.Vout.HasOutputOfType(explorer.VoutColdStaking) {
+			tx.MetaData.Type = string(explorer.TxColdStaking)
 		} else {
-			tx.MetaData.Type = string(entity.TxStaking)
+			tx.MetaData.Type = string(explorer.TxStaking)
 		}
 	} else {
-		tx.MetaData.Type = string(entity.TxSpend)
+		tx.MetaData.Type = string(explorer.TxSpend)
 	}
 
 	log.WithFields(log.Fields{"type": tx.MetaData.Type}).Debug("Transaction type")
 }
 
-func applyFees(tx *entity.BlockTransaction, block *entity.Block) {
+func applyFees(tx *explorer.BlockTransaction, block *explorer.Block) {
 	log.Debug("*** APPLYING FEES ***")
 	if tx.IsSpend() {
 		tx.MetaData.Fees = uint64(tx.Vin.GetAmount() - tx.Vout.GetAmount())
@@ -177,7 +177,7 @@ func applyFees(tx *entity.BlockTransaction, block *entity.Block) {
 	log.WithFields(log.Fields{"fees": tx.MetaData.Fees}).Debug("Transaction fees")
 }
 
-func applyStaking(tx *entity.BlockTransaction, block *entity.Block) {
+func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
 	log.Debug("*** APPLYING STAKING ***")
 	if tx.IsSpend() {
 		return
@@ -197,7 +197,7 @@ func applyStaking(tx *entity.BlockTransaction, block *entity.Block) {
 	} else if tx.IsCoinbase() {
 		log.Debug("Transaction is coinbase")
 		for _, o := range tx.Vout {
-			if o.ScriptPubKey.Type == string(entity.VoutPubkeyhash) {
+			if o.ScriptPubKey.Type == string(explorer.VoutPubkeyhash) {
 				tx.MetaData.Stake = o.ValueSat
 				block.MetaData.Stake = o.ValueSat
 			}
@@ -213,9 +213,9 @@ func applyStaking(tx *entity.BlockTransaction, block *entity.Block) {
 	log.WithFields(log.Fields{"hash": tx.Hash, "stakedBy": block.MetaData.StakedBy}).Debug("Stake by")
 }
 
-func applySpend(tx *entity.BlockTransaction, block *entity.Block) {
+func applySpend(tx *explorer.BlockTransaction, block *explorer.Block) {
 	log.Debug("*** APPLYING SPEND ***")
-	if tx.MetaData.Type == string(entity.TxSpend) {
+	if tx.MetaData.Type == string(explorer.TxSpend) {
 		tx.MetaData.Spend = tx.Vout.GetAmount()
 		block.MetaData.Spend += tx.MetaData.Spend
 		log.WithFields(log.Fields{"hash": tx.Hash, "spend": tx.Vout.GetAmount()}).Debug("Transaction spend")
@@ -224,21 +224,21 @@ func applySpend(tx *entity.BlockTransaction, block *entity.Block) {
 	}
 }
 
-func applyCFundPayout(tx *entity.BlockTransaction, block *entity.Block) {
+func applyCFundPayout(tx *explorer.BlockTransaction, block *explorer.Block) {
 	log.Debug("*** APPLYING CFUND PAYOUT ***")
 	if !tx.IsCoinbase() {
 		log.Debug("Only applies to coinbase TX")
 		return
 	}
 	for _, o := range tx.Vout {
-		if o.ScriptPubKey.Type == string(entity.VoutPubkeyhash) && tx.Version == 3 {
+		if o.ScriptPubKey.Type == string(explorer.VoutPubkeyhash) && tx.Version == 3 {
 			block.MetaData.CFundPayout += o.ValueSat
 		}
 	}
 	log.WithFields(log.Fields{"hash": tx.Hash, "payout": block.MetaData.CFundPayout}).Debug("Transaction cfund payout")
 }
 
-func (i *Indexer) persist(txs *[]entity.BlockTransaction, block *entity.Block) error {
+func (i *Indexer) persist(txs *[]explorer.BlockTransaction, block *explorer.Block) error {
 	if err := i.persistBlockTransactions(txs, block); err != nil {
 		log.WithError(err).Error("Failed to persist block transactions")
 		return err
@@ -275,7 +275,7 @@ func (i *Indexer) persist(txs *[]entity.BlockTransaction, block *entity.Block) e
 	return nil
 }
 
-func (i *Indexer) persistBlockTransactions(txs *[]entity.BlockTransaction, block *entity.Block) error {
+func (i *Indexer) persistBlockTransactions(txs *[]explorer.BlockTransaction, block *explorer.Block) error {
 	for _, tx := range *txs {
 		_, err := i.Elastic.Client.
 			Index().
@@ -291,7 +291,7 @@ func (i *Indexer) persistBlockTransactions(txs *[]entity.BlockTransaction, block
 	return nil
 }
 
-func (i *Indexer) persistBlock(block entity.Block) error {
+func (i *Indexer) persistBlock(block explorer.Block) error {
 	_, err := i.Elastic.Client.
 		Index().
 		Index(BlockIndex.Get(i.Network)).

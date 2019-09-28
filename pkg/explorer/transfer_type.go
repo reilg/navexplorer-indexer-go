@@ -1,4 +1,4 @@
-package entity
+package explorer
 
 type TransferType string
 

@@ -1,4 +1,4 @@
-package entity
+package explorer
 
 type ScriptPubKey struct {
 	Asm       string   `json:"asm"`

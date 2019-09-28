@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic"
-	"github.com/NavExplorer/navexplorer-indexer-go/pkg/entity"
+	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,13 +19,13 @@ func NewAddressIndexer(network string, es *elastic.Elastic) *AddressIndexer {
 }
 
 func (addressIndexer *AddressIndexer) IndexAddressesForBlock(hash string) {
-	var block entity.Block
+	var block explorer.Block
 	if err := addressIndexer.elastic.GetById(BlockIndex.Get(addressIndexer.network), hash, &block); err != nil {
 		log.WithError(err).Fatal("Failed to get block")
 	}
 
 	for _, txHash := range block.Tx {
-		var blockTransaction entity.BlockTransaction
+		var blockTransaction explorer.BlockTransaction
 		if err := addressIndexer.elastic.GetById(BlockTransactionIndex.Get(addressIndexer.network), txHash, &blockTransaction); err != nil {
 			log.WithError(err).Fatal("Failed to get block")
 		}
@@ -39,8 +39,8 @@ func (addressIndexer *AddressIndexer) IndexAddressesForBlock(hash string) {
 	}
 }
 
-func (addressIndexer *AddressIndexer) indexAddressForTx(hash string, blockTransaction entity.BlockTransaction) error {
-	addressTransaction := entity.AddressTransaction{
+func (addressIndexer *AddressIndexer) indexAddressForTx(hash string, blockTransaction explorer.BlockTransaction) error {
+	addressTransaction := explorer.AddressTransaction{
 		Hash:   hash,
 		Txid:   blockTransaction.Hash,
 		Height: blockTransaction.Height,
@@ -60,7 +60,7 @@ func (addressIndexer *AddressIndexer) indexAddressForTx(hash string, blockTransa
 		log.WithFields(log.Fields{"tx": string(bt)}).Fatal("Could not handle cold staking")
 	} else if blockTransaction.IsStaking() {
 		if blockTransaction.Vin.HasAddress(hash) {
-			addressTransaction.Type = entity.TransferStake
+			addressTransaction.Type = explorer.TransferStake
 		} else {
 			btJson, _ := json.Marshal(bt)
 			//	log.Debug("")
@@ -70,7 +70,7 @@ func (addressIndexer *AddressIndexer) indexAddressForTx(hash string, blockTransa
 	} else if blockTransaction.IsCoinbase() {
 		if blockTransaction.Version == 1 {
 			// POW block
-			addressTransaction.Type = entity.TransferStake
+			addressTransaction.Type = explorer.TransferStake
 		} else if blockTransaction.Version == 3 {
 			log.WithFields(log.Fields{"tx": string(bt)}).Fatal("Could not handle cfund payout")
 		} else {
@@ -78,13 +78,13 @@ func (addressIndexer *AddressIndexer) indexAddressForTx(hash string, blockTransa
 		}
 	} else {
 		if addressTransaction.Input < addressTransaction.Output {
-			addressTransaction.Type = entity.TransferSend
+			addressTransaction.Type = explorer.TransferSend
 		} else {
-			addressTransaction.Type = entity.TransferReceive
+			addressTransaction.Type = explorer.TransferReceive
 		}
 	}
 
-	//if addressTransaction.Height == 293 && addressTransaction.Transfer[0].Type != entity.TransferStake {
+	//if addressTransaction.Height == 293 && addressTransaction.Transfer[0].Type != explorer.TransferStake {
 	//	b, _ := json.Marshal(addressTransaction)
 	//	log.Debug("")
 	//	log.Fatal("Address TRANSACTION: %s", string(b))

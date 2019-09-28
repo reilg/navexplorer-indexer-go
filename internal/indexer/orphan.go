@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/NavExplorer/navcoind-go"
-	"github.com/NavExplorer/navexplorer-indexer-go/pkg/entity"
+	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	"log"
 )
 
-func (i *Indexer) isOrphanBlock(block entity.Block) (bool, error) {
+func (i *Indexer) isOrphanBlock(block explorer.Block) (bool, error) {
 	if block.Height == 1 {
 		return false, nil
 	}

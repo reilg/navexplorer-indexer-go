@@ -1,4 +1,4 @@
-package entity
+package explorer
 
 type Vout struct {
 	Value        float64      `json:"value"`

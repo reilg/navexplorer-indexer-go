@@ -1,4 +1,4 @@
-package entity
+package explorer
 
 type Vin struct {
 	Coinbase  string     `json:"coinbase,omitempty"`

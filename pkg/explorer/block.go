@@ -1,4 +1,4 @@
-package entity
+package explorer
 
 type Block struct {
 	Hash              string   `json:"hash"`

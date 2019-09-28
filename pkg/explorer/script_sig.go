@@ -1,4 +1,4 @@
-package entity
+package explorer
 
 type ScriptSig struct {
 	Asm string `json:"asm,omitempty"`

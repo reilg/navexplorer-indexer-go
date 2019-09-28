@@ -2,11 +2,11 @@ package indexer
 
 import (
 	"github.com/NavExplorer/navcoind-go"
-	"github.com/NavExplorer/navexplorer-indexer-go/pkg/entity"
+	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 )
 
-func CreateBlock(block navcoind.Block) entity.Block {
-	return entity.Block{
+func CreateBlock(block navcoind.Block) explorer.Block {
+	return explorer.Block{
 		Hash:              block.Hash,
 		Confirmations:     block.Confirmations,
 		StrippedSize:      block.StrippedSize,
@@ -28,8 +28,8 @@ func CreateBlock(block navcoind.Block) entity.Block {
 	}
 }
 
-func CreateBlockTransaction(tx navcoind.RawTransaction) entity.BlockTransaction {
-	return entity.BlockTransaction{
+func CreateBlockTransaction(tx navcoind.RawTransaction) explorer.BlockTransaction {
+	return explorer.BlockTransaction{
 		Hex:             tx.Hex,
 		Txid:            tx.Txid,
 		Hash:            tx.Hash,
@@ -48,10 +48,10 @@ func CreateBlockTransaction(tx navcoind.RawTransaction) entity.BlockTransaction 
 	}
 }
 
-func createVin(vins []navcoind.Vin) []entity.Vin {
-	var inputs = make([]entity.Vin, 0)
+func createVin(vins []navcoind.Vin) []explorer.Vin {
+	var inputs = make([]explorer.Vin, 0)
 	for idx, _ := range vins {
-		input := entity.Vin{
+		input := explorer.Vin{
 			Coinbase:  vins[idx].Coinbase,
 			ScriptSig: createScriptSig(vins[idx].ScriptSig),
 			Value:     vins[idx].Value,
@@ -69,25 +69,25 @@ func createVin(vins []navcoind.Vin) []entity.Vin {
 	return inputs
 }
 
-func createScriptSig(scriptSig navcoind.ScriptSig) *entity.ScriptSig {
+func createScriptSig(scriptSig navcoind.ScriptSig) *explorer.ScriptSig {
 	if scriptSig.Hex == "" && scriptSig.Asm == "" {
 		return nil
 	}
 
-	return &entity.ScriptSig{
+	return &explorer.ScriptSig{
 		Asm: scriptSig.Asm,
 		Hex: scriptSig.Hex,
 	}
 }
 
-func createVout(vouts []navcoind.Vout) []entity.Vout {
-	var output = make([]entity.Vout, 0)
+func createVout(vouts []navcoind.Vout) []explorer.Vout {
+	var output = make([]explorer.Vout, 0)
 	for _, o := range vouts {
-		output = append(output, entity.Vout{
+		output = append(output, explorer.Vout{
 			Value:    o.Value,
 			ValueSat: o.ValueSat,
 			N:        o.N,
-			ScriptPubKey: entity.ScriptPubKey{
+			ScriptPubKey: explorer.ScriptPubKey{
 				Asm:       o.ScriptPubKey.Asm,
 				Hex:       o.ScriptPubKey.Hex,
 				ReqSigs:   o.ScriptPubKey.ReqSigs,
