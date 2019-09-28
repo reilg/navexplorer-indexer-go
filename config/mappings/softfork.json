@@ -1,24 +1,6 @@
 {
   "mappings": {
     "properties": {
-      "_class": {
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword",
-            "ignore_above": 256
-          }
-        }
-      },
-      "activationHeight": {
-        "type": "long"
-      },
-      "blocksSignalling": {
-        "type": "long"
-      },
-      "lockedInHeight": {
-        "type": "long"
-      },
       "name": {
         "type": "text",
         "fields": {
@@ -28,13 +10,7 @@
           }
         }
       },
-      "previousCycles": {
-        "type": "long"
-      },
       "signalBit": {
-        "type": "long"
-      },
-      "signalledToBlock": {
         "type": "long"
       },
       "state": {
@@ -45,6 +21,26 @@
             "ignore_above": 256
           }
         }
+      },
+      "cycle": {
+        "type": "nested",
+        "properties": {
+          "cycle": {
+            "type": "long"
+          },
+          "blocksSignalling": {
+            "type": "long"
+          }
+        }
+      },
+      "lockedInHeight": {
+        "type": "long"
+      },
+      "activationHeight": {
+        "type": "long"
+      },
+      "signalledToBlock": {
+        "type": "long"
       }
     }
   }
