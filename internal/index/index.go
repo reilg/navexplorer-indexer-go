@@ -61,7 +61,7 @@ func (i *Index) Init() error {
 			return err
 		}
 
-		index := fmt.Sprintf("%s.%s", config.Get().Navcoind.Network, name[0:len(name)-len(filepath.Ext(name))])
+		index := fmt.Sprintf("%s.%s", config.Get().Network, name[0:len(name)-len(filepath.Ext(name))])
 		log.Printf("Creating elastic search index: %s", index)
 
 		if err = i.createIndex(index, b); err != nil {

@@ -52,17 +52,15 @@ func main() {
 }
 
 func eventSubscription(elastic *index.Index) {
-	elastic, _ = index.New()
 	addressIndexer := address_indexer.New(elastic)
 	event.On(string(events.EventBlockIndexed), event.ListenerFunc(func(e event.Event) error {
-		go addressIndexer.IndexAddressesForTransactions(e.Get("txs").(*[]explorer.BlockTransaction))
+		addressIndexer.IndexAddressesForTransactions(e.Get("txs").(*[]explorer.BlockTransaction))
 		return nil
 	}), event.Normal)
 
-	elastic, _ = index.New()
 	signalIndexer := signal_indexer.New(elastic)
 	event.On(string(events.EventBlockIndexed), event.ListenerFunc(func(e event.Event) error {
-		go signalIndexer.IndexSignal(e.Get("block").(*explorer.Block))
+		signalIndexer.IndexSignal(e.Get("block").(*explorer.Block))
 		return nil
 	}), event.Normal)
 }

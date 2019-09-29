@@ -9,7 +9,7 @@ import (
 )
 
 type Config struct {
-	BaseDir       string
+	Network       string
 	Debug         bool
 	Reindex       bool
 	Navcoind      NavcoindConfig
@@ -27,7 +27,6 @@ type NavcoindConfig struct {
 	User     string
 	Password string
 	Ssl      bool
-	Network  string
 }
 
 type ElasticSearchConfig struct {
@@ -53,7 +52,7 @@ func Init() {
 
 func Get() *Config {
 	return &Config{
-		BaseDir: getString("BASE_DIR", "/app"),
+		Network: getString("NAVCOIND_NETWORK", "mainnet"),
 		Debug:   getBool("DEBUG", false),
 		Reindex: getBool("REINDEX", false),
 		Navcoind: NavcoindConfig{
@@ -62,7 +61,6 @@ func Get() *Config {
 			User:     getString("NAVCOIND_USER", "user"),
 			Password: getString("NAVCOIND_PASSWORD", "password"),
 			Ssl:      getBool("NAVCOIND_SSL", false),
-			Network:  getString("NAVCOIND_NETWORK", "mainnet"),
 		},
 		ElasticSearch: ElasticSearchConfig{
 			Hosts:       getSlice("ELASTIC_SEARCH_HOSTS", make([]string, 0), ","),
