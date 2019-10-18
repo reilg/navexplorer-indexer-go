@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/olivere/elastic/v7"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/syncmap"
 	"io/ioutil"
 	"log"
 	"os"
@@ -15,7 +17,8 @@ import (
 )
 
 type Index struct {
-	Client *elastic.Client
+	Client   *elastic.Client
+	requests syncmap.Map
 }
 
 var (
@@ -30,7 +33,7 @@ func New() (*Index, error) {
 		elastic.SetHealthcheck(config.Get().ElasticSearch.HealthCheck),
 	}
 
-	if config.Get().Debug {
+	if config.Get().ElasticSearch.Debug {
 		opts = append(opts, elastic.SetTraceLog(log.New(os.Stdout, "", 0)))
 	}
 
@@ -40,7 +43,7 @@ func New() (*Index, error) {
 		return nil, ErrDatabaseConnection
 	}
 
-	return &Index{client}, nil
+	return &Index{client, syncmap.Map{}}, nil
 }
 
 func (i *Index) Init() error {
@@ -72,8 +75,29 @@ func (i *Index) Init() error {
 	return nil
 }
 
-func (i *Index) Flush(indexes ...string) *elastic.IndicesFlushService {
-	return i.Client.Flush(indexes...)
+func (i *Index) GetBulkRequest(height uint64) *elastic.BulkService {
+	request, ok := i.requests.Load(height)
+	if !ok {
+		request = i.Client.Bulk()
+		i.requests.Store(height, request)
+	}
+
+	return request.(*elastic.BulkService)
+}
+
+func (i *Index) PersistRequest(height uint64) {
+	bulkRequest := i.GetBulkRequest(height)
+	actions := bulkRequest.NumberOfActions()
+	if actions != 0 {
+		_, err := bulkRequest.Do(context.Background())
+		if err != nil {
+			logrus.WithError(err).Fatal("Failed to persist request at height ", height)
+		}
+	}
+	if height%100 == 0 {
+		logrus.WithFields(logrus.Fields{"actions": actions}).Info("Indexed height ", height)
+	}
+	i.requests.Delete(height)
 }
 
 func (i *Index) GetById(index string, id string, record interface{}) error {

@@ -44,23 +44,25 @@ func main() {
 	go eventSubscription(elastic)
 
 	blockIndexer := block_indexer.New(elastic, cache, navcoin)
-	defer blockIndexer.Close()
-
 	if err := blockIndexer.IndexBlocks(); err != nil {
 		log.WithError(err).Fatal("Failed to index blocks")
 	}
 }
 
 func eventSubscription(elastic *index.Index) {
-	addressIndexer := address_indexer.New(elastic)
 	event.On(string(events.EventBlockIndexed), event.ListenerFunc(func(e event.Event) error {
-		addressIndexer.IndexAddressesForTransactions(e.Get("txs").(*[]explorer.BlockTransaction))
+		block := e.Get("block").(*explorer.Block)
+		address_indexer.New(elastic).IndexAddressesForTransactions(e.Get("txs").(*[]explorer.BlockTransaction))
+		signal_indexer.New(elastic).IndexSignal(block)
 		return nil
 	}), event.Normal)
 
-	signalIndexer := signal_indexer.New(elastic)
-	event.On(string(events.EventBlockIndexed), event.ListenerFunc(func(e event.Event) error {
-		signalIndexer.IndexSignal(e.Get("block").(*explorer.Block))
+	event.On(string(events.EventSignalIndexed), event.ListenerFunc(func(e event.Event) error {
+		signal := e.Get("signal").(*explorer.Signal)
+		block := e.Get("block").(*explorer.Block)
+		softfork_indexer.New(elastic, nil).UpdateForSignal(signal, block)
+
+		elastic.PersistRequest(signal.Height)
 		return nil
 	}), event.Normal)
 }

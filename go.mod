@@ -9,4 +9,5 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/olivere/elastic/v7 v7.0.6
 	github.com/sirupsen/logrus v1.4.2
+	golang.org/x/sync v0.0.0-20190227155943-e225da77a7e6
 )

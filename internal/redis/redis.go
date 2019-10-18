@@ -65,13 +65,12 @@ func (r *Redis) SetLastBlock(height uint64) error {
 }
 
 func (r *Redis) RewindBy(blocks uint64) error {
-	log.Info("Rewinding last block_indexer indexed by", blocks)
 	height, err := r.GetLastBlockIndexed()
 	if err != nil {
 		return err
 	}
 
-	log.Infof("Rewinding last block_indexer indexed from %d by %d blocks", height, blocks)
+	log.Infof("Rewinding last block indexed from %d by %d blocks", height, blocks)
 
 	if height > 10 {
 		height = height - blocks

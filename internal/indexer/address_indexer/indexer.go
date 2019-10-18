@@ -1,11 +1,11 @@
 package address_indexer
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -21,18 +21,15 @@ func (i *Indexer) IndexAddressesForTransactions(txs *[]explorer.BlockTransaction
 	if len(*txs) == 0 {
 		return
 	}
+
 	for _, tx := range *txs {
 		for _, address := range tx.GetAllAddresses() {
-			if err := i.indexAddressForTx(address, tx); err != nil {
-				log.WithError(err).Fatal("Failed to index address transactions")
-			}
+			i.indexAddressForTx(address, tx)
 		}
 	}
-
-	log.WithFields(log.Fields{"height": (*txs)[0].Height}).Info("Address Txs Indexed")
 }
 
-func (i *Indexer) indexAddressForTx(address string, tx explorer.BlockTransaction) error {
+func (i *Indexer) indexAddressForTx(address string, tx explorer.BlockTransaction) {
 	addressTransaction := explorer.AddressTransaction{
 		Hash:   address,
 		Txid:   tx.Hash,
@@ -76,16 +73,8 @@ func (i *Indexer) indexAddressForTx(address string, tx explorer.BlockTransaction
 		}
 	}
 
-	_, err := i.elastic.Client.
-		Index().
+	i.elastic.GetBulkRequest(tx.Height).Add(elastic.NewBulkIndexRequest().
 		Index(index.AddressTransactionIndex.Get()).
 		Id(fmt.Sprintf("%s-%s", address, tx.Hash)).
-		BodyJson(addressTransaction).
-		Do(context.Background())
-
-	i.elastic.Flush([]string{
-		index.AddressTransactionIndex.Get(),
-	}...)
-
-	return err
+		Doc(addressTransaction))
 }

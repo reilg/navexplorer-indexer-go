@@ -25,10 +25,6 @@ func New(elastic *index.Index, cache *redis.Redis, navcoin *navcoind.Navcoind) *
 	return &Indexer{elastic: elastic, cache: cache, navcoin: navcoin}
 }
 
-func (i *Indexer) Close() error {
-	return nil
-}
-
 func (i *Indexer) IndexBlocks() error {
 	log.Info("Indexing all blocks")
 	if config.Get().Debug {
@@ -53,7 +49,7 @@ func (i *Indexer) IndexBlocks() error {
 		}
 	}
 
-	return i.IndexBlocks()
+	return nil
 }
 
 func (i *Indexer) indexBlocks(height uint64) error {
@@ -195,18 +191,14 @@ func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
 	}
 
 	if tx.IsAnyStaking() {
-		log.Debug("Transaction is staking")
 		if tx.Height >= 2761920 {
-			log.Debug("Fixed stake reward")
 			tx.MetaData.Stake = 2 // hard coded to 2 as static rewards arrived after block_indexer 2761920
 			block.MetaData.Stake += tx.MetaData.Stake
 		} else {
-			log.Debug("Variable stake reward")
 			tx.MetaData.Stake = uint64(tx.Vout.GetAmount() - tx.Vin.GetAmount())
 			block.MetaData.Stake += tx.MetaData.Stake
 		}
 	} else if tx.IsCoinbase() {
-		log.Debug("Transaction is coinbase")
 		for _, o := range tx.Vout {
 			if o.ScriptPubKey.Type == string(explorer.VoutPubkeyhash) {
 				tx.MetaData.Stake = o.ValueSat
@@ -220,8 +212,10 @@ func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
 		block.MetaData.StakedBy = voutsWithAddresses[0].ScriptPubKey.Addresses[0]
 	}
 
-	log.WithFields(log.Fields{"hash": tx.Hash, "stake": tx.MetaData.Stake}).Debug("Stake reward")
-	log.WithFields(log.Fields{"hash": tx.Hash, "stakedBy": block.MetaData.StakedBy}).Debug("Stake by")
+	if tx.MetaData.Stake != 0 {
+		log.WithFields(log.Fields{"hash": tx.Hash, "stake": tx.MetaData.Stake}).Debug("Stake reward")
+		log.WithFields(log.Fields{"hash": tx.Hash, "stakedBy": block.MetaData.StakedBy}).Debug("Stake by")
+	}
 }
 
 func applySpend(tx *explorer.BlockTransaction, block *explorer.Block) {
