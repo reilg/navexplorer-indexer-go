@@ -39,20 +39,3 @@ func (i *Indexer) IndexSignal(block *explorer.Block) {
 
 	event.MustFire(string(events.EventSignalIndexed), event.M{"signal": &signal, "block": block})
 }
-
-//public void indexBlock(Block block) {
-//List<SoftFork> softForks = softForkRepository.findAll();
-//
-//softForks.forEach(softFork -> {
-//boolean signalling = (block.getVersion() >> softFork.getSignalBit() & 1) == 1;
-//
-//block.getSignals().add(new Signal(softFork.getName(), signalling));
-//});
-//
-//block.setBlockCycle(
-//((Double) Math.ceil(block.getHeight().intValue() / blocksInCycle)).intValue() + 1
-//);
-//blockRepository.save(block);
-//
-//updateSoftForks(block);
-//}
