@@ -18,9 +18,12 @@ import (
 func main() {
 	config.Init()
 
-	elastic, _ := index.New()
+	elastic, err := index.New()
+	if err != nil {
+		log.WithError(err).Fatal("Failed toStart ES")
+	}
 	if err := elastic.Init(); err != nil {
-		log.WithError(err).Fatal("Failed to initialize Elastic Search")
+		log.WithError(err).Fatal("Failed to initialize ES")
 	}
 
 	cache := redis.New()
