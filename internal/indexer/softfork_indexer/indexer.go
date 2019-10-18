@@ -3,12 +3,14 @@ package softfork_indexer
 import (
 	"context"
 	"github.com/NavExplorer/navcoind-go"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
 
-var SoftForks []explorer.SoftFork
+var SoftForks explorer.SoftForks
 
 type Indexer struct {
 	elastic *index.Index
@@ -51,13 +53,43 @@ func (i *Indexer) Init() *Indexer {
 	return i
 }
 
-func (i *Indexer) Update(softFork *explorer.SoftFork) error {
-	_, err := i.elastic.Client.
-		Index().
-		Index(index.SoftForkIndex.Get()).
-		Id(softFork.Name).
-		BodyJson(softFork).
-		Do(context.Background())
+func (i *Indexer) UpdateForSignal(signal *explorer.Signal, block *explorer.Block) {
+	if !signal.IsSignalling() {
+		return
+	}
 
-	return err
+	size := config.Get().SoftForkBlockCycle
+	blockCycle := block.BlockCycle(size)
+	cycleIndex := block.CycleIndex(size)
+
+	for _, s := range signal.SoftForks {
+		softFork := SoftForks.GetSoftFork(s)
+		if softFork == nil || softFork.SignalHeight >= signal.Height {
+			continue
+		}
+
+		cycle := softFork.GetCycle(blockCycle)
+		if cycle == nil {
+			softFork.Cycles = append(softFork.Cycles, explorer.SoftForkCycle{Cycle: blockCycle, BlocksSignalling: 0})
+			cycle = softFork.GetCycle(blockCycle)
+		}
+		cycle.BlocksSignalling++
+
+		if cycle.BlocksSignalling >= uint(float64(size)*0.75) {
+			softFork.LockedInHeight = uint64(size * blockCycle)
+			softFork.ActivationHeight = softFork.LockedInHeight + uint64(size)
+			if cycleIndex == size {
+				softFork.State = explorer.SoftForkLockedIn
+			}
+		}
+
+		softFork.SignalHeight = signal.Height
+		if softFork.State == explorer.SoftForkDefined {
+			softFork.State = explorer.SoftForkStarted
+		}
+
+		i.elastic.GetBulkRequest(block.Height).Add(
+			elastic.NewBulkIndexRequest().Index(index.SoftForkIndex.Get()).Id(softFork.Name).Doc(softFork),
+		)
+	}
 }

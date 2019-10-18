@@ -11,7 +11,7 @@
         }
       },
       "height": {"type": "long"},
-      "signals": {
+      "softforks": {
         "type": "text",
         "fields": {
           "keyword": {

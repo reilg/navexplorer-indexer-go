@@ -22,7 +22,14 @@
           }
         }
       },
-      "cycle": {
+      "lockedInHeight": {"type": "long"},
+      "activationHeight": {
+        "type": "long"
+      },
+      "signalHeight": {
+        "type": "long"
+      },
+      "cycles": {
         "type": "nested",
         "properties": {
           "cycle": {
@@ -32,15 +39,6 @@
             "type": "long"
           }
         }
-      },
-      "lockedInHeight": {
-        "type": "long"
-      },
-      "activationHeight": {
-        "type": "long"
-      },
-      "signalledToBlock": {
-        "type": "long"
       }
     }
   }

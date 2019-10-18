@@ -1,13 +1,13 @@
 package signal_indexer
 
 import (
-	"context"
 	"fmt"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/events"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer/softfork_indexer"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
-	log "github.com/sirupsen/logrus"
-	"strings"
+	"github.com/gookit/event"
+	"github.com/olivere/elastic/v7"
 )
 
 type Indexer struct {
@@ -20,32 +20,24 @@ func New(elastic *index.Index) *Indexer {
 
 func (i *Indexer) IndexSignal(block *explorer.Block) {
 	signal := explorer.Signal{
-		Address: block.MetaData.StakedBy,
-		Height:  block.Height,
-		Signals: make([]string, 0),
+		Address:   block.MetaData.StakedBy,
+		Height:    block.Height,
+		SoftForks: make([]string, 0),
 	}
 	for _, sf := range softfork_indexer.SoftForks {
 		if sf.IsOpen() && block.Version>>sf.SignalBit&1 == 1 {
-			signal.Signals = append(signal.Signals, sf.Name)
+			signal.SoftForks = append(signal.SoftForks, sf.Name)
 		}
 	}
 
-	if len(signal.Signals) == 0 {
-		return
+	if len(signal.SoftForks) != 0 {
+		i.elastic.GetBulkRequest(block.Height).Add(elastic.NewBulkIndexRequest().
+			Index(index.SignalIndex.Get()).
+			Id(fmt.Sprintf("%d-%s", block.Height, block.MetaData.StakedBy)).
+			Doc(signal))
 	}
 
-	log.WithFields(log.Fields{"height": signal.Height}).Info("Signals Indexed: ", strings.Join(signal.Signals, ","))
-
-	_, err := i.elastic.Client.Index().
-		Index(index.SignalIndex.Get()).
-		Id(fmt.Sprintf("%d-%s", block.Height, block.MetaData.StakedBy)).
-		BodyJson(signal).
-		Do(context.Background())
-
-	if err != nil {
-		log.WithError(err).Fatal("Failed to index signal at height: ", block.Height)
-	}
-
+	event.MustFire(string(events.EventSignalIndexed), event.M{"signal": &signal, "block": block})
 }
 
 //public void indexBlock(Block block) {
