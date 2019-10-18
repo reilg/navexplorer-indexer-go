@@ -1,4 +1,4 @@
-package indexer
+package block_indexer
 
 import (
 	"github.com/NavExplorer/navcoind-go"
