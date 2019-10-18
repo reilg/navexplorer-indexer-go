@@ -22,8 +22,7 @@ type Index struct {
 }
 
 var (
-	ErrRecordNotFound     = errors.New("Record not found")
-	ErrDatabaseConnection = errors.New("Could not connect to the search cluster")
+	ErrRecordNotFound = errors.New("Record not found")
 )
 
 func New() (*Index, error) {
@@ -33,17 +32,23 @@ func New() (*Index, error) {
 		elastic.SetHealthcheck(config.Get().ElasticSearch.HealthCheck),
 	}
 
+	if config.Get().ElasticSearch.Username != "" {
+		opts = append(opts, elastic.SetBasicAuth(
+			config.Get().ElasticSearch.Username,
+			config.Get().ElasticSearch.Password,
+		))
+	}
+
 	if config.Get().ElasticSearch.Debug {
 		opts = append(opts, elastic.SetTraceLog(log.New(os.Stdout, "", 0)))
 	}
 
 	client, err := elastic.NewClient(opts...)
 	if err != nil {
-		log.Print("Error: ", err)
-		return nil, ErrDatabaseConnection
+		log.Println("Error: ", err)
 	}
 
-	return &Index{client, syncmap.Map{}}, nil
+	return &Index{client, syncmap.Map{}}, err
 }
 
 func (i *Index) Init() error {
@@ -135,8 +140,8 @@ func (i *Index) createIndex(index string, mapping []byte) error {
 			return err
 		}
 
-		if !createIndex.Acknowledged {
-			log.Printf("Created index: %s", index)
+		if createIndex.Acknowledged {
+			logrus.Info("Created index: ", index)
 		}
 	}
 

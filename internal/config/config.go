@@ -35,6 +35,8 @@ type ElasticSearchConfig struct {
 	Sniff       bool
 	HealthCheck bool
 	Debug       bool
+	Username    string
+	Password    string
 	MappingDir  string
 }
 
@@ -69,6 +71,8 @@ func Get() *Config {
 			Sniff:       getBool("ELASTIC_SEARCH_SNIFF", true),
 			HealthCheck: getBool("ELASTIC_SEARCH_HEALTH_CHECK", true),
 			Debug:       getBool("ELASTIC_SEARCH_DEBUG", false),
+			Username:    getString("ELASTIC_SEARCH_USERNAME", "/data/mappings"),
+			Password:    getString("ELASTIC_SEARCH_PASSWORD", "/data/mappings"),
 			MappingDir:  getString("ELASTIC_SEARCH_MAPPING_DIR", "/data/mappings"),
 		},
 		Redis: RedisConfig{
