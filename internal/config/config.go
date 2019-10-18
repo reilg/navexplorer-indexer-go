@@ -9,12 +9,13 @@ import (
 )
 
 type Config struct {
-	Network       string
-	Debug         bool
-	Reindex       bool
-	Navcoind      NavcoindConfig
-	ElasticSearch ElasticSearchConfig
-	Redis         RedisConfig
+	Network            string
+	Debug              bool
+	Reindex            bool
+	SoftForkBlockCycle uint
+	Navcoind           NavcoindConfig
+	ElasticSearch      ElasticSearchConfig
+	Redis              RedisConfig
 }
 
 type StorageConfig struct {
@@ -52,9 +53,10 @@ func Init() {
 
 func Get() *Config {
 	return &Config{
-		Network: getString("NAVCOIND_NETWORK", "mainnet"),
-		Debug:   getBool("DEBUG", false),
-		Reindex: getBool("REINDEX", false),
+		Network:            getString("NAVCOIND_NETWORK", "mainnet"),
+		SoftForkBlockCycle: getUint("BLOCKCYCLE_SOFTFORK", 20160),
+		Debug:              getBool("DEBUG", false),
+		Reindex:            getBool("REINDEX", false),
 		Navcoind: NavcoindConfig{
 			Host:     getString("NAVCOIND_HOST", ""),
 			Port:     getInt("NAVCOIND_PORT", 8332),
@@ -92,6 +94,10 @@ func getInt(key string, defaultValue int) int {
 	}
 
 	return defaultValue
+}
+
+func getUint(key string, defaultValue uint) uint {
+	return uint(getInt(key, int(defaultValue)))
 }
 
 func getBool(key string, defaultValue bool) bool {
