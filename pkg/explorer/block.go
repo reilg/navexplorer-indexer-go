@@ -1,5 +1,7 @@
 package explorer
 
+import "math"
+
 type Block struct {
 	Hash              string   `json:"hash"`
 	Confirmations     uint64   `json:"confirmations"`
@@ -27,4 +29,19 @@ type Block struct {
 		Fees        uint64 `json:"fees"`
 		CFundPayout uint64 `json:"cfundPayout"`
 	}
+}
+
+func (b *Block) BlockCycle(size uint) uint {
+	return GetCycleForHeight(b.Height, size)
+}
+
+func (b *Block) CycleIndex(size uint) uint {
+	end := size * b.BlockCycle(size)
+	start := end - size
+
+	return uint(b.Height) - start
+}
+
+func GetCycleForHeight(height uint64, size uint) uint {
+	return uint(math.Ceil(float64(uint(height)/(size+1)))) + 1
 }
