@@ -42,7 +42,12 @@ func main() {
 		log.WithError(err).Fatal("Failed to initialize Navcoind")
 	}
 
-	softfork_indexer.New(elastic, navcoin).Init()
+	if config.Get().Reindex {
+		lbi, err := cache.GetLastBlockIndexed()
+		if err == nil {
+			softfork_indexer.New(elastic, navcoin).Init().Reindex(lbi)
+		}
+	}
 
 	go eventSubscription(elastic)
 
@@ -55,6 +60,7 @@ func main() {
 func eventSubscription(elastic *index.Index) {
 	event.On(string(events.EventBlockIndexed), event.ListenerFunc(func(e event.Event) error {
 		block := e.Get("block").(*explorer.Block)
+
 		address_indexer.New(elastic).IndexAddressesForTransactions(e.Get("txs").(*[]explorer.BlockTransaction))
 		signal_indexer.New(elastic).IndexSignal(block)
 		return nil
@@ -63,8 +69,8 @@ func eventSubscription(elastic *index.Index) {
 	event.On(string(events.EventSignalIndexed), event.ListenerFunc(func(e event.Event) error {
 		signal := e.Get("signal").(*explorer.Signal)
 		block := e.Get("block").(*explorer.Block)
-		softfork_indexer.New(elastic, nil).UpdateForSignal(signal, block)
 
+		softfork_indexer.New(elastic, nil).Update(signal, block)
 		elastic.PersistRequest(signal.Height)
 		return nil
 	}), event.Normal)

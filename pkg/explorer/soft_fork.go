@@ -3,18 +3,28 @@ package explorer
 type SoftForks []SoftFork
 
 type SoftFork struct {
-	Name             string          `json:"name"`
-	SignalBit        uint            `json:"signalBit"`
-	State            SoftForkState   `json:"state"`
-	LockedInHeight   uint64          `json:"lockedinheight,omitempty"`
-	ActivationHeight uint64          `json:"activationheight,omitempty"`
-	SignalHeight     uint64          `json:"signalheight,omitempty"`
-	Cycles           []SoftForkCycle `json:"cycles,omitempty"`
+	Name             string         `json:"name"`
+	SignalBit        uint           `json:"signalBit"`
+	State            SoftForkState  `json:"state"`
+	LockedInHeight   uint64         `json:"lockedinheight,omitempty"`
+	ActivationHeight uint64         `json:"activationheight,omitempty"`
+	SignalHeight     uint64         `json:"signalheight,omitempty"`
+	Cycles           SoftForkCycles `json:"cycles,omitempty"`
 }
+
+type SoftForkCycles []SoftForkCycle
 
 type SoftForkCycle struct {
 	Cycle            uint `json:"cycle"`
 	BlocksSignalling uint `json:"blocks"`
+}
+
+func (s *SoftFork) LatestCycle() *SoftForkCycle {
+	if len(s.Cycles) == 0 {
+		return nil
+	}
+
+	return &(s.Cycles)[len(s.Cycles)-1]
 }
 
 func (s *SoftFork) IsOpen() bool {
@@ -22,8 +32,8 @@ func (s *SoftFork) IsOpen() bool {
 }
 
 func (s *SoftFork) GetCycle(cycle uint) *SoftForkCycle {
-	for i, _ := range s.Cycles {
-		if (s.Cycles)[i].Cycle == cycle {
+	for i, c := range s.Cycles {
+		if c.Cycle == cycle {
 			return &s.Cycles[i]
 		}
 	}

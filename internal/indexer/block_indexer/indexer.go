@@ -5,7 +5,6 @@ import (
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/redis"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	log "github.com/sirupsen/logrus"
@@ -70,14 +69,12 @@ func (i *Indexer) IndexBlock(height uint64) error {
 
 	navBlock, err := i.navcoin.GetBlock(hash)
 	if err != nil {
-		log.WithFields(log.Fields{"hash": hash, "height": height}).
-			WithError(err).
-			Error("Failed to GetBlock")
+		log.WithFields(log.Fields{"hash": hash, "height": height}).WithError(err).Error("Failed to GetBlock")
 		return err
 	}
-	block := indexer.CreateBlock(navBlock)
+	block := CreateBlock(navBlock)
 
-	orphan, err := i.isOrphanBlock(block)
+	orphan, _ := i.isOrphanBlock(block)
 	if orphan == true {
 		return ErrOrphanBlockFound
 	}
@@ -92,7 +89,7 @@ func (i *Indexer) IndexBlock(height uint64) error {
 			return err
 		}
 
-		txs = append(txs, indexer.CreateBlockTransaction(rawTx.(navcoind.RawTransaction)))
+		txs = append(txs, CreateBlockTransaction(rawTx.(navcoind.RawTransaction)))
 	}
 
 	if err := i.applyInputs(&txs); err != nil {
@@ -131,7 +128,7 @@ func (i *Indexer) applyInputs(txs *[]explorer.BlockTransaction) error {
 			if err != nil {
 				log.WithFields(log.Fields{"hash": *vin[vdx].Txid}).WithError(err).Fatal("Failed to get previous transaction")
 			}
-			prevTx := indexer.CreateBlockTransaction(rawTx.(navcoind.RawTransaction))
+			prevTx := CreateBlockTransaction(rawTx.(navcoind.RawTransaction))
 
 			if len(prevTx.Vout) <= *vin[vdx].Vout {
 				log.WithFields(log.Fields{"index": vdx, "tx": prevTx.Hash}).Fatal("Vout does not exist")

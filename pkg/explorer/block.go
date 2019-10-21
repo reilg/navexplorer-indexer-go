@@ -31,17 +31,30 @@ type Block struct {
 	}
 }
 
-func (b *Block) BlockCycle(size uint) uint {
-	return GetCycleForHeight(b.Height, size)
+type BlockCycle struct {
+	Cycle  uint
+	Index  uint
+	Quorum uint
 }
 
-func (b *Block) CycleIndex(size uint) uint {
-	end := size * b.BlockCycle(size)
-	start := end - size
+func (b *Block) BlockCycle(size uint) BlockCycle {
+	cycle := GetCycleForHeight(b.Height, size)
 
-	return uint(b.Height) - start
+	return BlockCycle{
+		Cycle:  cycle,
+		Index:  GetCycleIndex(b.Height, cycle, size),
+		Quorum: GetQuorum(size),
+	}
 }
 
 func GetCycleForHeight(height uint64, size uint) uint {
 	return uint(math.Ceil(float64(uint(height)/(size+1)))) + 1
+}
+
+func GetCycleIndex(height uint64, cycle uint, size uint) uint {
+	return uint(height) - (cycle * size) - size
+}
+
+func GetQuorum(size uint) uint {
+	return uint(float64(size) * 0.75)
 }

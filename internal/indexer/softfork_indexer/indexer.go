@@ -2,10 +2,12 @@ package softfork_indexer
 
 import (
 	"context"
+	"fmt"
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer/repository"
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
@@ -53,43 +55,130 @@ func (i *Indexer) Init() *Indexer {
 	return i
 }
 
+func (i *Indexer) reset() {
+	for idx, s := range SoftForks {
+		SoftForks[idx] = explorer.SoftFork{Name: s.Name, SignalBit: s.SignalBit, State: explorer.SoftForkDefined}
+	}
+}
+
+func (i *Indexer) Reindex(height uint64) {
+	i.reset()
+
+	size := config.Get().SoftForkBlockCycle
+	start := uint64(1)
+	end := uint64(size)
+
+	for {
+		if height == 0 || end >= height {
+			break
+		}
+
+		signalRepository := repository.New(i.elastic.Client)
+		signals := signalRepository.GetSignals(start, end)
+
+		log.WithFields(log.Fields{"Start": start, "End": end, "height": height, "signals": len(*signals)}).
+			Info(fmt.Sprintf("Latest Cycle"))
+
+		for _, s := range *signals {
+			for _, sf := range s.SoftForks {
+				softFork := SoftForks.GetSoftFork(sf)
+				if softFork.IsOpen() {
+					softFork.SignalHeight = end
+					softFork.State = explorer.SoftForkStarted
+					cycleIndex := explorer.GetCycleForHeight(s.Height, size)
+					var cycle *explorer.SoftForkCycle
+					if cycle = softFork.GetCycle(cycleIndex); cycle == nil {
+						softFork.Cycles = append(softFork.Cycles, explorer.SoftForkCycle{Cycle: cycleIndex, BlocksSignalling: 0})
+						cycle = softFork.GetCycle(cycleIndex)
+					}
+					cycle.BlocksSignalling++
+				}
+			}
+		}
+
+		for idx, s := range SoftForks {
+			if s.State == explorer.SoftForkStarted && s.LatestCycle().BlocksSignalling >= explorer.GetQuorum(size) {
+				SoftForks[idx].State = explorer.SoftForkLockedIn
+				SoftForks[idx].LockedInHeight = end
+				SoftForks[idx].ActivationHeight = end + uint64(size)
+			}
+			if s.State == explorer.SoftForkLockedIn && height >= SoftForks[idx].ActivationHeight {
+				SoftForks[idx].State = explorer.SoftForkActive
+			}
+		}
+
+		start, end = func(start uint64, end uint64, height uint64) (uint64, uint64) {
+			start += uint64(config.Get().SoftForkBlockCycle)
+			end += uint64(config.Get().SoftForkBlockCycle)
+			if end > height {
+				end = height
+			}
+			return start, end
+		}(start, end, height)
+	}
+
+	//i.UpdateSoftForkState(&SoftForks, height)
+	//i.persist(height)
+}
+
+func (i *Indexer) Update(signal *explorer.Signal, block *explorer.Block) {
+	i.UpdateForSignal(signal, block)
+	i.UpdateSoftForkState(&SoftForks, block.Height)
+	i.persist(block.Height)
+}
+
 func (i *Indexer) UpdateForSignal(signal *explorer.Signal, block *explorer.Block) {
-	if !signal.IsSignalling() {
+	if signal == nil || !signal.IsSignalling() {
 		return
 	}
 
 	size := config.Get().SoftForkBlockCycle
 	blockCycle := block.BlockCycle(size)
-	cycleIndex := block.CycleIndex(size)
 
 	for _, s := range signal.SoftForks {
 		softFork := SoftForks.GetSoftFork(s)
 		if softFork == nil || softFork.SignalHeight >= signal.Height {
 			continue
 		}
-
-		cycle := softFork.GetCycle(blockCycle)
-		if cycle == nil {
-			softFork.Cycles = append(softFork.Cycles, explorer.SoftForkCycle{Cycle: blockCycle, BlocksSignalling: 0})
-			cycle = softFork.GetCycle(blockCycle)
-		}
-		cycle.BlocksSignalling++
-
-		if cycle.BlocksSignalling >= uint(float64(size)*0.75) {
-			softFork.LockedInHeight = uint64(size * blockCycle)
-			softFork.ActivationHeight = softFork.LockedInHeight + uint64(size)
-			if cycleIndex == size {
-				softFork.State = explorer.SoftForkLockedIn
-			}
-		}
-
 		softFork.SignalHeight = signal.Height
 		if softFork.State == explorer.SoftForkDefined {
 			softFork.State = explorer.SoftForkStarted
 		}
 
-		i.elastic.GetBulkRequest(block.Height).Add(
-			elastic.NewBulkIndexRequest().Index(index.SoftForkIndex.Get()).Id(softFork.Name).Doc(softFork),
+		var cycle *explorer.SoftForkCycle
+		if cycle = softFork.GetCycle(blockCycle.Cycle); cycle == nil {
+			softFork.Cycles = append(softFork.Cycles, explorer.SoftForkCycle{Cycle: blockCycle.Cycle, BlocksSignalling: 0})
+			cycle = softFork.GetCycle(blockCycle.Cycle)
+		}
+
+		cycle.BlocksSignalling++
+	}
+}
+
+func (i *Indexer) UpdateSoftForkState(softForks *explorer.SoftForks, height uint64) {
+	log.Info("UpdateSoftForkState")
+	size := config.Get().SoftForkBlockCycle
+	blockCycle := explorer.GetCycleForHeight(height, size)
+
+	for idx, s := range SoftForks {
+		if s.Cycles == nil {
+			continue
+		}
+		if s.State == explorer.SoftForkStarted && s.LatestCycle().BlocksSignalling >= explorer.GetQuorum(size) {
+			SoftForks[idx].State = explorer.SoftForkLockedIn
+			SoftForks[idx].LockedInHeight = uint64(size * blockCycle)
+			SoftForks[idx].ActivationHeight = SoftForks[idx].LockedInHeight + uint64(size)
+		}
+		if s.State == explorer.SoftForkLockedIn && height >= SoftForks[idx].ActivationHeight {
+			SoftForks[idx].State = explorer.SoftForkActive
+		}
+	}
+}
+
+func (i *Indexer) persist(height uint64) {
+	for _, s := range SoftForks {
+		i.elastic.GetBulkRequest(height).Add(
+			elastic.NewBulkIndexRequest().Index(index.SoftForkIndex.Get()).Id(s.Name).Doc(s),
 		)
 	}
 }

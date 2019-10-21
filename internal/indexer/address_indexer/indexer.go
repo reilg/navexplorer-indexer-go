@@ -66,7 +66,7 @@ func (i *Indexer) indexAddressForTx(address string, tx explorer.BlockTransaction
 			log.WithFields(log.Fields{"tx": string(bt)}).Fatal("Could not handle coinbase")
 		}
 	} else {
-		if addressTransaction.Input < addressTransaction.Output {
+		if addressTransaction.Input > addressTransaction.Output {
 			addressTransaction.Type = explorer.TransferSend
 		} else {
 			addressTransaction.Type = explorer.TransferReceive
