@@ -3,6 +3,7 @@ package redis
 import (
 	"errors"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
 	"github.com/go-redis/redis"
 	log "github.com/sirupsen/logrus"
 	"strconv"
@@ -29,7 +30,7 @@ func New() *Redis {
 
 func (r *Redis) Init() error {
 	if !config.Get().Reindex {
-		return r.RewindBy(10)
+		return r.RewindBy(index.BulkSize)
 	}
 
 	return r.SetLastBlock(0)

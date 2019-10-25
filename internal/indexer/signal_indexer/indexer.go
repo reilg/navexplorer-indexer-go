@@ -7,7 +7,6 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer/softfork_indexer"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	"github.com/gookit/event"
-	"github.com/olivere/elastic/v7"
 )
 
 type Indexer struct {
@@ -31,10 +30,8 @@ func (i *Indexer) IndexSignal(block *explorer.Block) {
 	}
 
 	if len(signal.SoftForks) != 0 {
-		i.elastic.GetBulkRequest(block.Height).Add(elastic.NewBulkIndexRequest().
-			Index(index.SignalIndex.Get()).
-			Id(fmt.Sprintf("%d-%s", block.Height, block.MetaData.StakedBy)).
-			Doc(signal))
+		id := fmt.Sprintf("%d-%s", block.Height, block.MetaData.StakedBy)
+		i.elastic.AddRequest(index.SignalIndex.Get(), id, signal)
 	}
 
 	event.MustFire(string(events.EventSignalIndexed), event.M{"signal": &signal, "block": block})

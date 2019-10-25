@@ -17,10 +17,18 @@ import (
 
 type Index struct {
 	Client   *elastic.Client
-	requests map[uint64]*elastic.BulkService
+	requests []Request
+}
+
+type Request struct {
+	Height uint64
+	Index  string
+	Id     string
+	Doc    interface{}
 }
 
 var (
+	BulkSize          = uint64(200)
 	ErrRecordNotFound = errors.New("Record not found")
 )
 
@@ -47,7 +55,7 @@ func New() (*Index, error) {
 		log.Println("Error: ", err)
 	}
 
-	return &Index{client, map[uint64]*elastic.BulkService{}}, err
+	return &Index{Client: client, requests: make([]Request, 0)}, err
 }
 
 func (i *Index) Init() error {
@@ -79,31 +87,64 @@ func (i *Index) Init() error {
 	return nil
 }
 
-func (i *Index) GetBulkRequest(height uint64) *elastic.BulkService {
-	request, ok := i.requests[height]
-	if !ok {
-		request = i.Client.Bulk()
-		i.requests[height] = request
+func (i *Index) AddRequest(index string, id string, doc interface{}) {
+	if request := i.GetRequest(index, id); request != nil {
+		request.Doc = doc
+	} else {
+		i.requests = append(i.requests, Request{
+			Index: index,
+			Id:    id,
+			Doc:   doc,
+		})
 	}
-
-	return request
 }
 
-func (i *Index) PersistRequest(height uint64) {
-	bulkRequest := i.GetBulkRequest(height)
-	actions := bulkRequest.NumberOfActions()
-	if actions != 0 {
-		_, err := bulkRequest.Do(context.Background())
-		if err != nil {
-			logrus.WithError(err).Fatal("Failed to persist request at height ", height)
+func (i *Index) GetRequest(index string, id string) *Request {
+	for idx, r := range i.requests {
+		if r.Index == index && r.Id == id {
+			return &i.requests[idx]
 		}
 	}
 
-	if height%100 == 0 {
+	return nil
+}
+
+func (i *Index) PersistRequests(height uint64) {
+	if height%BulkSize != 0 || len(i.requests) == 0 {
+		return
+	}
+
+	bulk := i.Client.Bulk()
+	for _, r := range i.requests {
+		bulk.Add(elastic.NewBulkIndexRequest().Index(r.Index).Id(r.Id).Doc(r.Doc))
+	}
+	actions := bulk.NumberOfActions()
+	if actions != 0 {
+		_, err := bulk.Do(context.Background())
+		if err != nil {
+			logrus.WithError(err).Fatal("Failed to persist request at height ", height)
+		}
+
 		logrus.WithFields(logrus.Fields{"actions": actions}).Info("Indexed height ", height)
 	}
 
-	delete(i.requests, height)
+	i.requests = make([]Request, 0)
+}
+
+func (i *Index) commit(from int, to int) error {
+	bulk := i.Client.Bulk()
+	for idx, r := range i.requests {
+		if idx >= from && idx < to {
+			bulk.Add(elastic.NewBulkIndexRequest().Index(r.Index).Id(r.Id).Doc(r.Doc))
+		}
+	}
+	actions := bulk.NumberOfActions()
+	if actions != 0 {
+		_, err := bulk.Do(context.Background())
+		if err != nil {
+			logrus.WithError(err).Fatal("Failed to commit to elastic search")
+		}
+	}
 }
 
 func (i *Index) GetById(index string, id string, record interface{}) error {

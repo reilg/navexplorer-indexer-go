@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
-	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -73,8 +72,9 @@ func (i *Indexer) indexAddressForTx(address string, tx explorer.BlockTransaction
 		}
 	}
 
-	i.elastic.GetBulkRequest(tx.Height).Add(elastic.NewBulkIndexRequest().
-		Index(index.AddressTransactionIndex.Get()).
-		Id(fmt.Sprintf("%s-%s", address, tx.Hash)).
-		Doc(addressTransaction))
+	i.elastic.AddRequest(
+		index.AddressTransactionIndex.Get(),
+		fmt.Sprintf("%s-%s", address, tx.Hash),
+		addressTransaction,
+	)
 }

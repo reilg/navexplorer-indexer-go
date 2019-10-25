@@ -42,7 +42,7 @@ func (i *Indexer) IndexBlocks() error {
 			log.WithError(err).Error(err)
 			return err
 		}
-		if err := i.cache.RewindBy(10); err != nil {
+		if err := i.cache.RewindBy(index.BulkSize); err != nil {
 			log.WithError(err).Error("Rewind blocks")
 			return err
 		}
@@ -138,6 +138,8 @@ func (i *Indexer) applyInputs(txs *[]explorer.BlockTransaction) error {
 			vin[vdx].Value = previousOutput.Value
 			vin[vdx].ValueSat = previousOutput.ValueSat
 			vin[vdx].Address = previousOutput.ScriptPubKey.Addresses[0]
+			vin[vdx].Type = prevTx.MetaData.Type
+			vin[vdx].Height = prevTx.Height
 
 			log.WithFields(log.Fields{"hash": prevTx.Hash}).Debug("Previous Transaction")
 		}

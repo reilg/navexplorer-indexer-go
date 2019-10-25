@@ -71,7 +71,7 @@ func eventSubscription(elastic *index.Index) {
 		block := e.Get("block").(*explorer.Block)
 
 		softfork_indexer.New(elastic, nil).Update(signal, block)
-		elastic.PersistRequest(signal.Height)
+		elastic.PersistRequests(signal.Height)
 		return nil
 	}), event.Normal)
 }

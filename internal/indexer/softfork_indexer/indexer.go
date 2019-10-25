@@ -8,7 +8,6 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer/repository"
-	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -189,8 +188,7 @@ func (i *Indexer) persist(height uint64) {
 		if s.Dirty == false {
 			continue
 		}
-		i.elastic.GetBulkRequest(height).Add(
-			elastic.NewBulkIndexRequest().Index(index.SoftForkIndex.Get()).Id(s.Name).Doc(s),
-		)
+
+		i.elastic.AddRequest(index.SoftForkIndex.Get(), s.Name, s)
 	}
 }
