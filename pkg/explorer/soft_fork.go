@@ -1,5 +1,7 @@
 package explorer
 
+import "log"
+
 type SoftForks []SoftFork
 
 type SoftFork struct {
@@ -10,6 +12,7 @@ type SoftFork struct {
 	ActivationHeight uint64         `json:"activationheight,omitempty"`
 	SignalHeight     uint64         `json:"signalheight,omitempty"`
 	Cycles           SoftForkCycles `json:"cycles,omitempty"`
+	Dirty            bool           `json:"_"`
 }
 
 type SoftForkCycles []SoftForkCycle
@@ -28,6 +31,9 @@ func (s *SoftFork) LatestCycle() *SoftForkCycle {
 }
 
 func (s *SoftFork) IsOpen() bool {
+	if s.State == "" {
+		log.Fatal("State cannot be null")
+	}
 	return s.State == SoftForkDefined || s.State == SoftForkStarted || s.State == SoftForkFailed
 }
 
