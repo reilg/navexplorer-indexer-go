@@ -17,12 +17,11 @@ type BlockTransaction struct {
 	Time            int64  `json:"time, omitempty"`
 	BlockTime       int64  `json:"blocktime, omitempty"`
 
-	MetaData struct {
-		Type  string `json:"type"`
-		Stake uint64 `json:"stake"`
-		Spend uint64 `json:"spend"`
-		Fees  uint64 `json:"fees"`
-	}
+	// Custom
+	Type  string `json:"type"`
+	Stake uint64 `json:"stake"`
+	Spend uint64 `json:"spend"`
+	Fees  uint64 `json:"fees"`
 }
 
 func (blockTransaction *BlockTransaction) GetAllAddresses() []string {
@@ -57,25 +56,25 @@ func (blockTransaction *BlockTransaction) IsCoinbase() bool {
 }
 
 func (blockTransaction *BlockTransaction) IsSpend() bool {
-	return blockTransaction.MetaData.Type == string(TxSpend)
+	return blockTransaction.Type == string(TxSpend)
 }
 
 func (blockTransaction *BlockTransaction) IsAnyStaking() bool {
-	return blockTransaction.MetaData.Type == string(TxColdStaking) ||
-		blockTransaction.MetaData.Type == string(TxStaking) ||
-		blockTransaction.MetaData.Type == string(TxPoolStaking)
+	return blockTransaction.Type == string(TxColdStaking) ||
+		blockTransaction.Type == string(TxStaking) ||
+		blockTransaction.Type == string(TxPoolStaking)
 }
 
 func (blockTransaction *BlockTransaction) IsStaking() bool {
-	return blockTransaction.MetaData.Type == string(TxStaking)
+	return blockTransaction.Type == string(TxStaking)
 }
 
 func (blockTransaction *BlockTransaction) IsColdStaking() bool {
-	return blockTransaction.MetaData.Type == string(TxColdStaking)
+	return blockTransaction.Type == string(TxColdStaking)
 }
 
 func (blockTransaction *BlockTransaction) IsPoolStaking() bool {
-	return blockTransaction.MetaData.Type == string(TxPoolStaking)
+	return blockTransaction.Type == string(TxPoolStaking)
 }
 
 func isValueInList(value string, list []string) bool {

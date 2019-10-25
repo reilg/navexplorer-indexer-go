@@ -113,6 +113,18 @@
           },
           "sequence": {
             "type": "long"
+          },
+          "type": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "height": {
+            "type": "long"
           }
         }
       },
@@ -194,6 +206,24 @@
       },
       "blocktime": {
         "type": "date"
+      },
+      "type": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "stake": {
+        "type": "long"
+      },
+      "spend": {
+        "type": "long"
+      },
+      "fees": {
+        "type": "long"
       }
     }
   },

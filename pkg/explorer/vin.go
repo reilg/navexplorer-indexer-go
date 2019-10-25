@@ -10,10 +10,9 @@ type Vin struct {
 	Address   string     `json:"address,omitempty"`
 	Sequence  uint32     `json:"sequence"`
 
-	MetaData *struct {
-		Height uint64 `json:"height"`
-		Type   string `json:"type"`
-	}
+	// Custom
+	Height uint64 `json:"height"`
+	Type   string `json:"type"`
 }
 
 func (v *Vin) IsCoinbase() bool {

@@ -120,6 +120,9 @@
       },
       "spend": {
         "type": "long"
+      },
+      "cfundPayout": {
+        "type": "long"
       }
     }
   },
