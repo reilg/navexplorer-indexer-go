@@ -61,7 +61,7 @@ func (i *Indexer) indexAddressForTx(address string, tx explorer.BlockTransaction
 			// POW block_indexer
 			addressTransaction.Type = explorer.TransferStake
 		} else if tx.Version == 3 {
-			log.WithFields(log.Fields{"tx": string(bt)}).Fatal("Could not handle cfund payout")
+			addressTransaction.Type = explorer.TransferCommunityFundPayout
 		} else {
 			log.WithFields(log.Fields{"tx": string(bt)}).Fatal("Could not handle coinbase")
 		}
