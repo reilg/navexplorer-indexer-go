@@ -1,7 +1,6 @@
 package signal_indexer
 
 import (
-	"fmt"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/events"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer/softfork_indexer"
@@ -19,7 +18,7 @@ func New(elastic *index.Index) *Indexer {
 
 func (i *Indexer) IndexSignal(block *explorer.Block) {
 	signal := explorer.Signal{
-		Address:   block.MetaData.StakedBy,
+		Address:   block.StakedBy,
 		Height:    block.Height,
 		SoftForks: make([]string, 0),
 	}
@@ -30,8 +29,7 @@ func (i *Indexer) IndexSignal(block *explorer.Block) {
 	}
 
 	if len(signal.SoftForks) != 0 {
-		id := fmt.Sprintf("%d-%s", block.Height, block.MetaData.StakedBy)
-		i.elastic.AddRequest(index.SignalIndex.Get(), id, signal)
+		i.elastic.AddRequest(index.SignalIndex.Get(), string(block.Height), signal)
 	}
 
 	event.MustFire(string(events.EventSignalIndexed), event.M{"signal": &signal, "block": block})

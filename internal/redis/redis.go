@@ -3,14 +3,14 @@ package redis
 import (
 	"errors"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
 	"github.com/go-redis/redis"
 	log "github.com/sirupsen/logrus"
 	"strconv"
 )
 
 type Redis struct {
-	client *redis.Client
+	client      *redis.Client
+	reindexSize uint
 }
 
 var (
@@ -25,15 +25,16 @@ func New() *Redis {
 			Password: config.Get().Redis.Password,
 			DB:       config.Get().Redis.Db,
 		}),
+		reindexSize: config.Get().ReindexSize,
 	}
 }
 
-func (r *Redis) Init() error {
+func (r *Redis) Init() (uint64, error) {
 	if !config.Get().Reindex {
-		return r.RewindBy(index.BulkSize)
+		return r.RewindBy(uint64(r.reindexSize))
 	}
 
-	return r.SetLastBlock(0)
+	return 0, r.SetLastBlock(0)
 }
 
 func (r *Redis) GetLastBlockIndexed() (uint64, error) {
@@ -65,10 +66,14 @@ func (r *Redis) SetLastBlock(height uint64) error {
 	return nil
 }
 
-func (r *Redis) RewindBy(blocks uint64) error {
+func (r *Redis) Rewind() (uint64, error) {
+	return r.RewindBy(uint64(r.reindexSize))
+}
+
+func (r *Redis) RewindBy(blocks uint64) (uint64, error) {
 	height, err := r.GetLastBlockIndexed()
 	if err != nil {
-		return err
+		return height, err
 	}
 
 	log.Infof("Rewinding last block indexed from %d by %d blocks", height, blocks)
@@ -79,5 +84,5 @@ func (r *Redis) RewindBy(blocks uint64) error {
 		height = 0
 	}
 
-	return r.SetLastBlock(height)
+	return height, r.SetLastBlock(height)
 }

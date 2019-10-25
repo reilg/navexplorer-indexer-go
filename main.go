@@ -18,40 +18,18 @@ import (
 func main() {
 	config.Init()
 
-	elastic, err := index.New()
-	if err != nil {
-		log.WithError(err).Fatal("Failed toStart ES")
-	}
-	if err := elastic.Init(); err != nil {
-		log.WithError(err).Fatal("Failed to initialize ES")
-	}
+	elastic := initElasticCache()
+	navcoin := initNavcoin()
+	redis, lastBlock := initRedis()
 
-	cache := redis.New()
-	if err := cache.Init(); err != nil {
-		log.WithError(err).Fatal("Failed to initialize Redis")
-	}
-
-	navcoin, err := navcoind.New(
-		config.Get().Navcoind.Host,
-		config.Get().Navcoind.Port,
-		config.Get().Navcoind.User,
-		config.Get().Navcoind.Password,
-		config.Get().Navcoind.Ssl,
-	)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to initialize Navcoind")
-	}
-
+	softforkIndexer := softfork_indexer.New(elastic, navcoin).Init()
 	if config.Get().Reindex {
-		lbi, err := cache.GetLastBlockIndexed()
-		if err == nil {
-			softfork_indexer.New(elastic, navcoin).Init().Reindex(lbi)
-		}
+		softforkIndexer.Reindex(lastBlock)
 	}
 
 	go eventSubscription(elastic)
 
-	blockIndexer := block_indexer.New(elastic, cache, navcoin)
+	blockIndexer := block_indexer.New(elastic, redis, navcoin)
 	if err := blockIndexer.IndexBlocks(); err != nil {
 		log.WithError(err).Fatal("Failed to index blocks")
 	}
@@ -74,4 +52,42 @@ func eventSubscription(elastic *index.Index) {
 		elastic.PersistRequests(signal.Height)
 		return nil
 	}), event.Normal)
+}
+
+func initElasticCache() *index.Index {
+	elastic, err := index.New()
+	if err != nil {
+		log.WithError(err).Fatal("Failed toStart ES")
+	}
+	if err := elastic.Init(); err != nil {
+		log.WithError(err).Fatal("Failed to initialize ES")
+	}
+
+	return elastic
+}
+
+func initNavcoin() *navcoind.Navcoind {
+	navcoin, err := navcoind.New(
+		config.Get().Navcoind.Host,
+		config.Get().Navcoind.Port,
+		config.Get().Navcoind.User,
+		config.Get().Navcoind.Password,
+		config.Get().Navcoind.Ssl,
+	)
+
+	if err != nil {
+		log.WithError(err).Fatal("Failed to initialize Navcoind")
+	}
+
+	return navcoin
+}
+
+func initRedis() (*redis.Redis, uint64) {
+	cache := redis.New()
+	lastBlock, err := cache.Init()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to initialize Redis")
+	}
+
+	return cache, lastBlock
 }

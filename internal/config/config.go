@@ -12,6 +12,8 @@ type Config struct {
 	Network            string
 	Debug              bool
 	Reindex            bool
+	ReindexSize        uint
+	BulkIndexSize      uint
 	SoftForkBlockCycle uint
 	Navcoind           NavcoindConfig
 	ElasticSearch      ElasticSearchConfig
@@ -59,6 +61,8 @@ func Get() *Config {
 		SoftForkBlockCycle: getUint("BLOCKCYCLE_SOFTFORK", 20160),
 		Debug:              getBool("DEBUG", false),
 		Reindex:            getBool("REINDEX", false),
+		ReindexSize:        getUint("REINDEX_SIZE", 200),
+		BulkIndexSize:      getUint("BULK_INDEX_SIZE", 200),
 		Navcoind: NavcoindConfig{
 			Host:     getString("NAVCOIND_HOST", ""),
 			Port:     getInt("NAVCOIND_PORT", 8332),

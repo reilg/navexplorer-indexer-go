@@ -16,8 +16,9 @@ import (
 )
 
 type Index struct {
-	Client   *elastic.Client
-	requests []Request
+	Client        *elastic.Client
+	requests      []Request
+	bulkIndexSize uint
 }
 
 type Request struct {
@@ -28,7 +29,6 @@ type Request struct {
 }
 
 var (
-	BulkSize          = uint64(200)
 	ErrRecordNotFound = errors.New("Record not found")
 )
 
@@ -55,7 +55,11 @@ func New() (*Index, error) {
 		log.Println("Error: ", err)
 	}
 
-	return &Index{Client: client, requests: make([]Request, 0)}, err
+	return &Index{
+		Client:        client,
+		requests:      make([]Request, 0),
+		bulkIndexSize: config.Get().BulkIndexSize,
+	}, err
 }
 
 func (i *Index) Init() error {
@@ -110,7 +114,7 @@ func (i *Index) GetRequest(index string, id string) *Request {
 }
 
 func (i *Index) PersistRequests(height uint64) {
-	if height%BulkSize != 0 || len(i.requests) == 0 {
+	if height%uint64(i.bulkIndexSize) != 0 || len(i.requests) == 0 {
 		return
 	}
 
@@ -129,22 +133,6 @@ func (i *Index) PersistRequests(height uint64) {
 	}
 
 	i.requests = make([]Request, 0)
-}
-
-func (i *Index) commit(from int, to int) error {
-	bulk := i.Client.Bulk()
-	for idx, r := range i.requests {
-		if idx >= from && idx < to {
-			bulk.Add(elastic.NewBulkIndexRequest().Index(r.Index).Id(r.Id).Doc(r.Doc))
-		}
-	}
-	actions := bulk.NumberOfActions()
-	if actions != 0 {
-		_, err := bulk.Do(context.Background())
-		if err != nil {
-			logrus.WithError(err).Fatal("Failed to commit to elastic search")
-		}
-	}
 }
 
 func (i *Index) GetById(index string, id string, record interface{}) error {
