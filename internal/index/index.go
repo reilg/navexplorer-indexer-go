@@ -8,7 +8,6 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/olivere/elastic/v7"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/sync/syncmap"
 	"io/ioutil"
 	"log"
 	"os"
@@ -18,7 +17,7 @@ import (
 
 type Index struct {
 	Client   *elastic.Client
-	requests syncmap.Map
+	requests map[uint64]*elastic.BulkService
 }
 
 var (
@@ -48,7 +47,7 @@ func New() (*Index, error) {
 		log.Println("Error: ", err)
 	}
 
-	return &Index{client, syncmap.Map{}}, err
+	return &Index{client, map[uint64]*elastic.BulkService{}}, err
 }
 
 func (i *Index) Init() error {
@@ -81,13 +80,13 @@ func (i *Index) Init() error {
 }
 
 func (i *Index) GetBulkRequest(height uint64) *elastic.BulkService {
-	request, ok := i.requests.Load(height)
+	request, ok := i.requests[height]
 	if !ok {
 		request = i.Client.Bulk()
-		i.requests.Store(height, request)
+		i.requests[height] = request
 	}
 
-	return request.(*elastic.BulkService)
+	return request
 }
 
 func (i *Index) PersistRequest(height uint64) {
@@ -99,10 +98,12 @@ func (i *Index) PersistRequest(height uint64) {
 			logrus.WithError(err).Fatal("Failed to persist request at height ", height)
 		}
 	}
+
 	if height%100 == 0 {
 		logrus.WithFields(logrus.Fields{"actions": actions}).Info("Indexed height ", height)
 	}
-	i.requests.Delete(height)
+
+	delete(i.requests, height)
 }
 
 func (i *Index) GetById(index string, id string, record interface{}) error {
