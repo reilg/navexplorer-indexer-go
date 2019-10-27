@@ -128,8 +128,6 @@ func (i *Index) PersistRequests(height uint64) {
 		if err != nil {
 			logrus.WithError(err).Fatal("Failed to persist request at height ", height)
 		}
-
-		logrus.WithFields(logrus.Fields{"actions": actions}).Info("Indexed height ", height)
 	}
 
 	i.requests = make([]Request, 0)
