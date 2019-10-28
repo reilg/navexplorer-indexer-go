@@ -12,8 +12,10 @@ func (vins *Vins) First() Vin {
 
 func (vins *Vins) HasAddress(address string) bool {
 	for _, vin := range *vins {
-		if vin.Address == address {
-			return true
+		for _, a := range vin.Addresses {
+			if a == address {
+				return true
+			}
 		}
 	}
 
@@ -30,9 +32,11 @@ func (vins *Vins) GetAmount() uint64 {
 
 func (vins *Vins) GetAmountByAddress(address string) (value float64, valuesat uint64) {
 	for _, i := range *vins {
-		if i.Address == address {
-			value += i.Value
-			valuesat += i.ValueSat
+		for _, a := range i.Addresses {
+			if a == address {
+				value += i.Value
+				valuesat += i.ValueSat
+			}
 		}
 	}
 

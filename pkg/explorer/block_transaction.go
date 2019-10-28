@@ -27,18 +27,16 @@ type BlockTransaction struct {
 func (blockTransaction *BlockTransaction) GetAllAddresses() []string {
 	var addressMap = make(map[string]struct{})
 	for _, vin := range blockTransaction.Vin {
-		if vin.Address != "" {
-			if _, ok := addressMap[vin.Address]; !ok {
-				addressMap[vin.Address] = struct{}{}
+		for _, a := range vin.Addresses {
+			if _, ok := addressMap[a]; !ok {
+				addressMap[a] = struct{}{}
 			}
 		}
 	}
 	for _, vout := range blockTransaction.Vout {
-		if len(vout.ScriptPubKey.Addresses) != 0 {
-			for _, address := range vout.ScriptPubKey.Addresses {
-				if _, ok := addressMap[address]; !ok {
-					addressMap[address] = struct{}{}
-				}
+		for _, a := range vout.ScriptPubKey.Addresses {
+			if _, ok := addressMap[a]; !ok {
+				addressMap[a] = struct{}{}
 			}
 		}
 	}

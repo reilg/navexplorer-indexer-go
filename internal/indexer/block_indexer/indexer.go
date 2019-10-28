@@ -61,6 +61,8 @@ func (i *Indexer) indexBlocks(height uint64) error {
 }
 
 func (i *Indexer) IndexBlock(height uint64) error {
+	//log.Info("Index Block @ height ", height)
+
 	hash, err := i.navcoin.GetBlockHash(height)
 	if err != nil {
 		log.WithFields(log.Fields{"hash": hash, "height": height}).
@@ -111,7 +113,6 @@ func (i *Indexer) IndexBlock(height uint64) error {
 }
 
 func (i *Indexer) applyInputs(txs *[]explorer.BlockTransaction) error {
-	log.Debug("*** APPLYING INPUTS ***")
 	if len(*txs) == 0 {
 		return nil
 	}
@@ -139,9 +140,9 @@ func (i *Indexer) applyInputs(txs *[]explorer.BlockTransaction) error {
 			previousOutput := prevTx.Vout[*vin[vdx].Vout]
 			vin[vdx].Value = previousOutput.Value
 			vin[vdx].ValueSat = previousOutput.ValueSat
-			vin[vdx].Address = previousOutput.ScriptPubKey.Addresses[0]
-			vin[vdx].Type = prevTx.Type
-			vin[vdx].Height = prevTx.Height
+			vin[vdx].Addresses = previousOutput.ScriptPubKey.Addresses
+			vin[vdx].PreviousOutput.Type = previousOutput.ScriptPubKey.Type
+			vin[vdx].PreviousOutput.Height = prevTx.Height
 
 			log.WithFields(log.Fields{"hash": prevTx.Hash}).Debug("Previous Transaction")
 		}
@@ -157,7 +158,7 @@ func applyType(tx *explorer.BlockTransaction, txs *[]explorer.BlockTransaction) 
 			coinbase = &tx
 		}
 	}
-	log.Debug("*** APPLYING TYPE ***")
+
 	if tx.IsCoinbase() {
 		tx.Type = string(explorer.TxCoinbase)
 	} else if tx.Vout.GetAmount() > tx.Vin.GetAmount() {

@@ -130,6 +130,8 @@ func (i *Index) PersistRequests(height uint64) {
 		}
 	}
 
+	logrus.WithFields(logrus.Fields{"actions": actions}).Info("Indexed height ", height)
+
 	i.requests = make([]Request, 0)
 }
 

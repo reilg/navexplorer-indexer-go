@@ -114,17 +114,22 @@
           "sequence": {
             "type": "long"
           },
-          "type": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
+          "previousOutput": {
+            "type": "nested",
+            "properties": {
+              "height": {
+                "type": "long"
+              },
+              "type": {
+                "type": "text",
+                "fields": {
+                  "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                  }
+                }
               }
             }
-          },
-          "height": {
-            "type": "long"
           }
         }
       },

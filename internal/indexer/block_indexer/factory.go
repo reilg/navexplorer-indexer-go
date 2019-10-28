@@ -52,12 +52,8 @@ func createVin(vins []navcoind.Vin) []explorer.Vin {
 	var inputs = make([]explorer.Vin, 0)
 	for idx, _ := range vins {
 		input := explorer.Vin{
-			Coinbase:  vins[idx].Coinbase,
-			ScriptSig: createScriptSig(vins[idx].ScriptSig),
-			Value:     vins[idx].Value,
-			ValueSat:  vins[idx].ValueSat,
-			Address:   vins[idx].Address,
-			Sequence:  vins[idx].Sequence,
+			Coinbase: vins[idx].Coinbase,
+			Sequence: vins[idx].Sequence,
 		}
 		if vins[idx].Txid != "" {
 			input.Txid = &vins[idx].Txid
