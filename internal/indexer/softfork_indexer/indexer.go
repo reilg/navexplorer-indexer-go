@@ -25,7 +25,7 @@ func New(elastic *index.Index, navcoin *navcoind.Navcoind) *Indexer {
 func (i *Indexer) Init() *Indexer {
 	info, err := i.navcoin.GetBlockchainInfo()
 	if err != nil {
-		log.WithError(err).Error("Failed to get blockchaininfo")
+		log.WithError(err).Fatal("Failed to get blockchaininfo")
 	}
 
 	for name, fork := range info.Bip9SoftForks {
