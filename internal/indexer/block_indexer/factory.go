@@ -65,17 +65,6 @@ func createVin(vins []navcoind.Vin) []explorer.Vin {
 	return inputs
 }
 
-func createScriptSig(scriptSig navcoind.ScriptSig) *explorer.ScriptSig {
-	if scriptSig.Hex == "" && scriptSig.Asm == "" {
-		return nil
-	}
-
-	return &explorer.ScriptSig{
-		Asm: scriptSig.Asm,
-		Hex: scriptSig.Hex,
-	}
-}
-
 func createVout(vouts []navcoind.Vout) []explorer.Vout {
 	var output = make([]explorer.Vout, 0)
 	for _, o := range vouts {
@@ -87,7 +76,7 @@ func createVout(vouts []navcoind.Vout) []explorer.Vout {
 				Asm:       o.ScriptPubKey.Asm,
 				Hex:       o.ScriptPubKey.Hex,
 				ReqSigs:   o.ScriptPubKey.ReqSigs,
-				Type:      o.ScriptPubKey.Type,
+				Type:      explorer.VoutTypes[o.ScriptPubKey.Type],
 				Addresses: o.ScriptPubKey.Addresses,
 			},
 		})

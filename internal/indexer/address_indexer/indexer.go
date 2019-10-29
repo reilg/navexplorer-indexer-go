@@ -29,31 +29,30 @@ func (i *Indexer) IndexAddressesForTransactions(txs *[]explorer.BlockTransaction
 }
 
 func (i *Indexer) indexAddressForTx(address string, tx explorer.BlockTransaction) {
+	if tx.HasColdStakingInput(address) || tx.HasColdStakingOutput(address) {
+		i.indexAddressForColdTx(address, tx)
+	}
+
 	addressTransaction := explorer.AddressTransaction{
 		Hash:   address,
 		Txid:   tx.Hash,
 		Height: tx.Height,
 		Time:   tx.Time,
+		Cold:   false,
 	}
 
-	_, input := tx.Vin.GetAmountByAddress(address)
-	_, output := tx.Vout.GetAmountByAddress(address)
+	_, input := tx.Vin.GetAmountByAddress(address, addressTransaction.Cold)
+	_, output := tx.Vout.GetAmountByAddress(address, addressTransaction.Cold)
 	addressTransaction.Input = input
 	addressTransaction.Output = output
 	addressTransaction.Total = int64(addressTransaction.Output - addressTransaction.Input)
 
 	bt, _ := json.Marshal(tx)
-	if tx.IsPoolStaking() {
-		log.WithFields(log.Fields{"tx": string(bt)}).Fatal("Could not handle pool staking")
-	} else if tx.IsColdStaking() {
-		log.WithFields(log.Fields{"tx": string(bt)}).Fatal("Could not handle cold staking")
-	} else if tx.IsStaking() {
+	if tx.IsStaking() {
 		if tx.Vin.HasAddress(address) {
 			addressTransaction.Type = explorer.TransferStake
 		} else {
-			btJson, _ := json.Marshal(bt)
-			log.WithFields(log.Fields{"tx": string(btJson)}).Info("BlockTX")
-			log.WithFields(log.Fields{"tx": string(bt)}).Fatal("Delegate staking recipient")
+			addressTransaction.Type = explorer.TransferDelegateStake
 		}
 	} else if tx.IsCoinbase() {
 		if tx.Version == 1 {
@@ -75,6 +74,46 @@ func (i *Indexer) indexAddressForTx(address string, tx explorer.BlockTransaction
 	i.elastic.AddRequest(
 		index.AddressTransactionIndex.Get(),
 		fmt.Sprintf("%s-%s", address, tx.Hash),
+		addressTransaction,
+	)
+}
+
+func (i *Indexer) indexAddressForColdTx(address string, tx explorer.BlockTransaction) {
+	addressTransaction := explorer.AddressTransaction{
+		Hash:   address,
+		Txid:   tx.Hash,
+		Height: tx.Height,
+		Time:   tx.Time,
+		Cold:   true,
+	}
+
+	_, input := tx.Vin.GetAmountByAddress(address, addressTransaction.Cold)
+	_, output := tx.Vout.GetAmountByAddress(address, addressTransaction.Cold)
+	addressTransaction.Input = input
+	addressTransaction.Output = output
+	addressTransaction.Total = int64(addressTransaction.Output - addressTransaction.Input)
+
+	bt, _ := json.Marshal(tx)
+	if tx.IsSpend() {
+		if addressTransaction.Input > addressTransaction.Output {
+			addressTransaction.Type = explorer.TransferSend
+		} else {
+			addressTransaction.Type = explorer.TransferReceive
+		}
+	} else if tx.IsColdStaking() {
+		if tx.Vin.HasAddress(address) {
+			addressTransaction.Type = explorer.TransferStake
+		} else {
+			addressTransaction.Type = explorer.TransferDelegateStake
+			btJson, _ := json.Marshal(bt)
+			log.WithFields(log.Fields{"tx": string(btJson)}).Info("BlockTX")
+			log.WithFields(log.Fields{"tx": string(bt)}).Fatal("Delegate staking recipient")
+		}
+	}
+
+	i.elastic.AddRequest(
+		index.AddressTransactionIndex.Get(),
+		fmt.Sprintf("%s-%s-cold", address, tx.Hash),
 		addressTransaction,
 	)
 }

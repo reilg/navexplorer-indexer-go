@@ -4,7 +4,7 @@ type Vouts []Vout
 
 func (vouts *Vouts) HasOutputOfType(txType VoutType) bool {
 	for _, vout := range *vouts {
-		if vout.ScriptPubKey.Type == string(txType) {
+		if vout.ScriptPubKey.Type == txType {
 			return true
 		}
 	}
@@ -21,13 +21,17 @@ func (vouts *Vouts) GetAmount() uint64 {
 	return amount
 }
 
-func (vouts *Vouts) GetAmountByAddress(address string) (value float64, valuesat uint64) {
+func (vouts *Vouts) GetAmountByAddress(address string, cold bool) (value float64, valuesat uint64) {
 	for _, o := range *vouts {
+		if (cold && o.ScriptPubKey.Type != VoutColdStaking) || (!cold && o.ScriptPubKey.Type == VoutColdStaking) {
+			continue
+		}
 		if isValueInList(address, o.ScriptPubKey.Addresses) {
 			value += o.Value
 			valuesat += o.ValueSat
 		}
 	}
+
 	return
 }
 

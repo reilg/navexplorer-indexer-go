@@ -6,10 +6,9 @@ var (
 	TransferSend                TransferType = "send"
 	TransferReceive             TransferType = "receive"
 	TransferStake               TransferType = "stake"
-	TransferColdStake           TransferType = "cold_stake"
+	TransferDelegateStake       TransferType = "delegate_stake"
 	TransferPoolStake           TransferType = "pool_stake"
 	TransferPoolFee             TransferType = "pool_fee"
-	TransferDelegateStake       TransferType = "delegate_stake"
 	TransferCommunityFund       TransferType = "community_fund"
 	TransferCommunityFundPayout TransferType = "community_fund_payout"
 )

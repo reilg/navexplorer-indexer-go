@@ -18,22 +18,22 @@ type BlockTransaction struct {
 	BlockTime       int64  `json:"blocktime, omitempty"`
 
 	// Custom
-	Type  string `json:"type"`
-	Stake uint64 `json:"stake"`
-	Spend uint64 `json:"spend"`
-	Fees  uint64 `json:"fees"`
+	Type  BlockTransactionType `json:"type"`
+	Stake uint64               `json:"stake"`
+	Spend uint64               `json:"spend"`
+	Fees  uint64               `json:"fees"`
 }
 
-func (blockTransaction *BlockTransaction) GetAllAddresses() []string {
+func (tx *BlockTransaction) GetAllAddresses() []string {
 	var addressMap = make(map[string]struct{})
-	for _, vin := range blockTransaction.Vin {
+	for _, vin := range tx.Vin {
 		for _, a := range vin.Addresses {
 			if _, ok := addressMap[a]; !ok {
 				addressMap[a] = struct{}{}
 			}
 		}
 	}
-	for _, vout := range blockTransaction.Vout {
+	for _, vout := range tx.Vout {
 		for _, a := range vout.ScriptPubKey.Addresses {
 			if _, ok := addressMap[a]; !ok {
 				addressMap[a] = struct{}{}
@@ -49,30 +49,46 @@ func (blockTransaction *BlockTransaction) GetAllAddresses() []string {
 	return addresses
 }
 
-func (blockTransaction *BlockTransaction) IsCoinbase() bool {
-	return !blockTransaction.Vin.Empty() && blockTransaction.Vin[0].IsCoinbase()
+func (tx *BlockTransaction) IsCoinbase() bool {
+	return !tx.Vin.Empty() && tx.Vin[0].IsCoinbase()
 }
 
-func (blockTransaction *BlockTransaction) IsSpend() bool {
-	return blockTransaction.Type == string(TxSpend)
+func (tx *BlockTransaction) IsSpend() bool {
+	return tx.Type == TxSpend
 }
 
-func (blockTransaction *BlockTransaction) IsAnyStaking() bool {
-	return blockTransaction.Type == string(TxColdStaking) ||
-		blockTransaction.Type == string(TxStaking) ||
-		blockTransaction.Type == string(TxPoolStaking)
+func (tx *BlockTransaction) IsAnyStaking() bool {
+	return tx.Type == TxColdStaking || tx.Type == TxStaking || tx.Type == TxPoolStaking
 }
 
-func (blockTransaction *BlockTransaction) IsStaking() bool {
-	return blockTransaction.Type == string(TxStaking)
+func (tx *BlockTransaction) IsStaking() bool {
+	return tx.Type == TxStaking
 }
 
-func (blockTransaction *BlockTransaction) IsColdStaking() bool {
-	return blockTransaction.Type == string(TxColdStaking)
+func (tx *BlockTransaction) IsColdStaking() bool {
+	return tx.Type == TxColdStaking
 }
 
-func (blockTransaction *BlockTransaction) IsPoolStaking() bool {
-	return blockTransaction.Type == string(TxPoolStaking)
+func (tx *BlockTransaction) IsPoolStaking() bool {
+	return tx.Type == TxPoolStaking
+}
+
+func (tx *BlockTransaction) HasColdStakingInput(address string) bool {
+	for _, i := range tx.Vin {
+		if i.PreviousOutput.Type == VoutColdStaking && i.Addresses[0] == address {
+			return true
+		}
+	}
+	return false
+}
+
+func (tx *BlockTransaction) HasColdStakingOutput(address string) bool {
+	for _, o := range tx.Vout {
+		if o.ScriptPubKey.Type == VoutColdStaking && o.ScriptPubKey.Addresses[0] == address {
+			return true
+		}
+	}
+	return false
 }
 
 func isValueInList(value string, list []string) bool {

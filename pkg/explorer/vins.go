@@ -30,13 +30,15 @@ func (vins *Vins) GetAmount() uint64 {
 	return amount
 }
 
-func (vins *Vins) GetAmountByAddress(address string) (value float64, valuesat uint64) {
+func (vins *Vins) GetAmountByAddress(address string, cold bool) (value float64, valuesat uint64) {
 	for _, i := range *vins {
-		for _, a := range i.Addresses {
-			if a == address {
-				value += i.Value
-				valuesat += i.ValueSat
-			}
+		if (cold && i.PreviousOutput.Type != VoutColdStaking) || (!cold && i.PreviousOutput.Type == VoutColdStaking) {
+			continue
+		}
+
+		if isValueInList(address, i.Addresses) {
+			value += i.Value
+			valuesat += i.ValueSat
 		}
 	}
 

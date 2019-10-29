@@ -156,38 +156,34 @@ func applyType(tx *explorer.BlockTransaction, txs *[]explorer.BlockTransaction) 
 	for _, tx := range *txs {
 		if tx.IsCoinbase() {
 			coinbase = &tx
+			break
 		}
 	}
 
 	if tx.IsCoinbase() {
-		tx.Type = string(explorer.TxCoinbase)
+		tx.Type = explorer.TxCoinbase
 	} else if tx.Vout.GetAmount() > tx.Vin.GetAmount() {
 		if coinbase != nil && coinbase.Vout.HasOutputOfType(explorer.VoutPoolStaking) {
-			tx.Type = string(explorer.TxPoolStaking)
+			tx.Type = explorer.TxPoolStaking
 		}
 		if tx.Vout.HasOutputOfType(explorer.VoutColdStaking) {
-			tx.Type = string(explorer.TxColdStaking)
+			tx.Type = explorer.TxColdStaking
 		} else {
-			tx.Type = string(explorer.TxStaking)
+			tx.Type = explorer.TxStaking
 		}
 	} else {
-		tx.Type = string(explorer.TxSpend)
+		tx.Type = explorer.TxSpend
 	}
-
-	log.WithFields(log.Fields{"type": tx.Type}).Debug("Transaction type")
 }
 
 func applyFees(tx *explorer.BlockTransaction, block *explorer.Block) {
-	log.Debug("*** APPLYING FEES ***")
 	if tx.IsSpend() {
 		tx.Fees = tx.Vin.GetAmount() - tx.Vout.GetAmount()
 		block.Fees += tx.Fees
 	}
-	log.WithFields(log.Fields{"fees": tx.Fees}).Debug("Transaction fees")
 }
 
 func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
-	log.Debug("*** APPLYING STAKING ***")
 	if tx.IsSpend() {
 		return
 	}
@@ -202,7 +198,7 @@ func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
 		}
 	} else if tx.IsCoinbase() {
 		for _, o := range tx.Vout {
-			if o.ScriptPubKey.Type == string(explorer.VoutPubkeyhash) {
+			if o.ScriptPubKey.Type == explorer.VoutPubkeyhash {
 				tx.Stake = o.ValueSat
 				block.Stake = o.ValueSat
 			}
@@ -213,34 +209,22 @@ func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
 	if len(voutsWithAddresses) != 0 {
 		block.StakedBy = voutsWithAddresses[0].ScriptPubKey.Addresses[0]
 	}
-
-	if tx.Stake != 0 {
-		log.WithFields(log.Fields{"hash": tx.Hash, "stake": tx.Stake}).Debug("Stake reward")
-		log.WithFields(log.Fields{"hash": tx.Hash, "stakedBy": block.StakedBy}).Debug("Stake by")
-	}
 }
 
 func applySpend(tx *explorer.BlockTransaction, block *explorer.Block) {
-	log.Debug("*** APPLYING SPEND ***")
-	if tx.Type == string(explorer.TxSpend) {
+	if tx.Type == explorer.TxSpend {
 		tx.Spend = tx.Vout.GetAmount()
 		block.Spend += tx.Spend
-		log.WithFields(log.Fields{"hash": tx.Hash, "spend": tx.Vout.GetAmount()}).Debug("Transaction spend")
-	} else {
-		log.Debug("Transaction is not a spend")
 	}
 }
 
 func applyCFundPayout(tx *explorer.BlockTransaction, block *explorer.Block) {
-	log.Debug("*** APPLYING CFUND PAYOUT ***")
 	if !tx.IsCoinbase() {
-		log.Debug("Only applies to coinbase TX")
 		return
 	}
 	for _, o := range tx.Vout {
-		if o.ScriptPubKey.Type == string(explorer.VoutPubkeyhash) && tx.Version == 3 {
+		if o.ScriptPubKey.Type == explorer.VoutPubkeyhash && tx.Version == 3 {
 			block.CFundPayout += o.ValueSat
 		}
 	}
-	log.WithFields(log.Fields{"hash": tx.Hash, "payout": block.CFundPayout}).Debug("Transaction cfund payout")
 }

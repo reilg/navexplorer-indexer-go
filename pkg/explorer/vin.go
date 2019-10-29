@@ -8,15 +8,25 @@ type Vin struct {
 	Sequence  uint32     `json:"sequence"`
 
 	// Custom
-	Value          float64  `json:"value,omitempty"`
-	ValueSat       uint64   `json:"valuesat,omitempty"`
-	Addresses      []string `json:"addresses,omitempty"`
-	PreviousOutput struct {
-		Height uint64 `json:"height"`
-		Type   string `json:"type"`
-	}
+	Value          float64        `json:"value,omitempty"`
+	ValueSat       uint64         `json:"valuesat,omitempty"`
+	Addresses      []string       `json:"addresses,omitempty"`
+	PreviousOutput PreviousOutput `json:"previousOutput,omitempty"`
 }
 
-func (v *Vin) IsCoinbase() bool {
-	return v.Coinbase != ""
+type PreviousOutput struct {
+	Height uint64   `json:"height"`
+	Type   VoutType `json:"type"`
+}
+
+func (i *Vin) IsCoinbase() bool {
+	return i.Coinbase != ""
+}
+
+func (i *Vin) IsColdStakingAddress(address string) bool {
+	return len(i.Addresses) == 2 && i.Addresses[0] == address
+}
+
+func (i *Vin) IsColdSpendingAddress(address string) bool {
+	return len(i.Addresses) == 2 && i.Addresses[0] == address
 }
