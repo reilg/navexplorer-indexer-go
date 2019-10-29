@@ -36,7 +36,8 @@
       },
       "input": {"type": "long"},
       "output": {"type": "long"},
-      "total": {"type": "long"}
+      "total": {"type": "long"},
+      "cold": {"type": "boolean"}
     }
   },
   "settings":{
