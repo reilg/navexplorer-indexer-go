@@ -86,3 +86,7 @@ func (r *Redis) RewindBy(blocks uint64) (uint64, error) {
 
 	return height, r.SetLastBlock(height)
 }
+
+func (r *Redis) RewindTo(height uint64) (uint64, error) {
+	return height, r.SetLastBlock(height)
+}
