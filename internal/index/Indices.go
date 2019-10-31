@@ -11,6 +11,7 @@ var (
 	AddressTransactionIndex Indices = "addresstransaction"
 	BlockIndex              Indices = "block"
 	BlockTransactionIndex   Indices = "blocktransaction"
+	ProposalIndex           Indices = "proposal"
 	SignalIndex             Indices = "signal"
 	SoftForkIndex           Indices = "softfork"
 )

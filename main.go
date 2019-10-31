@@ -7,6 +7,7 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer/address_indexer"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer/block_indexer"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer/dao_indexer"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer/signal_indexer"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer/softfork_indexer"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/redis"
@@ -27,7 +28,7 @@ func main() {
 		softforkIndexer.Reindex(lastBlock)
 	}
 
-	go eventSubscription(elastic)
+	go eventSubscription(navcoin, elastic)
 
 	blockIndexer := block_indexer.New(elastic, redis, navcoin)
 	if err := blockIndexer.IndexBlocks(); err != nil {
@@ -35,11 +36,13 @@ func main() {
 	}
 }
 
-func eventSubscription(elastic *index.Index) {
+func eventSubscription(navcoin *navcoind.Navcoind, elastic *index.Index) {
 	event.On(string(events.EventBlockIndexed), event.ListenerFunc(func(e event.Event) error {
 		block := e.Get("block").(*explorer.Block)
+		txs := e.Get("txs").(*[]explorer.BlockTransaction)
 
-		address_indexer.New(elastic).IndexAddressesForTransactions(e.Get("txs").(*[]explorer.BlockTransaction))
+		address_indexer.New(elastic).IndexAddressesForTransactions(txs)
+		dao_indexer.NewCfundProposalIndexer(navcoin, elastic).IndexProposalsForTransactions(txs)
 		signal_indexer.New(elastic).IndexSignal(block)
 		return nil
 	}), event.Normal)
