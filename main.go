@@ -42,7 +42,8 @@ func eventSubscription(navcoin *navcoind.Navcoind, elastic *index.Index) {
 		txs := e.Get("txs").(*[]explorer.BlockTransaction)
 
 		address_indexer.New(elastic).IndexAddressesForTransactions(txs)
-		dao_indexer.NewCfundProposalIndexer(navcoin, elastic).IndexProposalsForTransactions(txs)
+		dao_indexer.NewProposalIndexer(navcoin, elastic).IndexProposals(txs)
+		dao_indexer.NewPaymentRequestIndexer(navcoin, elastic).IndexPaymentRequests(txs)
 		signal_indexer.New(elastic).IndexSignal(block)
 		return nil
 	}), event.Normal)

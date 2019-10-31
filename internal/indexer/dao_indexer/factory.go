@@ -26,6 +26,20 @@ func CreateProposal(proposal navcoind.Proposal, height uint64) explorer.Proposal
 	}
 }
 
+func CreatePaymentRequest(paymentRequest navcoind.PaymentRequest, height uint64) explorer.PaymentRequest {
+	return explorer.PaymentRequest{
+		Version:             paymentRequest.Version,
+		Hash:                paymentRequest.Hash,
+		BlockHash:           paymentRequest.BlockHash,
+		Description:         paymentRequest.Description,
+		RequestedAmount:     convertStringToUint(paymentRequest.RequestedAmount),
+		Status:              "pending",
+		State:               0,
+		StateChangedOnBlock: paymentRequest.StateChangedOnBlock,
+		Height:              height,
+	}
+}
+
 func convertStringToUint(input string) uint64 {
 	output, err := strconv.ParseUint(input, 10, 64)
 	if err != nil {
