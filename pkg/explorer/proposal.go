@@ -11,13 +11,19 @@ type Proposal struct {
 	PaymentAddress      string `json:"paymentAddress"`
 	ProposalDuration    uint64 `json:"proposalDuration"`
 	ExpiresOn           uint64 `json:"expiresOn"`
-	VotesYes            uint   `json:"votesYes"`
-	VotesNo             uint   `json:"votesNo"`
-	VotingCycle         uint   `json:"votingCycle"`
 	Status              string `json:"status"`
 	State               uint   `json:"state"`
 	StateChangedOnBlock string `json:"stateChangedOnBlock,omitempty"`
 
 	// Custom
-	Height uint64 `json:"height"`
+	Height uint64         `json:"height"`
+	Cycles ProposalCycles `json:"cycles"`
+}
+
+type ProposalCycles []ProposalCycle
+
+type ProposalCycle struct {
+	VotingCycle uint `json:"votingCycle"`
+	VotesYes    uint `json:"votesYes"`
+	VotesNo     uint `json:"votesNo"`
 }

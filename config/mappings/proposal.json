@@ -55,15 +55,6 @@
       "expiresOn": {
         "type": "long"
       },
-      "votesYes": {
-        "type": "long"
-      },
-      "votesNo": {
-        "type": "long"
-      },
-      "votingCycle": {
-        "type": "long"
-      },
       "status": {
         "type": "text",
         "fields": {
@@ -91,8 +82,23 @@
           }
         }
       },
+
       "height": {
         "type": "long"
+      },
+      "cycles": {
+        "type": "nested",
+        "properties": {
+          "votingCycle": {
+            "type": "long"
+          },
+          "votesYes": {
+            "type": "long"
+          },
+          "votesNo": {
+            "type": "long"
+          }
+        }
       }
     }
   },
