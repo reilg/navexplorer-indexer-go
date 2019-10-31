@@ -4,7 +4,6 @@ import (
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
-	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -33,5 +32,5 @@ func (i *CfundProposalIndexer) indexProposal(tx explorer.BlockTransaction) {
 	}
 
 	log.Info("Indexing proposal in tx ", tx.Hash)
-	i.elastic.AddRequest(index.ProposalIndex.Get(), tx.Hash, CreateProposal(navProposal))
+	i.elastic.AddRequest(index.ProposalIndex.Get(), tx.Hash, CreateProposal(navProposal, tx.Height))
 }

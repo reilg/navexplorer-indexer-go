@@ -17,4 +17,7 @@ type Proposal struct {
 	Status              string `json:"status"`
 	State               uint   `json:"state"`
 	StateChangedOnBlock string `json:"stateChangedOnBlock,omitempty"`
+
+	// Custom
+	Height uint64 `json:"height"`
 }

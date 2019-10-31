@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func CreateProposal(proposal navcoind.Proposal) explorer.Proposal {
+func CreateProposal(proposal navcoind.Proposal, height uint64) explorer.Proposal {
 	return explorer.Proposal{
 		Version:             proposal.Version,
 		Hash:                proposal.Hash,
@@ -25,6 +25,7 @@ func CreateProposal(proposal navcoind.Proposal) explorer.Proposal {
 		Status:              proposal.Status,
 		State:               proposal.State,
 		StateChangedOnBlock: proposal.StateChangedOnBlock,
+		Height:              height,
 	}
 }
 
