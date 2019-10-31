@@ -1,29 +1,8 @@
 {
   "mappings": {
     "properties": {
-      "blockHash": {
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword",
-            "ignore_above": 256
-          }
-        }
-      },
-      "createdAt": {
-        "type": "date"
-      },
-      "description": {
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword",
-            "ignore_above": 256
-          }
-        }
-      },
-      "expiresOn": {
-        "type": "date"
+      "version": {
+        "type": "long"
       },
       "hash": {
         "type": "text",
@@ -34,10 +13,31 @@
           }
         }
       },
-      "height": {
+      "blockHash": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "description": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "requestedAmount": {
         "type": "long"
       },
       "notPaidYet": {
+        "type": "long"
+      },
+      "userPaidFee": {
         "type": "long"
       },
       "paymentAddress": {
@@ -52,8 +52,26 @@
       "proposalDuration": {
         "type": "long"
       },
-      "requestedAmount": {
+      "expiresOn": {
         "type": "long"
+      },
+      "votesYes": {
+        "type": "long"
+      },
+      "votesNo": {
+        "type": "long"
+      },
+      "votingCycle": {
+        "type": "long"
+      },
+      "status": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
       },
       "state": {
         "type": "text",
@@ -73,28 +91,7 @@
           }
         }
       },
-      "status": {
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword",
-            "ignore_above": 256
-          }
-        }
-      },
-      "userPaidFee": {
-        "type": "long"
-      },
-      "version": {
-        "type": "long"
-      },
-      "votesNo": {
-        "type": "long"
-      },
-      "votesYes": {
-        "type": "long"
-      },
-      "votingCycle": {
+      "height": {
         "type": "long"
       }
     }
