@@ -73,7 +73,7 @@ func (tx *BlockTransaction) IsPoolStaking() bool {
 	return tx.Type == TxPoolStaking
 }
 
-func (tx *BlockTransaction) HasColdStakingInput(address string) bool {
+func (tx *BlockTransaction) HasColdInput(address string) bool {
 	for _, i := range tx.Vin {
 		if i.PreviousOutput.Type == VoutColdStaking && i.Addresses[0] == address {
 			return true
@@ -82,9 +82,18 @@ func (tx *BlockTransaction) HasColdStakingInput(address string) bool {
 	return false
 }
 
-func (tx *BlockTransaction) HasColdStakingOutput(address string) bool {
+func (tx *BlockTransaction) HasColdStakeStake(address string) bool {
 	for _, o := range tx.Vout {
 		if o.ScriptPubKey.Type == VoutColdStaking && o.ScriptPubKey.Addresses[0] == address {
+			return true
+		}
+	}
+	return false
+}
+
+func (tx *BlockTransaction) HasColdStakeSpend(address string) bool {
+	for _, o := range tx.Vout {
+		if o.ScriptPubKey.Type == VoutColdStaking && o.ScriptPubKey.Addresses[1] == address {
 			return true
 		}
 	}

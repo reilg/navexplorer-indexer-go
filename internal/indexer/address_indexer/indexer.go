@@ -29,7 +29,7 @@ func (i *Indexer) IndexAddressesForTransactions(txs *[]explorer.BlockTransaction
 }
 
 func (i *Indexer) indexAddressForTx(address string, tx explorer.BlockTransaction) {
-	if tx.HasColdStakingInput(address) || tx.HasColdStakingOutput(address) {
+	if tx.HasColdInput(address) || tx.HasColdStakeStake(address) {
 		i.indexAddressForColdTx(address, tx)
 	}
 
@@ -43,11 +43,14 @@ func (i *Indexer) indexAddressForTx(address string, tx explorer.BlockTransaction
 
 	_, input := tx.Vin.GetAmountByAddress(address, addressTransaction.Cold)
 	_, output := tx.Vout.GetAmountByAddress(address, addressTransaction.Cold)
+	if input+output == 0 {
+		return
+	}
+
 	addressTransaction.Input = input
 	addressTransaction.Output = output
 	addressTransaction.Total = int64(addressTransaction.Output - addressTransaction.Input)
 
-	bt, _ := json.Marshal(tx)
 	if tx.IsStaking() {
 		if tx.Vin.HasAddress(address) {
 			addressTransaction.Type = explorer.TransferStake
@@ -61,7 +64,18 @@ func (i *Indexer) indexAddressForTx(address string, tx explorer.BlockTransaction
 		} else if tx.Version == 3 {
 			addressTransaction.Type = explorer.TransferCommunityFundPayout
 		} else {
+			bt, _ := json.Marshal(tx)
 			log.WithFields(log.Fields{"tx": string(bt)}).Fatal("Could not handle coinbase")
+		}
+	} else if tx.IsColdStaking() {
+		if addressTransaction.Input == addressTransaction.Output {
+			addressTransaction.Type = explorer.TransferStake
+		} else if tx.HasColdStakeSpend(address) {
+			if tx.Vin.HasAddress(address) {
+				addressTransaction.Type = explorer.TransferColdStake
+			} else {
+				addressTransaction.Type = explorer.TransferColdDelegateStake
+			}
 		}
 	} else {
 		if addressTransaction.Input > addressTransaction.Output {
@@ -69,6 +83,9 @@ func (i *Indexer) indexAddressForTx(address string, tx explorer.BlockTransaction
 		} else {
 			addressTransaction.Type = explorer.TransferReceive
 		}
+	}
+	if addressTransaction.Type == "" {
+		return
 	}
 
 	i.elastic.AddRequest(
@@ -89,11 +106,14 @@ func (i *Indexer) indexAddressForColdTx(address string, tx explorer.BlockTransac
 
 	_, input := tx.Vin.GetAmountByAddress(address, addressTransaction.Cold)
 	_, output := tx.Vout.GetAmountByAddress(address, addressTransaction.Cold)
+	if input+output == 0 {
+		return
+	}
+
 	addressTransaction.Input = input
 	addressTransaction.Output = output
 	addressTransaction.Total = int64(addressTransaction.Output - addressTransaction.Input)
 
-	bt, _ := json.Marshal(tx)
 	if tx.IsSpend() {
 		if addressTransaction.Input > addressTransaction.Output {
 			addressTransaction.Type = explorer.TransferSend
@@ -102,13 +122,12 @@ func (i *Indexer) indexAddressForColdTx(address string, tx explorer.BlockTransac
 		}
 	} else if tx.IsColdStaking() {
 		if tx.Vin.HasAddress(address) {
-			addressTransaction.Type = explorer.TransferStake
+			addressTransaction.Type = explorer.TransferColdStake
 		} else {
-			addressTransaction.Type = explorer.TransferDelegateStake
-			btJson, _ := json.Marshal(bt)
-			log.WithFields(log.Fields{"tx": string(btJson)}).Info("BlockTX")
-			log.WithFields(log.Fields{"tx": string(bt)}).Fatal("Delegate staking recipient")
+			addressTransaction.Type = explorer.TransferColdDelegateStake
 		}
+	} else {
+		log.WithFields(log.Fields{"tx.type": tx.Type}).Fatal("WE FOUND SOMETHING ELSE IN COLD TX")
 	}
 
 	i.elastic.AddRequest(
