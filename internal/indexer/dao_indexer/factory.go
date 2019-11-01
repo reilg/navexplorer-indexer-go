@@ -13,9 +13,9 @@ func CreateProposal(proposal navcoind.Proposal, height uint64) explorer.Proposal
 		Hash:                proposal.Hash,
 		BlockHash:           proposal.BlockHash,
 		Description:         proposal.Description,
-		RequestedAmount:     convertStringToUint(proposal.RequestedAmount),
-		NotPaidYet:          convertStringToUint(proposal.RequestedAmount),
-		UserPaidFee:         convertStringToUint(proposal.UserPaidFee),
+		RequestedAmount:     convertStringToFloat(proposal.RequestedAmount),
+		NotPaidYet:          convertStringToFloat(proposal.RequestedAmount),
+		UserPaidFee:         convertStringToFloat(proposal.UserPaidFee),
 		PaymentAddress:      proposal.PaymentAddress,
 		ProposalDuration:    proposal.ProposalDuration,
 		ExpiresOn:           proposal.ExpiresON,
@@ -32,7 +32,7 @@ func CreatePaymentRequest(paymentRequest navcoind.PaymentRequest, height uint64)
 		Hash:                paymentRequest.Hash,
 		BlockHash:           paymentRequest.BlockHash,
 		Description:         paymentRequest.Description,
-		RequestedAmount:     convertStringToUint(paymentRequest.RequestedAmount),
+		RequestedAmount:     convertStringToFloat(paymentRequest.RequestedAmount),
 		Status:              "pending",
 		State:               0,
 		StateChangedOnBlock: paymentRequest.StateChangedOnBlock,
@@ -40,8 +40,8 @@ func CreatePaymentRequest(paymentRequest navcoind.PaymentRequest, height uint64)
 	}
 }
 
-func convertStringToUint(input string) uint64 {
-	output, err := strconv.ParseUint(input, 10, 64)
+func convertStringToFloat(input string) float64 {
+	output, err := strconv.ParseFloat(input, 64)
 	if err != nil {
 		log.WithError(err).Errorf("Unable to convert %s to uint64", input)
 		return 0
