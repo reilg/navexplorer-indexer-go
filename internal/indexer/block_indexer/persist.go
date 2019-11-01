@@ -9,9 +9,9 @@ import (
 )
 
 func (i *Indexer) persist(txs *[]explorer.BlockTransaction, block *explorer.Block) error {
-	i.elastic.AddRequest(index.BlockIndex.Get(), block.Hash, block)
+	i.elastic.AddIndexRequest(index.BlockIndex.Get(), block.Hash, block)
 	for _, tx := range *txs {
-		i.elastic.AddRequest(index.BlockTransactionIndex.Get(), tx.Hash, tx)
+		i.elastic.AddIndexRequest(index.BlockTransactionIndex.Get(), tx.Hash, tx)
 	}
 
 	if err := i.cache.SetLastBlock(block.Height); err != nil {

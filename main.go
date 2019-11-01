@@ -12,6 +12,7 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer/softfork_indexer"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/redis"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer/repository"
 	"github.com/gookit/event"
 	log "github.com/sirupsen/logrus"
 )
@@ -19,14 +20,13 @@ import (
 func main() {
 	config.Init()
 
-	elastic := initElasticCache()
-	navcoin := initNavcoin()
 	redis, lastBlock := initRedis()
+	elastic := initElasticCache(lastBlock)
+	navcoin := initNavcoin()
 
-	softforkIndexer := softfork_indexer.New(elastic, navcoin).Init()
-	if config.Get().Reindex {
-		softforkIndexer.Reindex(lastBlock)
-	}
+	softForkRepo := repository.NewSoftForkRepo(elastic.Client)
+	softforkIndexer := softfork_indexer.New(elastic, navcoin, &softForkRepo).Init()
+	softforkIndexer.RewindTo(lastBlock)
 
 	go eventSubscription(navcoin, elastic)
 
@@ -48,17 +48,18 @@ func eventSubscription(navcoin *navcoind.Navcoind, elastic *index.Index) {
 		return nil
 	}), event.Normal)
 
+	softForkRepo := repository.NewSoftForkRepo(elastic.Client)
 	event.On(string(events.EventSignalIndexed), event.ListenerFunc(func(e event.Event) error {
 		signal := e.Get("signal").(*explorer.Signal)
 		block := e.Get("block").(*explorer.Block)
 
-		softfork_indexer.New(elastic, nil).Update(signal, block)
+		softfork_indexer.New(elastic, navcoin, &softForkRepo).Update(signal, block)
 		elastic.PersistRequests(signal.Height)
 		return nil
 	}), event.Normal)
 }
 
-func initElasticCache() *index.Index {
+func initElasticCache(lastBlock uint64) *index.Index {
 	elastic, err := index.New()
 	if err != nil {
 		log.WithError(err).Fatal("Failed toStart ES")
@@ -66,6 +67,8 @@ func initElasticCache() *index.Index {
 	if err := elastic.Init(); err != nil {
 		log.WithError(err).Fatal("Failed to initialize ES")
 	}
+
+	elastic.RewindTo(lastBlock)
 
 	return elastic
 }

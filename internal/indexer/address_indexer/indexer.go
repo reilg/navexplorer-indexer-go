@@ -88,7 +88,7 @@ func (i *Indexer) indexAddressForTx(address string, tx explorer.BlockTransaction
 		return
 	}
 
-	i.elastic.AddRequest(
+	i.elastic.AddIndexRequest(
 		index.AddressTransactionIndex.Get(),
 		fmt.Sprintf("%s-%s", address, tx.Hash),
 		addressTransaction,
@@ -130,7 +130,7 @@ func (i *Indexer) indexAddressForColdTx(address string, tx explorer.BlockTransac
 		log.WithFields(log.Fields{"tx.type": tx.Type}).Fatal("WE FOUND SOMETHING ELSE IN COLD TX")
 	}
 
-	i.elastic.AddRequest(
+	i.elastic.AddIndexRequest(
 		index.AddressTransactionIndex.Get(),
 		fmt.Sprintf("%s-%s-cold", address, tx.Hash),
 		addressTransaction,

@@ -5,6 +5,7 @@ import "log"
 type SoftForks []SoftFork
 
 type SoftFork struct {
+	Id               string         `json:"_"`
 	Name             string         `json:"name"`
 	SignalBit        uint           `json:"signalBit"`
 	State            SoftForkState  `json:"state"`
@@ -12,7 +13,6 @@ type SoftFork struct {
 	ActivationHeight uint64         `json:"activationheight,omitempty"`
 	SignalHeight     uint64         `json:"signalheight,omitempty"`
 	Cycles           SoftForkCycles `json:"cycles,omitempty"`
-	Dirty            bool           `json:"_"`
 }
 
 type SoftForkCycles []SoftForkCycle

@@ -30,7 +30,7 @@ func (i *Indexer) IndexSignal(block *explorer.Block) {
 	}
 
 	if len(signal.SoftForks) != 0 {
-		i.elastic.AddRequest(index.SignalIndex.Get(), fmt.Sprintf("%d", block.Height), signal)
+		i.elastic.AddIndexRequest(index.SignalIndex.Get(), fmt.Sprintf("%d", block.Height), signal)
 	}
 
 	event.MustFire(string(events.EventSignalIndexed), event.M{"signal": &signal, "block": block})

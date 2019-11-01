@@ -21,3 +21,15 @@ var (
 func (i *Indices) Get() string {
 	return fmt.Sprintf("%s.%s", config.Get().Network, string(*i))
 }
+
+func All() []Indices {
+	return []Indices{
+		AddressTransactionIndex,
+		BlockIndex,
+		BlockTransactionIndex,
+		ProposalIndex,
+		PaymentRequestIndex,
+		SignalIndex,
+		SoftForkIndex,
+	}
+}

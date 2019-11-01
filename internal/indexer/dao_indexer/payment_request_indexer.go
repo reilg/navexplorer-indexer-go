@@ -32,5 +32,5 @@ func (i *PaymentRequestIndexer) indexPaymentRequest(tx explorer.BlockTransaction
 	}
 
 	log.Info("Indexing proposal in tx ", tx.Hash)
-	i.elastic.AddRequest(index.PaymentRequestIndex.Get(), tx.Hash, CreatePaymentRequest(navPaymentRequest, tx.Height))
+	i.elastic.AddIndexRequest(index.PaymentRequestIndex.Get(), tx.Hash, CreatePaymentRequest(navPaymentRequest, tx.Height))
 }

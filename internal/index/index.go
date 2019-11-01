@@ -2,7 +2,6 @@ package index
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
@@ -24,8 +23,10 @@ type Index struct {
 type Request struct {
 	Height uint64
 	Index  string
-	Id     string
+	Name   string
 	Doc    interface{}
+	Type   string
+	Id     string
 }
 
 var (
@@ -81,8 +82,6 @@ func (i *Index) Init() error {
 		}
 
 		index := fmt.Sprintf("%s.%s", config.Get().Network, name[0:len(name)-len(filepath.Ext(name))])
-		log.Printf("Creating elastic search index: %s", index)
-
 		if err = i.createIndex(index, b); err != nil {
 			return err
 		}
@@ -91,21 +90,31 @@ func (i *Index) Init() error {
 	return nil
 }
 
-func (i *Index) AddRequest(index string, id string, doc interface{}) {
-	if request := i.GetRequest(index, id); request != nil {
+func (i *Index) AddIndexRequest(index string, name string, doc interface{}) {
+	i.AddRequest(index, name, doc, "index", "")
+}
+
+func (i *Index) AddUpdateRequest(index string, name string, doc interface{}, id string) {
+	i.AddRequest(index, name, doc, "update", id)
+}
+
+func (i *Index) AddRequest(index string, name string, doc interface{}, reqType string, id string) {
+	if request := i.GetRequest(index, name, id); request != nil {
 		request.Doc = doc
 	} else {
 		i.requests = append(i.requests, Request{
 			Index: index,
-			Id:    id,
+			Name:  name,
 			Doc:   doc,
+			Type:  reqType,
+			Id:    id,
 		})
 	}
 }
 
-func (i *Index) GetRequest(index string, id string) *Request {
+func (i *Index) GetRequest(index string, name string, id string) *Request {
 	for idx, r := range i.requests {
-		if r.Index == index && r.Id == id {
+		if r.Index == index && r.Name == name && r.Id == id {
 			return &i.requests[idx]
 		}
 	}
@@ -120,8 +129,13 @@ func (i *Index) PersistRequests(height uint64) {
 
 	bulk := i.Client.Bulk()
 	for _, r := range i.requests {
-		bulk.Add(elastic.NewBulkIndexRequest().Index(r.Index).Id(r.Id).Doc(r.Doc))
+		if r.Type == "index" {
+			bulk.Add(elastic.NewBulkIndexRequest().Index(r.Index).Doc(r.Doc))
+		} else if r.Type == "update" {
+			bulk.Add(elastic.NewBulkUpdateRequest().Index(r.Index).Id(r.Id).Doc(r.Doc))
+		}
 	}
+
 	actions := bulk.NumberOfActions()
 	if actions != 0 {
 		_, err := bulk.Do(context.Background())
@@ -135,18 +149,39 @@ func (i *Index) PersistRequests(height uint64) {
 	i.requests = make([]Request, 0)
 }
 
-func (i *Index) GetById(index string, id string, record interface{}) error {
-	result, err := i.Client.
-		Get().
-		Index(index).
-		Id(id).
-		Do(context.Background())
-	if err != nil {
-		return ErrRecordNotFound
+func (i *Index) RewindTo(height uint64) *Index {
+	rewind := func(index string) {
+		_, err := i.Client.DeleteByQuery().
+			Index(index).
+			Query(elastic.NewRangeQuery("height").Gt(height)).
+			Do(context.Background())
+		if err != nil {
+			logrus.WithError(err).Fatal("Could not rewind block index to ", height)
+		}
 	}
 
-	return json.Unmarshal(result.Source, record)
+	rewind(BlockIndex.Get())
+	rewind(BlockTransactionIndex.Get())
+	rewind(AddressTransactionIndex.Get())
+	rewind(SignalIndex.Get())
+	rewind(ProposalIndex.Get())
+	rewind(PaymentRequestIndex.Get())
+
+	return i
 }
+
+//func (i *Index) GetById(index string, id string, record interface{}) error {
+//	result, err := i.Client.
+//		Get().
+//		Index(index).
+//		Id(id).
+//		Do(context.Background())
+//	if err != nil {
+//		return ErrRecordNotFound
+//	}
+//
+//	return json.Unmarshal(result.Source, record)
+//}
 
 func (i *Index) createIndex(index string, mapping []byte) error {
 	ctx := context.Background()

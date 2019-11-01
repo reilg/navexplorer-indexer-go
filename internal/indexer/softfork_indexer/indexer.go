@@ -16,10 +16,15 @@ var SoftForks explorer.SoftForks
 type Indexer struct {
 	elastic *index.Index
 	navcoin *navcoind.Navcoind
+	repo    *repository.SoftForkRepository
 }
 
-func New(elastic *index.Index, navcoin *navcoind.Navcoind) *Indexer {
-	return &Indexer{elastic: elastic, navcoin: navcoin}
+func New(
+	elastic *index.Index,
+	navcoin *navcoind.Navcoind,
+	repo *repository.SoftForkRepository,
+) *Indexer {
+	return &Indexer{elastic, navcoin, repo}
 }
 
 func (i *Indexer) Init() *Indexer {
@@ -30,22 +35,19 @@ func (i *Indexer) Init() *Indexer {
 
 	for name, fork := range info.Bip9SoftForks {
 		var softFork *explorer.SoftFork
-		if err := i.elastic.GetById(index.SoftForkIndex.Get(), name, &softFork); err != nil {
-			softFork = &explorer.SoftFork{
-				Name:      name,
-				SignalBit: uint(fork.Bit),
-				State:     explorer.SoftForkDefined,
-			}
-			_, err := i.elastic.Client.
-				Index().
+		softFork, err := i.repo.GetSoftFork(name)
+		if err != nil {
+			softFork = &explorer.SoftFork{Name: name, SignalBit: uint(fork.Bit), State: explorer.SoftForkDefined}
+			resp, err := i.elastic.Client.Index().
 				Index(index.SoftForkIndex.Get()).
-				Id(name).
 				BodyJson(softFork).
 				Do(context.Background())
-
 			if err != nil {
 				log.WithError(err).Fatal("Could not index new soft fork")
 			}
+			softFork.Id = resp.Id
+
+			log.Infof("Indexing Softfork: %s:%s ", softFork.Id, softFork.Name)
 		}
 
 		SoftForks = append(SoftForks, *softFork)
@@ -56,11 +58,11 @@ func (i *Indexer) Init() *Indexer {
 
 func (i *Indexer) reset() {
 	for idx, s := range SoftForks {
-		SoftForks[idx] = explorer.SoftFork{Name: s.Name, SignalBit: s.SignalBit, State: explorer.SoftForkDefined}
+		SoftForks[idx] = explorer.SoftFork{Id: s.Id, Name: s.Name, SignalBit: s.SignalBit, State: explorer.SoftForkDefined}
 	}
 }
 
-func (i *Indexer) Reindex(height uint64) {
+func (i *Indexer) RewindTo(height uint64) *Indexer {
 	i.reset()
 
 	size := config.Get().SoftForkBlockCycle
@@ -72,7 +74,7 @@ func (i *Indexer) Reindex(height uint64) {
 			break
 		}
 
-		signalRepository := repository.New(i.elastic.Client)
+		signalRepository := repository.NewSignalRepo(i.elastic.Client)
 		signals := signalRepository.GetSignals(start, end)
 		cycle := explorer.GetCycleForHeight(start, size)
 
@@ -83,7 +85,6 @@ func (i *Indexer) Reindex(height uint64) {
 			for _, sf := range s.SoftForks {
 				softFork := SoftForks.GetSoftFork(sf)
 				if softFork.IsOpen() {
-					softFork.Dirty = true
 					softFork.SignalHeight = end
 					softFork.State = explorer.SoftForkStarted
 					cycleIndex := explorer.GetCycleForHeight(s.Height, size)
@@ -102,11 +103,9 @@ func (i *Indexer) Reindex(height uint64) {
 				SoftForks[idx].State = explorer.SoftForkLockedIn
 				SoftForks[idx].LockedInHeight = end
 				SoftForks[idx].ActivationHeight = end + uint64(size)
-				SoftForks[idx].Dirty = true
 			}
 			if s.State == explorer.SoftForkLockedIn && height >= SoftForks[idx].ActivationHeight {
 				SoftForks[idx].State = explorer.SoftForkActive
-				SoftForks[idx].Dirty = true
 			}
 		}
 
@@ -119,6 +118,8 @@ func (i *Indexer) Reindex(height uint64) {
 			return start, end
 		}(start, end, height)
 	}
+
+	return i
 }
 
 func (i *Indexer) Update(signal *explorer.Signal, block *explorer.Block) {
@@ -142,7 +143,6 @@ func (i *Indexer) UpdateForSignal(signal *explorer.Signal, block *explorer.Block
 		}
 
 		softFork.SignalHeight = signal.Height
-		softFork.Dirty = true
 		if softFork.State == explorer.SoftForkDefined {
 			softFork.State = explorer.SoftForkStarted
 		}
@@ -168,16 +168,13 @@ func (i *Indexer) UpdateSoftForkState(softForks *explorer.SoftForks, height uint
 		if s.State == explorer.SoftForkStarted && s.LatestCycle().BlocksSignalling >= explorer.GetQuorum(size) {
 			SoftForks[idx].LockedInHeight = uint64(size * blockCycle)
 			SoftForks[idx].ActivationHeight = SoftForks[idx].LockedInHeight + uint64(size)
-			SoftForks[idx].Dirty = true
 		}
 		if s.LockedInHeight != 0 && s.ActivationHeight != 0 {
 			if s.State == explorer.SoftForkStarted && height >= s.LockedInHeight {
 				SoftForks[idx].State = explorer.SoftForkLockedIn
-				SoftForks[idx].Dirty = true
 			}
 			if s.State == explorer.SoftForkLockedIn && height >= s.ActivationHeight {
 				SoftForks[idx].State = explorer.SoftForkActive
-				SoftForks[idx].Dirty = true
 			}
 		}
 	}
@@ -185,10 +182,6 @@ func (i *Indexer) UpdateSoftForkState(softForks *explorer.SoftForks, height uint
 
 func (i *Indexer) persist(height uint64) {
 	for _, s := range SoftForks {
-		if s.Dirty == false {
-			continue
-		}
-
-		i.elastic.AddRequest(index.SoftForkIndex.Get(), s.Name, s)
+		i.elastic.AddUpdateRequest(index.SoftForkIndex.Get(), s.Name, s, s.Id)
 	}
 }

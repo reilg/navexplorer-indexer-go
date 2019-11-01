@@ -32,5 +32,5 @@ func (i *ProposalIndexer) indexProposal(tx explorer.BlockTransaction) {
 	}
 
 	log.Info("Indexing proposal in tx ", tx.Hash)
-	i.elastic.AddRequest(index.ProposalIndex.Get(), tx.Hash, CreateProposal(navProposal, tx.Height))
+	i.elastic.AddIndexRequest(index.ProposalIndex.Get(), tx.Hash, CreateProposal(navProposal, tx.Height))
 }

@@ -12,7 +12,7 @@ type SignalRepository struct {
 	Client *elastic.Client
 }
 
-func New(client *elastic.Client) SignalRepository {
+func NewSignalRepo(client *elastic.Client) SignalRepository {
 	return SignalRepository{client}
 }
 
