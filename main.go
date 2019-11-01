@@ -11,8 +11,8 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer/signal_indexer"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer/softfork_indexer"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/redis"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/repository"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
-	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer/repository"
 	"github.com/gookit/event"
 	log "github.com/sirupsen/logrus"
 )
