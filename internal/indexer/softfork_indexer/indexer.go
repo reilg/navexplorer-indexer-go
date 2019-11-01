@@ -6,8 +6,8 @@ import (
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/repository"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
-	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer/repository"
 	log "github.com/sirupsen/logrus"
 )
 
