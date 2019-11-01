@@ -2,7 +2,7 @@ package explorer
 
 import "math"
 
-type Block struct {
+type RawBlock struct {
 	Hash              string   `json:"hash"`
 	Confirmations     uint64   `json:"confirmations"`
 	StrippedSize      uint64   `json:"strippedsize"`
@@ -21,13 +21,18 @@ type Block struct {
 	Chainwork         string   `json:"chainwork,omitempty"`
 	Previousblockhash string   `json:"previousblockhash"`
 	Nextblockhash     string   `json:"nextblockhash"`
+}
 
-	// Custom
+type Block struct {
+	RawBlock
 	Stake       uint64 `json:"stake"`
 	StakedBy    string `json:"stakedBy"`
 	Spend       uint64 `json:"spend"`
 	Fees        uint64 `json:"fees"`
 	CFundPayout uint64 `json:"cfundPayout"`
+
+	// Transient
+	Best bool `json:"best,omitempty"`
 }
 
 type BlockCycle struct {
