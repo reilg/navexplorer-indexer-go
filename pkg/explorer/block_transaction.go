@@ -1,6 +1,6 @@
 package explorer
 
-type BlockTransaction struct {
+type RawBlockTransaction struct {
 	Hex             string `json:"hex"`
 	Txid            string `json:"txid"`
 	Hash            string `json:"hash"`
@@ -9,15 +9,21 @@ type BlockTransaction struct {
 	Version         uint32 `json:"version"`
 	LockTime        uint32 `json:"locktime"`
 	AnonDestination string `json:"anon-destination"`
-	Vin             Vins   `json:"vin"`
-	Vout            Vouts  `json:"vout"`
 	BlockHash       string `json:"blockhash, omitempty"`
 	Height          uint64 `json:"height"`
 	Confirmations   uint64 `json:"confirmations, omitempty"`
 	Time            int64  `json:"time, omitempty"`
 	BlockTime       int64  `json:"blocktime, omitempty"`
 
-	// Custom
+	Vin  RawVins  `json:"vin"`
+	Vout RawVouts `json:"vout"`
+}
+
+type BlockTransaction struct {
+	RawBlockTransaction
+	Vin  Vins  `json:"vin"`
+	Vout Vouts `json:"vout"`
+
 	Type  BlockTransactionType `json:"type"`
 	Stake uint64               `json:"stake"`
 	Spend uint64               `json:"spend"`

@@ -1,5 +1,6 @@
 package explorer
 
+type RawVouts []RawVout
 type Vouts []Vout
 
 func (vouts *Vouts) HasOutputOfType(txType VoutType) bool {

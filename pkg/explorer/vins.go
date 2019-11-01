@@ -1,5 +1,7 @@
 package explorer
 
+type RawVins []RawVin
+
 type Vins []Vin
 
 func (vins *Vins) Empty() bool {

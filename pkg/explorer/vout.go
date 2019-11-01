@@ -1,10 +1,13 @@
 package explorer
 
-type Vout struct {
+type RawVout struct {
 	Value        float64      `json:"value"`
 	ValueSat     uint64       `json:"valuesat"`
 	N            int          `json:"n"`
 	ScriptPubKey ScriptPubKey `json:"scriptPubKey"`
+}
+type Vout struct {
+	RawVout
 }
 
 func (o *Vout) IsColdStaking() bool {
