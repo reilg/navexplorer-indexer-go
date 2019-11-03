@@ -191,7 +191,7 @@
           }
         }
       },
-      "blockHash": {
+      "blockhash": {
         "type": "text",
         "fields": {
           "keyword": {
