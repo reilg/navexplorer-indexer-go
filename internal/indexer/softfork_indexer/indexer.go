@@ -2,7 +2,6 @@ package softfork_indexer
 
 import (
 	"context"
-	"fmt"
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
@@ -79,7 +78,7 @@ func (i *Indexer) RewindTo(height uint64) *Indexer {
 		cycle := explorer.GetCycleForHeight(start, size)
 
 		log.WithFields(log.Fields{"Start": start, "End": end, "height": height, "signals": len(*signals)}).
-			Info(fmt.Sprintf("Cycle ", cycle))
+			Infof("Cycle %d", cycle)
 
 		for _, s := range *signals {
 			for _, sf := range s.SoftForks {
