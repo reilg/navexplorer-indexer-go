@@ -43,7 +43,7 @@ func (i *Indexer) IndexBlocks() error {
 			return err
 		}
 
-		_, err := i.cache.Rewind()
+		_, err := i.cache.RewindBy(10)
 		if err != nil {
 			log.WithError(err).Error("Rewind blocks")
 			return err

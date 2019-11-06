@@ -12,5 +12,6 @@
 *.out
 
 /.tmp
+/generated
 /vendor
 /.env

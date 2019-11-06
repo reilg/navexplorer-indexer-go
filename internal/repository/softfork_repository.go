@@ -13,8 +13,8 @@ type SoftForkRepository struct {
 	Client *elastic.Client
 }
 
-func NewSoftForkRepo(client *elastic.Client) SoftForkRepository {
-	return SoftForkRepository{client}
+func NewSoftForkRepo(client *elastic.Client) *SoftForkRepository {
+	return &SoftForkRepository{client}
 }
 
 func (r *SoftForkRepository) GetSoftFork(name string) (*explorer.SoftFork, error) {

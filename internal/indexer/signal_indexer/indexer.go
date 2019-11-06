@@ -2,7 +2,7 @@ package signal_indexer
 
 import (
 	"fmt"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/events"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer/softfork_indexer"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
@@ -33,5 +33,5 @@ func (i *Indexer) IndexSignal(block *explorer.Block) {
 		i.elastic.AddIndexRequest(index.SignalIndex.Get(), fmt.Sprintf("%d", block.Height), signal)
 	}
 
-	event.MustFire(string(events.EventSignalIndexed), event.M{"signal": &signal, "block": block})
+	event.MustFire(string(config.EventSignalIndexed), event.M{"signal": &signal, "block": block})
 }

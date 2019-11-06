@@ -63,11 +63,11 @@ func New() (*Index, error) {
 	}, err
 }
 
-func (i *Index) Init() error {
+func (i *Index) InstallMappings() {
 	log.Println("Install Mappings")
 	files, err := ioutil.ReadDir(config.Get().ElasticSearch.MappingDir)
 	if err != nil {
-		return err
+		logrus.WithError(err).Fatal("Failed to initialize ES")
 	}
 
 	for _, f := range files {
@@ -78,16 +78,14 @@ func (i *Index) Init() error {
 		name := f.Name()
 		b, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", config.Get().ElasticSearch.MappingDir, name))
 		if err != nil {
-			return err
+			logrus.WithError(err).Fatal("Failed to initialize ES")
 		}
 
 		index := fmt.Sprintf("%s.%s", config.Get().Network, name[0:len(name)-len(filepath.Ext(name))])
 		if err = i.createIndex(index, b); err != nil {
-			return err
+			logrus.WithError(err).Fatal("Failed to initialize ES")
 		}
 	}
-
-	return nil
 }
 
 func (i *Index) AddIndexRequest(index string, name string, doc interface{}) {
@@ -165,6 +163,7 @@ func (i *Index) RewindTo(height uint64) *Index {
 	rewind(AddressTransactionIndex.Get())
 	rewind(SignalIndex.Get())
 	rewind(ProposalIndex.Get())
+	//rewind(ProposalVoteIndex.Get())
 	rewind(PaymentRequestIndex.Get())
 
 	return i

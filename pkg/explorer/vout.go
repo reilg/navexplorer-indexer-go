@@ -14,6 +14,10 @@ func (o *Vout) IsColdStaking() bool {
 	return o.ScriptPubKey.Type == VoutColdStaking
 }
 
+func (o *Vout) IsProposalVote() bool {
+	return o.ScriptPubKey.Type == VoutProposalYesVote || o.ScriptPubKey.Type == VoutProposalNoVote
+}
+
 func (o *Vout) IsColdStakingAddress(address string) bool {
 	return len(o.ScriptPubKey.Addresses) == 2 && o.ScriptPubKey.Addresses[0] == address
 }

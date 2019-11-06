@@ -14,22 +14,16 @@ type Redis struct {
 }
 
 var (
-	ErrLastBlockIndexedRead  = errors.New("Failed to read last block_indexer indexed")
-	ErrLastBlockIndexedWrite = errors.New("Failed to write last block_indexer indexed")
+	ErrLastBlockIndexedRead  = errors.New("Failed to read last block indexed")
+	ErrLastBlockIndexedWrite = errors.New("Failed to write last block indexed")
 )
 
-func New() *Redis {
-	return &Redis{
-		client: redis.NewClient(&redis.Options{
-			Addr:     config.Get().Redis.Host,
-			Password: config.Get().Redis.Password,
-			DB:       config.Get().Redis.Db,
-		}),
-		reindexSize: config.Get().ReindexSize,
-	}
+func NewRedis(addr string, password string, db int, reindexSize uint) *Redis {
+	client := redis.NewClient(&redis.Options{Addr: addr, Password: password, DB: db})
+	return &Redis{client, reindexSize}
 }
 
-func (r *Redis) Init() (uint64, error) {
+func (r *Redis) Start() (uint64, error) {
 	if !config.Get().Reindex {
 		return r.RewindBy(uint64(r.reindexSize))
 	}
@@ -64,10 +58,6 @@ func (r *Redis) SetLastBlock(height uint64) error {
 	}
 
 	return nil
-}
-
-func (r *Redis) Rewind() (uint64, error) {
-	return r.RewindBy(uint64(r.reindexSize))
 }
 
 func (r *Redis) RewindBy(blocks uint64) (uint64, error) {

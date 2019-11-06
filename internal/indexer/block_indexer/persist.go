@@ -1,7 +1,7 @@
 package block_indexer
 
 import (
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/events"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/index"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	"github.com/gookit/event"
@@ -19,7 +19,6 @@ func (i *Indexer) persist(txs *[]explorer.BlockTransaction, block *explorer.Bloc
 		return err
 	}
 
-	event.MustFire(string(events.EventBlockIndexed), event.M{"block": block, "txs": txs})
-
+	event.MustFire(string(config.EventBlockIndexed), event.M{"block": block, "txs": txs})
 	return nil
 }
