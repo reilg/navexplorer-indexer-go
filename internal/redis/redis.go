@@ -28,7 +28,10 @@ func (r *Redis) Start() (uint64, error) {
 		return r.RewindBy(uint64(r.reindexSize))
 	}
 
-	return 0, r.SetLastBlock(0)
+	err := r.SetLastBlock(0)
+	log.Info("Redis started")
+
+	return 0, err
 }
 
 func (r *Redis) GetLastBlockIndexed() (uint64, error) {

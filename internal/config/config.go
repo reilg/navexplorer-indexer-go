@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/joho/godotenv"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"strconv"
 	"strings"
@@ -51,8 +51,9 @@ type RedisConfig struct {
 func Init() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal("Unable to init config")
 	}
+	log.Info("Config init")
 }
 
 func Get() *Config {

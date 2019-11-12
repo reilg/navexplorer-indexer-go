@@ -30,6 +30,18 @@ type BlockTransaction struct {
 	Fees  uint64               `json:"fees"`
 }
 
+type BlockTransactions []*BlockTransaction
+
+func (blockTransactions *BlockTransactions) GetCoinbase() *BlockTransaction {
+	for _, tx := range *blockTransactions {
+		if tx.IsCoinbase() {
+			return tx
+		}
+	}
+
+	return nil
+}
+
 func (tx *BlockTransaction) GetAllAddresses() []string {
 	var addressMap = make(map[string]struct{})
 	for _, vin := range tx.Vin {

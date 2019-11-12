@@ -1,11 +1,13 @@
 package explorer
 
-import "log"
+import (
+	"log"
+)
 
-type SoftForks []SoftFork
+type SoftForks []*SoftFork
 
 type SoftFork struct {
-	Id               string         `json:"_"`
+	Id               string         `json:"-"`
 	Name             string         `json:"name"`
 	SignalBit        uint           `json:"signalBit"`
 	State            SoftForkState  `json:"state"`
@@ -49,8 +51,9 @@ func (s *SoftFork) GetCycle(cycle uint) *SoftForkCycle {
 func (s SoftForks) GetSoftFork(name string) *SoftFork {
 	for i, _ := range s {
 		if s[i].Name == name {
-			return &s[i]
+			return s[i]
 		}
 	}
+
 	return nil
 }

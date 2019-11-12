@@ -10,22 +10,37 @@ import (
 var container *dic.Container
 
 func main() {
-	setup()
+	log.Info("Launching Indexer")
+	lastBlock := setup()
 
-	if err := container.GetBlockIndexer().IndexBlocks(); err != nil {
-		log.WithError(err).Fatal("Failed to index blocks")
+	if err := container.GetIndexer().Index(lastBlock + 1); err != nil {
+		if err.Error() == "-8: Block height out of range" {
+			log.Info("Persist any pending requests")
+			container.GetElastic().Persist()
+		} else {
+			log.WithError(err).Fatal("Failed to index blocks")
+		}
 	}
 }
 
-func setup() {
+func setup() uint64 {
 	config.Init()
 	container, _ = dic.NewContainer(dingo.App)
+	log.Info("Container init")
+
+	container.GetElastic().InstallMappings()
 
 	height, err := container.GetRedis().Start()
 	if err != nil {
-		log.WithError(err).Fatal("Failed to rewind redis")
+		log.WithError(err).Fatal("Failed to start redis")
 	}
 
-	container.GetElastic().RewindTo(height)
-	container.GetSoftforkIndexer().Init().RewindTo(height)
+	//height = 2621190
+	container.GetSoftforkService().LoadSoftForks()
+
+	if err := container.GetRewinder().RewindToHeight(height); err != nil {
+		log.WithError(err).Fatal("Failed to rewind index")
+	}
+
+	return height
 }
