@@ -42,12 +42,12 @@ func (i *Service) LoadSoftForks() {
 			}
 
 			log.Info("Saving new softfork ", name)
-			softFork.Id = resp.Id
+			softFork.MetaData = explorer.NewMetaData(resp.Id, resp.Index)
 			SoftForks = append(SoftForks, softFork)
 		}
 	}
 
 	for _, sf := range SoftForks {
-		log.WithFields(log.Fields{"Name": sf.Name, "id": sf.Id}).Info("SoftFork")
+		log.WithFields(log.Fields{"Name": sf.Name, "id": sf.MetaData.Id}).Info("SoftFork")
 	}
 }

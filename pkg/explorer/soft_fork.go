@@ -7,7 +7,8 @@ import (
 type SoftForks []*SoftFork
 
 type SoftFork struct {
-	Id               string         `json:"-"`
+	MetaData MetaData `json:"-"`
+
 	Name             string         `json:"name"`
 	SignalBit        uint           `json:"signalBit"`
 	State            SoftForkState  `json:"state"`

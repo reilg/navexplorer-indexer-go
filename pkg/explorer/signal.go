@@ -1,6 +1,8 @@
 package explorer
 
 type Signal struct {
+	MetaData MetaData `json:"-"`
+
 	Address   string   `json:"address"`
 	Height    uint64   `json:"height"`
 	SoftForks []string `json:"softforks"`

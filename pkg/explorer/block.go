@@ -3,6 +3,8 @@ package explorer
 import "math"
 
 type RawBlock struct {
+	MetaData MetaData `json:"-"`
+
 	Hash              string   `json:"hash"`
 	Confirmations     uint64   `json:"confirmations"`
 	StrippedSize      uint64   `json:"strippedsize"`

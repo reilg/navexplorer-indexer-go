@@ -20,6 +20,8 @@ type RawBlockTransaction struct {
 }
 
 type BlockTransaction struct {
+	MetaData MetaData `json:"-"`
+
 	RawBlockTransaction
 	Vin  Vins  `json:"vin"`
 	Vout Vouts `json:"vout"`
@@ -112,15 +114,6 @@ func (tx *BlockTransaction) HasColdStakeStake(address string) bool {
 func (tx *BlockTransaction) HasColdStakeSpend(address string) bool {
 	for _, o := range tx.Vout {
 		if o.ScriptPubKey.Type == VoutColdStaking && o.ScriptPubKey.Addresses[1] == address {
-			return true
-		}
-	}
-	return false
-}
-
-func isValueInList(value string, list []string) bool {
-	for _, v := range list {
-		if v == value {
 			return true
 		}
 	}

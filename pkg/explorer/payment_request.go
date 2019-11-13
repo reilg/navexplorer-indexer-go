@@ -1,6 +1,8 @@
 package explorer
 
 type PaymentRequest struct {
+	MetaData MetaData `json:"-"`
+
 	Version             uint32  `json:"version"`
 	Hash                string  `json:"hash"`
 	BlockHash           string  `json:"blockHash"`

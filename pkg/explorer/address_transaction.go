@@ -1,6 +1,8 @@
 package explorer
 
 type AddressTransaction struct {
+	MetaData MetaData `json:"-"`
+
 	Hash   string       `json:"hash"`
 	Txid   string       `json:"txid"`
 	Height uint64       `json:"height"`
