@@ -6,6 +6,42 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func CreateAddress(hash string) *explorer.Address {
+	return &explorer.Address{Hash: hash}
+}
+
+func ResetAddress(address *explorer.Address) *explorer.Address {
+	return &explorer.Address{MetaData: address.MetaData, Hash: address.Hash}
+}
+
+func ApplyTxToAddress(address *explorer.Address, tx *explorer.AddressTransaction) {
+	if tx.Cold == true {
+		address.ColdBalance = uint64(int64(address.ColdBalance) + tx.Total)
+		if tx.Type == explorer.TransferColdStake || tx.Type == explorer.TransferColdDelegateStake {
+			address.ColdStaked = uint64(int64(address.ColdStaked) + tx.Total)
+			address.ColdStakedCount++
+		} else if tx.Type == explorer.TransferSend {
+			address.ColdSent = address.ColdSent + tx.Input
+			address.ColdSentCount++
+		} else if tx.Type == explorer.TransferReceive {
+			address.ColdReceived = address.ColdReceived + tx.Output
+			address.ColdReceivedCount++
+		}
+	} else {
+		address.Balance = uint64(int64(address.Balance) + tx.Total)
+		if tx.Type == explorer.TransferStake || tx.Type == explorer.TransferDelegateStake {
+			address.Staked = uint64(int64(address.Staked) + tx.Total)
+			address.StakedCount++
+		} else if tx.Type == explorer.TransferSend {
+			address.Sent = address.Sent + tx.Input
+			address.SentCount++
+		} else if tx.Type == explorer.TransferReceive {
+			address.Received = address.Received + tx.Output
+			address.ReceivedCount++
+		}
+	}
+}
+
 func CreateAddressTransactions(txs []*explorer.BlockTransaction) []*explorer.AddressTransaction {
 	if len(txs) == 0 {
 		return nil

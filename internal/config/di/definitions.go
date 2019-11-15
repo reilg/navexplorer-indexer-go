@@ -49,6 +49,12 @@ var Definitions = []dingo.Def{
 		},
 	},
 	{
+		Name: "address.repo",
+		Build: func(elastic *elastic_cache.Index) (*address.Repository, error) {
+			return address.NewRepo(elastic.Client), nil
+		},
+	},
+	{
 		Name: "signal.repo",
 		Build: func(elastic *elastic_cache.Index) (*signal.Repository, error) {
 			return signal.NewRepo(elastic.Client), nil
@@ -100,14 +106,14 @@ var Definitions = []dingo.Def{
 	},
 	{
 		Name: "address.indexer",
-		Build: func(elastic *elastic_cache.Index) (*address.Indexer, error) {
-			return address.NewIndexer(elastic), nil
+		Build: func(elastic *elastic_cache.Index, repo *address.Repository) (*address.Indexer, error) {
+			return address.NewIndexer(elastic, repo), nil
 		},
 	},
 	{
 		Name: "address.rewinder",
-		Build: func(elastic *elastic_cache.Index) (*address.Rewinder, error) {
-			return address.NewRewinder(elastic), nil
+		Build: func(elastic *elastic_cache.Index, repo *address.Repository) (*address.Rewinder, error) {
+			return address.NewRewinder(elastic, repo), nil
 		},
 	},
 	{

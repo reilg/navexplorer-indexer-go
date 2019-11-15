@@ -25,7 +25,7 @@ func NewRedis(addr string, password string, db int, reindexSize uint) *Redis {
 
 func (r *Redis) Start() (uint64, error) {
 	if !config.Get().Reindex {
-		return r.RewindBy(uint64(r.reindexSize))
+		return r.GetLastBlockIndexed()
 	}
 
 	err := r.SetLastBlock(0)

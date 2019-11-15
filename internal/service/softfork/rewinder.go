@@ -40,11 +40,15 @@ func (r *Rewinder) Rewind(height uint64) error {
 	end := uint64(r.blocksInCycle)
 
 	for {
-		if height == 0 || end >= height {
+		if height == 0 || start >= height {
 			break
+		}
+		if end >= height {
+			end = height
 		}
 
 		signals := r.signalRepo.GetSignals(start, end)
+		log.Infof("Indexing %d signals for heights from %d to %d", len(signals), start, end)
 
 		for _, s := range signals {
 			for _, sf := range s.SoftForks {

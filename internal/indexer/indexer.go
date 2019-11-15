@@ -38,7 +38,11 @@ func NewIndexer(
 	}
 }
 
-func (i *Indexer) Index(height uint64) error {
+func (i *Indexer) Index(height uint64, bulk bool) error {
+	return i.index(height)
+}
+
+func (i *Indexer) index(height uint64) error {
 	b, txs, err := i.blockIndexer.Index(height)
 	if err != nil {
 		return err
@@ -69,7 +73,7 @@ func (i *Indexer) Index(height uint64) error {
 		return err
 	}
 
-	i.elastic.PersistRequests(height)
+	i.elastic.PersistBulkRequests(height)
 
-	return i.Index(height + 1)
+	return i.index(height + 1)
 }

@@ -27,7 +27,7 @@ func (i *Indexer) Index(block *explorer.Block) {
 	i.updateState(block)
 
 	for _, softFork := range SoftForks {
-		i.elastic.AddUpdateRequest(elastic_cache.SoftForkIndex.Get(), softFork.Name, softFork, softFork.Id)
+		i.elastic.AddUpdateRequest(elastic_cache.SoftForkIndex.Get(), softFork.Name, softFork, softFork.MetaData.Id)
 	}
 
 }

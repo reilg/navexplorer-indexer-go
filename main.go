@@ -13,7 +13,7 @@ func main() {
 	log.Info("Launching Indexer")
 	lastBlock := setup()
 
-	if err := container.GetIndexer().Index(lastBlock + 1); err != nil {
+	if err := container.GetIndexer().Index(lastBlock+1, true); err != nil {
 		if err.Error() == "-8: Block height out of range" {
 			log.Info("Persist any pending requests")
 			container.GetElastic().Persist()
@@ -35,8 +35,14 @@ func setup() uint64 {
 		log.WithError(err).Fatal("Failed to start redis")
 	}
 
-	//height = 2621190
+	//height = 2000000
 	container.GetSoftforkService().LoadSoftForks()
+
+	if height < uint64(config.Get().BulkIndexSize) {
+		height = 0
+	} else {
+		height = height - uint64(config.Get().BulkIndexSize)
+	}
 
 	if err := container.GetRewinder().RewindToHeight(height); err != nil {
 		log.WithError(err).Fatal("Failed to rewind index")

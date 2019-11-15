@@ -58,5 +58,7 @@ func (r *Rewinder) RewindToHeight(height uint64) error {
 		return err
 	}
 
+	r.elastic.Persist()
+
 	return nil
 }

@@ -46,8 +46,4 @@ func (i *Service) LoadSoftForks() {
 			SoftForks = append(SoftForks, softFork)
 		}
 	}
-
-	for _, sf := range SoftForks {
-		log.WithFields(log.Fields{"Name": sf.Name, "id": sf.MetaData.Id}).Info("SoftFork")
-	}
 }

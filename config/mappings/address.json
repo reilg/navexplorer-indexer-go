@@ -1,21 +1,6 @@
 {
   "mappings": {
     "properties": {
-      "balance": {"type": "long"},
-      "blockIndex": {"type": "long"},
-      "coldStaked": {"type": "long"},
-      "coldStakedBalance": {
-        "type": "long"
-      },
-      "coldStakedCount": {
-        "type": "long"
-      },
-      "coldStakedReceived": {
-        "type": "long"
-      },
-      "coldStakedSent": {
-        "type": "long"
-      },
       "hash": {
         "type": "text",
         "fields": {
@@ -25,15 +10,8 @@
           }
         }
       },
-      "label": {
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword",
-            "ignore_above": 256
-          }
-        }
-      },
+      "height": {"type": "long"},
+      "balance": {"type": "long"},
       "received": {
         "type": "long"
       },
@@ -52,12 +30,28 @@
       "stakedCount": {
         "type": "long"
       },
-      "stakedReceived": {
+      "coldReceived": {
         "type": "long"
       },
-      "stakedSent": {
+      "coldReceivedCount": {
         "type": "long"
-      }
+      },
+      "coldSent": {
+        "type": "long"
+      },
+      "coldSentCount": {
+        "type": "long"
+      },
+      "coldStaked": {
+        "type": "long"
+      },
+      "coldStakedCount": {
+        "type": "long"
+      },
+      "coldBalance": {
+        "type": "long"
+      },
+      "position": {"type": "long"}
     }
   },
   "settings": {

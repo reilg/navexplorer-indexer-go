@@ -8,6 +8,7 @@ import (
 type Indices string
 
 var (
+	AddressIndex            Indices = "address"
 	AddressTransactionIndex Indices = "addresstransaction"
 	BlockIndex              Indices = "block"
 	BlockTransactionIndex   Indices = "blocktransaction"
@@ -26,6 +27,7 @@ func (i *Indices) Get() string {
 
 func All() []Indices {
 	return []Indices{
+		AddressIndex,
 		AddressTransactionIndex,
 		BlockIndex,
 		BlockTransactionIndex,

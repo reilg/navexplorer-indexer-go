@@ -21,8 +21,8 @@ func (r *Repository) GetSignals(start uint64, end uint64) []*explorer.Signal {
 
 	results, err := r.Client.Search(elastic_cache.SignalIndex.Get()).
 		Sort("height", true).
-		Query(elastic.NewRangeQuery("height").Gte(start).Lte(end)).
-		Size(int(end-start) + 1).
+		Query(elastic.NewRangeQuery("height").Gt(start).Lte(end)).
+		Size(int(end - start)).
 		Do(context.Background())
 
 	if err == nil && results != nil && results.Hits != nil {
