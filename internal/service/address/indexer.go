@@ -85,9 +85,3 @@ func (i *Indexer) createNewAddresses(hashes []string, addresses []*explorer.Addr
 
 	return addresses
 }
-
-func (i *Indexer) UpdateAddresses() error {
-	_, err := i.repo.GetAllAddresses()
-
-	return err
-}
