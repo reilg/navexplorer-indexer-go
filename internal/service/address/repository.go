@@ -7,7 +7,6 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	"github.com/olivere/elastic/v7"
-	log "github.com/sirupsen/logrus"
 	"strings"
 )
 
@@ -17,50 +16,6 @@ type Repository struct {
 
 func NewRepo(Client *elastic.Client) *Repository {
 	return &Repository{Client}
-}
-
-func (r *Repository) GetAllAddresses() ([]string, error) {
-	fsc := elastic.NewFetchSourceContext(true).Include("hash")
-	ss := elastic.NewSearchSource().FetchSourceContext(fsc)
-
-	results, err := r.Client.Search().
-		Index(elastic_cache.AddressTransactionIndex.Get()).
-		SearchSource(ss).
-		Size(50000000).
-		Do(context.Background())
-	if err != nil {
-		log.WithError(err).Fatal(err.Error())
-	}
-	log.Infof("TOTAL HITS: %d", results.Hits.TotalHits.Value)
-
-	addresses := make([]string, 0)
-	for _, hit := range results.Hits.Hits {
-		var address *explorer.Address
-		if err = json.Unmarshal(hit.Source, &address); err != nil {
-			return nil, err
-		}
-		addresses = append(addresses, address.Hash)
-	}
-
-	log.Fatalf("Address 1 %s", addresses[0])
-	log.Fatalf("Found %d addresses", len(addresses))
-
-	//results, err := r.Client.Search(elastic_cache.AddressTransactionIndex.Get()).
-	//	Query().
-	//	Aggregation("address", elastic.NewTermsAggregation().Field("hash.keyword")).
-	//	Size(0).
-	//	Do(context.Background())
-
-	//if err != nil {
-	//	log.WithError(err).Error("Failed to aggregate distinct addresses")
-	//}
-	//
-	//if agg, found := results.Aggregations.Terms("address"); found {
-	//	bucket := agg.Buckets[0]
-	//	log.Fatal("Number of addresses:", bucket.DocCount)
-	//}
-
-	return nil, nil
 }
 
 func (r *Repository) GetAddresses(hashes []string) ([]*explorer.Address, error) {

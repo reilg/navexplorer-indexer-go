@@ -14,3 +14,11 @@ var (
 	TransferCommunityFund       TransferType = "community_fund"
 	TransferCommunityFundPayout TransferType = "community_fund_payout"
 )
+
+func IsStake(tt TransferType) bool {
+	return tt == TransferStake || tt == TransferDelegateStake
+}
+
+func IsColdStake(tt TransferType) bool {
+	return tt == TransferColdStake || tt == TransferColdDelegateStake
+}

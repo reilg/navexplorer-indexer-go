@@ -48,8 +48,6 @@ func (r *Rewinder) Rewind(height uint64) error {
 		}
 
 		signals := r.signalRepo.GetSignals(start, end)
-		log.Infof("Indexing %d signals for heights from %d to %d", len(signals), start, end)
-
 		for _, s := range signals {
 			for _, sf := range s.SoftForks {
 				softFork := SoftForks.GetSoftFork(sf)

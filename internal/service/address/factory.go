@@ -17,7 +17,7 @@ func ResetAddress(address *explorer.Address) *explorer.Address {
 func ApplyTxToAddress(address *explorer.Address, tx *explorer.AddressTransaction) {
 	if tx.Cold == true {
 		address.ColdBalance = uint64(int64(address.ColdBalance) + tx.Total)
-		if tx.Type == explorer.TransferColdStake || tx.Type == explorer.TransferColdDelegateStake {
+		if explorer.IsColdStake(tx.Type) {
 			address.ColdStaked = uint64(int64(address.ColdStaked) + tx.Total)
 			address.ColdStakedCount++
 		} else if tx.Type == explorer.TransferSend {
@@ -29,7 +29,7 @@ func ApplyTxToAddress(address *explorer.Address, tx *explorer.AddressTransaction
 		}
 	} else {
 		address.Balance = uint64(int64(address.Balance) + tx.Total)
-		if tx.Type == explorer.TransferStake || tx.Type == explorer.TransferDelegateStake {
+		if explorer.IsStake(tx.Type) || explorer.IsColdStake(tx.Type) {
 			address.Staked = uint64(int64(address.Staked) + tx.Total)
 			address.StakedCount++
 		} else if tx.Type == explorer.TransferSend {
