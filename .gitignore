@@ -12,6 +12,7 @@
 *.out
 
 /.tmp
+/build
 /generated
 /vendor
 /.env
