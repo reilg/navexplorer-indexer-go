@@ -35,7 +35,6 @@ func setup() uint64 {
 		log.WithError(err).Fatal("Failed to start redis")
 	}
 
-	//height = 2000000
 	container.GetSoftforkService().LoadSoftForks()
 
 	if height < uint64(config.Get().BulkIndexSize) {
