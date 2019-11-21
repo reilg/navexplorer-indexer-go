@@ -18,6 +18,7 @@ type Config struct {
 	Navcoind           NavcoindConfig
 	ElasticSearch      ElasticSearchConfig
 	Redis              RedisConfig
+	ZeroMq             ZeroMqConfig
 }
 
 type StorageConfig struct {
@@ -46,6 +47,10 @@ type RedisConfig struct {
 	Host     string
 	Password string
 	Db       int
+}
+
+type ZeroMqConfig struct {
+	Address string
 }
 
 func Init() {
@@ -84,6 +89,9 @@ func Get() *Config {
 			Host:     getString("REDIS_HOST", ""),
 			Password: getString("REDIS_PASSWORD", ""),
 			Db:       getInt("REDIS_DB", 0),
+		},
+		ZeroMq: ZeroMqConfig{
+			Address: getString("ZEROMQ_ADDRESS", "tcp://navcoind:28332"),
 		},
 	}
 }

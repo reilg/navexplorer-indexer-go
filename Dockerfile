@@ -1,19 +1,23 @@
 FROM golang:alpine AS builder
 
-RUN apk update && apk add --no-cache git
+RUN apk update && apk add --no-cache git gcc g++ make libc-dev pkgconfig zeromq-dev curl libunwind-dev
 
 RUN adduser -D -u 1001 -g '' appuser
 WORKDIR $GOPATH/src/mypackage/myapp/
 COPY . .
 
+RUN go env CGO_ENABLED
 RUN go mod download
 RUN go mod verify
 
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -a -installsuffix cgo -o /go/bin/indexerd ./cmd/indexerd
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -a -installsuffix cgo -o /go/bin/indexer-cli ./cmd/indexer-cli
+RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/indexerd ./cmd/indexerd
+RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/indexer-cli ./cmd/indexer-cli
+
 RUN chmod u+x /go/bin/*
 
-FROM scratch
+FROM alpine:latest
+
+RUN apk update && apk add --no-cache zeromq
 
 WORKDIR /app
 
