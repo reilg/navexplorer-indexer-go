@@ -50,3 +50,14 @@ func (vins *Vins) GetAmountByAddress(address string, cold bool) (value float64, 
 
 	return
 }
+
+func (vins *Vins) FilterWithAddresses() Vins {
+	var filtered = make(Vins, 0)
+	for _, i := range *vins {
+		if len(i.Addresses) != 0 {
+			filtered = append(filtered, i)
+		}
+	}
+
+	return filtered
+}
