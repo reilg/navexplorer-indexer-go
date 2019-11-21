@@ -1,6 +1,18 @@
 {
   "mappings": {
     "properties": {
+      "version": {
+        "type": "long"
+      },
+      "hash": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
       "blockHash": {
         "type": "text",
         "fields": {
@@ -19,14 +31,8 @@
           }
         }
       },
-      "hash": {
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword",
-            "ignore_above": 256
-          }
-        }
+      "requestedAmount": {
+        "type": "long"
       },
       "paidOnBlock": {
         "type": "text",
@@ -46,8 +52,14 @@
           }
         }
       },
-      "requestedAmount": {
-        "type": "long"
+      "status": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
       },
       "state": {
         "type": "text",
@@ -67,26 +79,19 @@
           }
         }
       },
-      "status": {
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword",
-            "ignore_above": 256
+      "cycles": {
+        "type": "nested",
+        "properties": {
+          "votingCycle": {
+            "type": "long"
+          },
+          "votesYes": {
+            "type": "long"
+          },
+          "votesNo": {
+            "type": "long"
           }
         }
-      },
-      "version": {
-        "type": "long"
-      },
-      "votesNo": {
-        "type": "long"
-      },
-      "votesYes": {
-        "type": "long"
-      },
-      "votingCycle": {
-        "type": "long"
       }
     }
   },
