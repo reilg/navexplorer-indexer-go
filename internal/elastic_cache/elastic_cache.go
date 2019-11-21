@@ -127,7 +127,7 @@ func (i *Index) GetRequest(index string, name string, id string) *Request {
 	return nil
 }
 
-func (i *Index) PersistBulkRequests(height uint64) {
+func (i *Index) BatchPersist(height uint64) {
 	if height%uint64(i.bulkIndexSize) != 0 || len(i.requests) == 0 {
 		return
 	}

@@ -17,15 +17,17 @@ func NewIndexer(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, orphan
 	return &Indexer{navcoin, elastic, orphanService}
 }
 
-func (i *Indexer) Index(height uint64) (*explorer.Block, []*explorer.BlockTransaction, error) {
+func (i *Indexer) Index(height uint64, option int) (*explorer.Block, []*explorer.BlockTransaction, error) {
 	navBlock, err := i.getBlockAtHeight(height)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	block := CreateBlock(navBlock)
-	if orphan, err := i.orphanService.IsOrphanBlock(block); orphan == true || err != nil {
-		return nil, nil, ErrOrphanBlockFound
+	if option == 1 {
+		if orphan, err := i.orphanService.IsOrphanBlock(block); orphan == true || err != nil {
+			return nil, nil, ErrOrphanBlockFound
+		}
 	}
 
 	var txs = make([]*explorer.BlockTransaction, 0)
@@ -35,7 +37,7 @@ func (i *Indexer) Index(height uint64) (*explorer.Block, []*explorer.BlockTransa
 			log.WithFields(log.Fields{"hash": block.Hash, "txHash": txHash, "height": height}).WithError(err).Error("Failed to GetRawTransaction")
 			return nil, nil, err
 		}
-		tx := CreateBlockTransaction(rawTx.(navcoind.RawTransaction), block)
+		tx := CreateBlockTransaction(rawTx.(navcoind.RawTransaction))
 		i.indexPreviousTxData(tx, block)
 		applyType(tx)
 		applyStaking(tx, block)
@@ -64,7 +66,7 @@ func (i *Indexer) indexPreviousTxData(tx *explorer.BlockTransaction, block *expl
 			log.WithFields(log.Fields{"hash": *vin[vdx].Txid}).WithError(err).Fatal("Failed to get previous transaction")
 		}
 
-		prevTx := CreateBlockTransaction(rawTx.(navcoind.RawTransaction), block)
+		prevTx := CreateBlockTransaction(rawTx.(navcoind.RawTransaction))
 		if len(prevTx.Vout) <= *vin[vdx].Vout {
 			log.WithFields(log.Fields{"index": vdx, "tx": prevTx.Hash}).Fatal("Vout does not exist")
 		}
@@ -81,7 +83,9 @@ func (i *Indexer) indexPreviousTxData(tx *explorer.BlockTransaction, block *expl
 func (i *Indexer) getBlockAtHeight(height uint64) (*navcoind.Block, error) {
 	hash, err := i.navcoin.GetBlockHash(height)
 	if err != nil {
-		log.WithFields(log.Fields{"hash": hash, "height": height}).WithError(err).Error("Failed to GetBlockHash")
+		if err.Error() != "-8: Block height out of range" {
+			log.WithFields(log.Fields{"hash": hash, "height": height}).WithError(err).Error("Failed to GetBlockHash")
+		}
 		return nil, err
 	}
 

@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/NavExplorer/navexplorer-indexer-go/generated/dic"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer"
 	"github.com/sarulabs/dingo/v3"
 	log "github.com/sirupsen/logrus"
 )
@@ -10,10 +11,9 @@ import (
 var container *dic.Container
 
 func main() {
-	log.Info("Launching Indexer")
-	lastBlock := setup()
+	setup()
 
-	if err := container.GetIndexer().Index(lastBlock+1, true); err != nil {
+	if err := container.GetIndexer().Index(indexer.BatchIndex); err != nil {
 		if err.Error() == "-8: Block height out of range" {
 			log.Info("Persist any pending requests")
 			container.GetElastic().Persist()
@@ -21,9 +21,11 @@ func main() {
 			log.WithError(err).Fatal("Failed to index blocks")
 		}
 	}
+
+	container.GetSubscriber().Subscribe()
 }
 
-func setup() uint64 {
+func setup() {
 	config.Init()
 	container, _ = dic.NewContainer(dingo.App)
 	log.Info("Container init")
@@ -46,6 +48,4 @@ func setup() uint64 {
 	if err := container.GetRewinder().RewindToHeight(height); err != nil {
 		log.WithError(err).Fatal("Failed to rewind index")
 	}
-
-	return height
 }

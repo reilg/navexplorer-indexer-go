@@ -30,7 +30,7 @@ func CreateBlock(block *navcoind.Block) *explorer.Block {
 	}
 }
 
-func CreateBlockTransaction(navTx navcoind.RawTransaction, block *explorer.Block) *explorer.BlockTransaction {
+func CreateBlockTransaction(navTx navcoind.RawTransaction) *explorer.BlockTransaction {
 	tx := &explorer.BlockTransaction{
 		RawBlockTransaction: explorer.RawBlockTransaction{
 			Hex:             navTx.Hex,
@@ -118,7 +118,7 @@ func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
 			tx.Stake = 2 // hard coded to 2 as static rewards arrived after block_indexer 2761920
 			block.Stake += tx.Stake
 		} else {
-			tx.Stake = uint64(tx.Vout.GetAmount() - tx.Vin.GetAmount())
+			tx.Stake = tx.Vout.GetAmount() - tx.Vin.GetAmount()
 			block.Stake += tx.Stake
 		}
 	} else if tx.IsCoinbase() {
@@ -131,7 +131,10 @@ func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
 	}
 
 	voutsWithAddresses := tx.Vout.FilterWithAddresses()
-	if len(voutsWithAddresses) != 0 {
+	vinsWithAddresses := tx.Vin.FilterWithAddresses()
+	if len(vinsWithAddresses) != 0 {
+		block.StakedBy = vinsWithAddresses[0].Addresses[0]
+	} else if len(voutsWithAddresses) != 0 {
 		block.StakedBy = voutsWithAddresses[0].ScriptPubKey.Addresses[0]
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/softfork"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/softfork/signal"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/subscriber"
 	"github.com/sarulabs/dingo/v3"
 	log "github.com/sirupsen/logrus"
 )
@@ -55,6 +56,12 @@ var Definitions = []dingo.Def{
 		},
 	},
 	{
+		Name: "block.repo",
+		Build: func(elastic *elastic_cache.Index) (*block.Repository, error) {
+			return block.NewRepo(elastic.Client), nil
+		},
+	},
+	{
 		Name: "signal.repo",
 		Build: func(elastic *elastic_cache.Index) (*signal.Repository, error) {
 			return signal.NewRepo(elastic.Client), nil
@@ -75,8 +82,9 @@ var Definitions = []dingo.Def{
 			addressIndexer *address.Indexer,
 			softForkIndexer *softfork.Indexer,
 			daoIndexer *dao.Indexer,
+			rewinder *indexer.Rewinder,
 		) (*indexer.Indexer, error) {
-			return indexer.NewIndexer(redis, elastic, blockIndexer, addressIndexer, softForkIndexer, daoIndexer), nil
+			return indexer.NewIndexer(redis, elastic, blockIndexer, addressIndexer, softForkIndexer, daoIndexer, rewinder), nil
 		},
 	},
 	{
@@ -118,8 +126,8 @@ var Definitions = []dingo.Def{
 	},
 	{
 		Name: "block.orphan.service",
-		Build: func() (*block.OrphanService, error) {
-			return block.NewOrphanService(), nil
+		Build: func(navcoin *navcoind.Navcoind) (*block.OrphanService, error) {
+			return block.NewOrphanService(navcoin), nil
 		},
 	},
 	{
@@ -150,6 +158,12 @@ var Definitions = []dingo.Def{
 		Name: "dao.Rewinder",
 		Build: func(elastic *elastic_cache.Index) (*dao.Rewinder, error) {
 			return dao.NewRewinder(elastic), nil
+		},
+	},
+	{
+		Name: "subscriber",
+		Build: func(indexer *indexer.Indexer) (*subscriber.Subscriber, error) {
+			return subscriber.New(config.Get().ZeroMq.Address, indexer), nil
 		},
 	},
 }

@@ -18,7 +18,15 @@ type Indexer struct {
 	addressIndexer  *address.Indexer
 	softForkIndexer *softfork.Indexer
 	daoIndexer      *dao.Indexer
+	rewinder        *Rewinder
 }
+
+type IndexOption int
+
+var (
+	SingleIndex IndexOption = 1
+	BatchIndex  IndexOption = 2
+)
 
 func NewIndexer(
 	redis *redis.Redis,
@@ -27,6 +35,7 @@ func NewIndexer(
 	addressIndexer *address.Indexer,
 	softForkIndexer *softfork.Indexer,
 	daoIndexer *dao.Indexer,
+	rewinder *Rewinder,
 ) *Indexer {
 	return &Indexer{
 		redis,
@@ -35,15 +44,31 @@ func NewIndexer(
 		addressIndexer,
 		softForkIndexer,
 		daoIndexer,
+		rewinder,
 	}
 }
 
-func (i *Indexer) Index(height uint64, bulk bool) error {
-	return i.index(height)
+func (i *Indexer) Index(option IndexOption) error {
+	lastBlockIndexed, err := i.redis.GetLastBlockIndexed()
+	if err != nil {
+		log.WithError(err).Fatal("Indexer failed to get last block indexed from redis")
+	}
+
+	if err = i.index(lastBlockIndexed+1, option); err != block.ErrOrphanBlockFound {
+		// Unexpected indexing error
+		return err
+	}
+
+	if err = i.rewinder.RewindToHeight(lastBlockIndexed - 9); err != nil {
+		// Unable to rewind blocks
+		return err
+	}
+
+	return i.Index(option)
 }
 
-func (i *Indexer) index(height uint64) error {
-	b, txs, err := i.blockIndexer.Index(height)
+func (i *Indexer) index(height uint64, option IndexOption) error {
+	b, txs, err := i.blockIndexer.Index(height, int(option))
 	if err != nil {
 		return err
 	}
@@ -73,7 +98,12 @@ func (i *Indexer) index(height uint64) error {
 		return err
 	}
 
-	i.elastic.PersistBulkRequests(height)
+	if option == BatchIndex {
+		i.elastic.BatchPersist(height)
+	} else {
+		i.elastic.Persist()
+		log.Infof("Indexed height: %d", height)
+	}
 
-	return i.index(height + 1)
+	return i.index(height+1, option)
 }

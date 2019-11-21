@@ -2,14 +2,17 @@ package block
 
 import (
 	"errors"
+	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	log "github.com/sirupsen/logrus"
 )
 
 type OrphanService struct {
+	navcoin *navcoind.Navcoind
 }
 
-func NewOrphanService() *OrphanService {
-	return &OrphanService{}
+func NewOrphanService(navcoin *navcoind.Navcoind) *OrphanService {
+	return &OrphanService{navcoin}
 }
 
 var (
@@ -20,26 +23,16 @@ func (o *OrphanService) IsOrphanBlock(block *explorer.Block) (bool, error) {
 	if block.Height == 1 {
 		return false, nil
 	}
-	//
-	//previousBlockJson, err := i.elastic.Client.Get().
-	//	Index(elastic_cache.BlockTransactionIndex.Get()).
-	//	Id(block.Previousblockhash).
-	//	Do(context.Background())
-	//if err != nil {
-	//	return false, err
-	//}
-	//
-	//var previousBlock navcoind.Block
-	//if err := json.Unmarshal(previousBlockJson.Source, &previousBlock); err != nil {
-	//	return false, err
-	//}
-	//
-	//orphan := previousBlock.Hash != block.Previousblockhash
-	//if orphan == true {
-	//	log.Printf("INFO: Orphan block_indexer found: %s", block.Hash)
-	//}
-	//
-	//return orphan, nil
 
-	return false, nil
+	previousBlockHash, err := o.navcoin.GetBlockHash(block.Height - 1)
+	if err != nil {
+		log.WithError(err).Fatal("OrphanService: Failed to get previous block hash")
+	}
+
+	orphan := previousBlockHash != block.Previousblockhash
+	if orphan == true {
+		log.WithFields(log.Fields{"height": block.Height, "hash": block.Hash}).Info("Orphan block found")
+	}
+
+	return orphan, nil
 }
