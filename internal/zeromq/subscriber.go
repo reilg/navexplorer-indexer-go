@@ -1,4 +1,4 @@
-package subscriber
+package zeromq
 
 import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer"

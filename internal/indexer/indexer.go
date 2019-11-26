@@ -48,6 +48,16 @@ func NewIndexer(
 	}
 }
 
+func (i *Indexer) BulkIndex() {
+	if err := i.Index(BatchIndex); err != nil {
+		if err.Error() == "-8: Block height out of range" {
+			i.elastic.Persist()
+		} else {
+			log.WithError(err).Fatal("Failed to index blocks")
+		}
+	}
+}
+
 func (i *Indexer) Index(option IndexOption) error {
 	lastBlockIndexed, err := i.redis.GetLastBlockIndexed()
 	if err != nil {

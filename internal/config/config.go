@@ -21,10 +21,6 @@ type Config struct {
 	ZeroMq             ZeroMqConfig
 }
 
-type StorageConfig struct {
-	Path string
-}
-
 type NavcoindConfig struct {
 	Host     string
 	Port     int

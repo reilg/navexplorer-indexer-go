@@ -11,7 +11,7 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/softfork"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/softfork/signal"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/subscriber"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/zeromq"
 	"github.com/sarulabs/dingo/v3"
 	log "github.com/sirupsen/logrus"
 )
@@ -53,12 +53,6 @@ var Definitions = []dingo.Def{
 		Name: "address.repo",
 		Build: func(elastic *elastic_cache.Index) (*address.Repository, error) {
 			return address.NewRepo(elastic.Client), nil
-		},
-	},
-	{
-		Name: "block.repo",
-		Build: func(elastic *elastic_cache.Index) (*block.Repository, error) {
-			return block.NewRepo(elastic.Client), nil
 		},
 	},
 	{
@@ -162,8 +156,8 @@ var Definitions = []dingo.Def{
 	},
 	{
 		Name: "subscriber",
-		Build: func(indexer *indexer.Indexer) (*subscriber.Subscriber, error) {
-			return subscriber.New(config.Get().ZeroMq.Address, indexer), nil
+		Build: func(indexer *indexer.Indexer) (*zeromq.Subscriber, error) {
+			return zeromq.New(config.Get().ZeroMq.Address, indexer), nil
 		},
 	},
 }
