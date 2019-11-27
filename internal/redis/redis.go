@@ -2,6 +2,7 @@ package redis
 
 import (
 	"errors"
+	"fmt"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/go-redis/redis"
 	log "github.com/sirupsen/logrus"
@@ -10,6 +11,7 @@ import (
 
 type Redis struct {
 	client      *redis.Client
+	network     string
 	reindexSize uint
 }
 
@@ -18,9 +20,9 @@ var (
 	ErrLastBlockIndexedWrite = errors.New("Failed to write last block indexed")
 )
 
-func NewRedis(addr string, password string, db int, reindexSize uint) *Redis {
+func NewRedis(addr string, password string, db int, network string, reindexSize uint) *Redis {
 	client := redis.NewClient(&redis.Options{Addr: addr, Password: password, DB: db})
-	return &Redis{client, reindexSize}
+	return &Redis{client, network, reindexSize}
 }
 
 func (r *Redis) Start() (uint64, error) {
@@ -35,10 +37,10 @@ func (r *Redis) Start() (uint64, error) {
 }
 
 func (r *Redis) GetLastBlockIndexed() (uint64, error) {
-	lastBlock, err := r.client.Get("last_block_indexed").Result()
+	lastBlock, err := r.client.Get(fmt.Sprintf("%s/last_block", r.network)).Result()
 	if err != nil {
 		if err == redis.Nil {
-			log.Info("INFO: Last block_indexer not found")
+			log.Info("INFO: Last block not found")
 			return 0, nil
 		} else {
 			log.WithError(err).Error(ErrLastBlockIndexedRead.Error())
@@ -55,7 +57,7 @@ func (r *Redis) GetLastBlockIndexed() (uint64, error) {
 }
 
 func (r *Redis) SetLastBlock(height uint64) error {
-	if err := r.client.Set("last_block_indexed", height, 0).Err(); err != nil {
+	if err := r.client.Set(fmt.Sprintf("%s/last_block", r.network), height, 0).Err(); err != nil {
 		log.WithError(err).Error(ErrLastBlockIndexedWrite.Error())
 		return ErrLastBlockIndexedWrite
 	}

@@ -35,6 +35,7 @@ var Definitions = []dingo.Def{
 				config.Get().Redis.Host,
 				config.Get().Redis.Password,
 				config.Get().Redis.Db,
+				config.Get().Network,
 				config.Get().ReindexSize), nil
 		},
 	},
