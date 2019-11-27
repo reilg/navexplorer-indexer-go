@@ -89,7 +89,7 @@ func createTransaction(address string, tx *explorer.BlockTransaction) *explorer.
 			addressTransaction.Type = explorer.TransferDelegateStake
 		}
 	} else if tx.IsCoinbase() {
-		if tx.Version == 1 {
+		if tx.Version == 1 || tx.Stake != 0 {
 			// POW block_indexer
 			addressTransaction.Type = explorer.TransferStake
 		} else if tx.Version == 3 {

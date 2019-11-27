@@ -123,7 +123,7 @@ func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
 		}
 	} else if tx.IsCoinbase() {
 		for _, o := range tx.Vout {
-			if o.ScriptPubKey.Type == explorer.VoutPubkeyhash {
+			if o.ScriptPubKey.Type == explorer.VoutPubkey {
 				tx.Stake = o.ValueSat
 				block.Stake = o.ValueSat
 			}
