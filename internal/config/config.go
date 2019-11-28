@@ -19,6 +19,7 @@ type Config struct {
 	ElasticSearch      ElasticSearchConfig
 	Redis              RedisConfig
 	ZeroMq             ZeroMqConfig
+	DaoCfundConsensus  DaoCfundConsensusConfig
 }
 
 type NavcoindConfig struct {
@@ -47,6 +48,17 @@ type RedisConfig struct {
 
 type ZeroMqConfig struct {
 	Address string
+}
+
+type DaoCfundConsensusConfig struct {
+	BlocksPerVotingCycle                uint
+	MinSumVotesPerVotingCycle           uint
+	MaxCountVotingCycleProposals        uint
+	MaxCountVotingCyclePaymentRequests  uint
+	VotesAcceptProposalPercentage       uint
+	VotesRejectProposalPercentage       uint
+	VotesAcceptPaymentRequestPercentage uint
+	VotesRejectPaymentRequestPercentage uint
 }
 
 func Init() {
@@ -88,6 +100,16 @@ func Get() *Config {
 		},
 		ZeroMq: ZeroMqConfig{
 			Address: getString("ZEROMQ_ADDRESS", "tcp://navcoind:28332"),
+		},
+		DaoCfundConsensus: DaoCfundConsensusConfig{
+			BlocksPerVotingCycle:                getUint("CFUND_BLOCKS_PER_VOTING_CYCLE", 20160),
+			MinSumVotesPerVotingCycle:           getUint("CFUND_MIN_SUM_VOTES_PER_VOTING_CYCLE", 10080),
+			MaxCountVotingCycleProposals:        getUint("CFUND_MAX_COUNT_VOTING_CYCLE_PROPOSALS", 6),
+			MaxCountVotingCyclePaymentRequests:  getUint("CFUND_MAX_COUNT_VOTING_CYCLE_PAYMENT_REQUESTS", 8),
+			VotesAcceptProposalPercentage:       getUint("CFUND_VOTES_ACCEPT_PROPOSAL_PERCENTAGE", 70),
+			VotesRejectProposalPercentage:       getUint("CFUND_VOTES_REJECT_PROPOSAL_PERCENTAGE", 70),
+			VotesAcceptPaymentRequestPercentage: getUint("CFUND_VOTES_ACCEPT_PAYMENT_REQUEST_PERCENTAGE", 70),
+			VotesRejectPaymentRequestPercentage: getUint("CFUND_VOTES_REJECT_PAYMENT_REQUEST_PERCENTAGE", 70),
 		},
 	}
 }
