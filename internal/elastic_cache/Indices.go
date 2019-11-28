@@ -13,9 +13,8 @@ var (
 	BlockIndex              Indices = "block"
 	BlockTransactionIndex   Indices = "blocktransaction"
 	ProposalIndex           Indices = "proposal"
-	ProposalVoteIndex       Indices = "proposalvote"
+	DaoVoteIndex            Indices = "daovote"
 	PaymentRequestIndex     Indices = "paymentrequest"
-	PaymentRequestVoteIndex Indices = "paymentrequestvote"
 	SignalIndex             Indices = "signal"
 	SoftForkIndex           Indices = "softfork"
 )
@@ -32,9 +31,8 @@ func All() []Indices {
 		BlockIndex,
 		BlockTransactionIndex,
 		ProposalIndex,
-		ProposalVoteIndex,
 		PaymentRequestIndex,
-		PaymentRequestVoteIndex,
+		DaoVoteIndex,
 		SignalIndex,
 		SoftForkIndex,
 	}

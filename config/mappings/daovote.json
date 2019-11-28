@@ -16,6 +16,15 @@
       "votes": {
         "type": "nested",
         "properties": {
+          "type": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
           "hash": {
             "type": "text",
             "fields": {

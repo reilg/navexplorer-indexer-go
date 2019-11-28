@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/payment_request"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/proposal"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 )
 
@@ -24,8 +22,7 @@ func (i *Indexer) Index(block *explorer.Block, txs []*explorer.BlockTransaction)
 
 	for _, tx := range txs {
 		if tx.IsCoinbase() {
-			i.indexProposalVotes(block, tx)
-			i.indexPaymentRequestVotes(block, tx)
+			i.indexVotes(block, tx)
 		}
 	}
 }
@@ -37,20 +34,8 @@ func (i *Indexer) indexProposals(txs []*explorer.BlockTransaction) {
 		}
 
 		if navP, err := i.navcoin.GetProposal(tx.Hash); err == nil {
-			p := proposal.CreateProposal(navP, tx.Height)
+			p := CreateProposal(navP, tx.Height)
 			i.elastic.AddIndexRequest(elastic_cache.ProposalIndex.Get(), p.Hash, p)
-		}
-	}
-}
-
-func (i *Indexer) indexProposalVotes(block *explorer.Block, coinbase *explorer.BlockTransaction) {
-	if vote := proposal.CreateProposalVotes(block, coinbase); vote != nil {
-		if len(vote.Votes) > 0 {
-			i.elastic.AddIndexRequest(
-				elastic_cache.ProposalVoteIndex.Get(),
-				fmt.Sprintf("%d-%s", vote.Height, vote.Address),
-				vote,
-			)
 		}
 	}
 }
@@ -62,17 +47,17 @@ func (i *Indexer) indexPaymentRequests(txs []*explorer.BlockTransaction) {
 		}
 
 		if navP, err := i.navcoin.GetPaymentRequest(tx.Hash); err == nil {
-			p := payment_request.CreatePaymentRequest(navP, tx.Height)
+			p := CreatePaymentRequest(navP, tx.Height)
 			i.elastic.AddIndexRequest(elastic_cache.PaymentRequestIndex.Get(), p.Hash, p)
 		}
 	}
 }
 
-func (i *Indexer) indexPaymentRequestVotes(block *explorer.Block, coinbase *explorer.BlockTransaction) {
-	if vote := payment_request.CreatePaymentRequestVotes(block, coinbase); vote != nil {
+func (i *Indexer) indexVotes(block *explorer.Block, coinbase *explorer.BlockTransaction) {
+	if vote := CreateVotes(block, coinbase); vote != nil {
 		if len(vote.Votes) > 0 {
 			i.elastic.AddIndexRequest(
-				elastic_cache.PaymentRequestVoteIndex.Get(),
+				elastic_cache.DaoVoteIndex.Get(),
 				fmt.Sprintf("%d-%s", vote.Height, vote.Address),
 				vote,
 			)
