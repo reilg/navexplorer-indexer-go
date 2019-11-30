@@ -18,12 +18,12 @@ func New(address string, indexer *indexer.Indexer) *Subscriber {
 func (s *Subscriber) Subscribe() {
 	subscriber, err := zmq.NewSocket(zmq.SUB)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to connect to 0MQ")
+		log.WithError(err).Fatal("Failed to open new 0MQ socket")
 	}
 	defer subscriber.Close()
 
 	if err := subscriber.Connect(s.address); err != nil {
-		log.WithError(err).Fatal("Failed to connect to 0MQ")
+		log.WithError(err).Fatalf("Failed to connect to %s", s.address)
 	}
 	if err := subscriber.SetSubscribe("hashblock"); err != nil {
 		log.WithError(err).Fatal("Failed to subscribe to 0MQ")
