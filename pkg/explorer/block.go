@@ -1,6 +1,8 @@
 package explorer
 
-import "math"
+import (
+	"math"
+)
 
 type RawBlock struct {
 	MetaData MetaData `json:"-"`
@@ -43,13 +45,13 @@ type BlockCycle struct {
 	Quorum uint
 }
 
-func (b *Block) BlockCycle(size uint) BlockCycle {
+func (b *Block) BlockCycle(size uint, quorum uint) BlockCycle {
 	cycle := GetCycleForHeight(b.Height, size)
 
 	return BlockCycle{
 		Cycle:  cycle,
 		Index:  GetCycleIndex(b.Height, cycle, size),
-		Quorum: GetQuorum(size),
+		Quorum: GetQuorum(size, quorum),
 	}
 }
 
@@ -58,9 +60,10 @@ func GetCycleForHeight(height uint64, size uint) uint {
 }
 
 func GetCycleIndex(height uint64, cycle uint, size uint) uint {
-	return uint(height) - (cycle * size) - size
+	base := (cycle * size) - size
+	return uint(height) - base
 }
 
-func GetQuorum(size uint) uint {
-	return uint(float64(size) * 0.75)
+func GetQuorum(size uint, quorum uint) uint {
+	return uint((float64(quorum) / 100) * float64(size))
 }

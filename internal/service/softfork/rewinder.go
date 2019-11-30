@@ -14,10 +14,11 @@ type Rewinder struct {
 	elastic       *elastic_cache.Index
 	signalRepo    *signal.Repository
 	blocksInCycle uint
+	quorum        uint
 }
 
-func NewRewinder(elastic *elastic_cache.Index, signalRepo *signal.Repository, blocksInCycle uint) *Rewinder {
-	return &Rewinder{elastic, signalRepo, blocksInCycle}
+func NewRewinder(elastic *elastic_cache.Index, signalRepo *signal.Repository, blocksInCycle uint, quorum uint) *Rewinder {
+	return &Rewinder{elastic, signalRepo, blocksInCycle, quorum}
 }
 
 func (r *Rewinder) Rewind(height uint64) error {
@@ -67,7 +68,7 @@ func (r *Rewinder) Rewind(height uint64) error {
 		}
 
 		for _, s := range SoftForks {
-			if s.State == explorer.SoftForkStarted && s.LatestCycle().BlocksSignalling >= explorer.GetQuorum(r.blocksInCycle) {
+			if s.State == explorer.SoftForkStarted && s.LatestCycle().BlocksSignalling >= explorer.GetQuorum(r.blocksInCycle, r.quorum) {
 				s.State = explorer.SoftForkLockedIn
 				s.LockedInHeight = end
 				s.ActivationHeight = end + uint64(r.blocksInCycle)

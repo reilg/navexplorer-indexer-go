@@ -15,6 +15,7 @@ type Config struct {
 	ReindexSize        uint
 	BulkIndexSize      uint
 	SoftForkBlockCycle uint
+	SoftForkQuorum     uint
 	Navcoind           NavcoindConfig
 	ElasticSearch      ElasticSearchConfig
 	Redis              RedisConfig
@@ -52,7 +53,7 @@ type ZeroMqConfig struct {
 
 type DaoCfundConsensusConfig struct {
 	BlocksPerVotingCycle                uint
-	MinSumVotesPerVotingCycle           uint
+	Quorum                              uint
 	MaxCountVotingCycleProposals        uint
 	MaxCountVotingCyclePaymentRequests  uint
 	VotesAcceptProposalPercentage       uint
@@ -72,7 +73,8 @@ func Init() {
 func Get() *Config {
 	return &Config{
 		Network:            getString("NAVCOIND_NETWORK", "mainnet"),
-		SoftForkBlockCycle: getUint("BLOCKCYCLE_SOFTFORK", 20160),
+		SoftForkBlockCycle: getUint("SOFTFORK_BLOCKCYCLE", 20160),
+		SoftForkQuorum:     getUint("SOFTFORK_QUORUM", 75),
 		Debug:              getBool("DEBUG", false),
 		Reindex:            getBool("REINDEX", false),
 		ReindexSize:        getUint("REINDEX_SIZE", 200),
@@ -103,7 +105,7 @@ func Get() *Config {
 		},
 		DaoCfundConsensus: DaoCfundConsensusConfig{
 			BlocksPerVotingCycle:                getUint("CFUND_BLOCKS_PER_VOTING_CYCLE", 20160),
-			MinSumVotesPerVotingCycle:           getUint("CFUND_MIN_SUM_VOTES_PER_VOTING_CYCLE", 10080),
+			Quorum:                              getUint("CFUND_QUORUM", 50),
 			MaxCountVotingCycleProposals:        getUint("CFUND_MAX_COUNT_VOTING_CYCLE_PROPOSALS", 6),
 			MaxCountVotingCyclePaymentRequests:  getUint("CFUND_MAX_COUNT_VOTING_CYCLE_PAYMENT_REQUESTS", 8),
 			VotesAcceptProposalPercentage:       getUint("CFUND_VOTES_ACCEPT_PROPOSAL_PERCENTAGE", 70),
