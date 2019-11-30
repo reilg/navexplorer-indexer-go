@@ -15,6 +15,7 @@ func CreateProposal(proposal navcoind.Proposal, height uint64) *explorer.Proposa
 		Description:         proposal.Description,
 		RequestedAmount:     convertStringToFloat(proposal.RequestedAmount),
 		NotPaidYet:          convertStringToFloat(proposal.RequestedAmount),
+		NotRequestedYet:     convertStringToFloat(proposal.RequestedAmount),
 		UserPaidFee:         convertStringToFloat(proposal.UserPaidFee),
 		PaymentAddress:      proposal.PaymentAddress,
 		ProposalDuration:    proposal.ProposalDuration,
@@ -47,17 +48,22 @@ func CreateVotes(block *explorer.Block, tx *explorer.BlockTransaction) *explorer
 
 	daoVote := &explorer.DaoVote{Height: tx.Height, Address: block.StakedBy}
 	for _, vout := range tx.Vout {
-		if vout.IsProposalVote() || !vout.IsPaymentRequestVote() {
-			vote := explorer.Vote{Hash: vout.ScriptPubKey.Hash, Vote: persuasion(vout.ScriptPubKey.Type)}
-			if vout.IsProposalVote() {
-				vote.Type = explorer.ProposalVote
-			}
-			if vout.IsPaymentRequestVote() {
-				vote.Type = explorer.PaymentRequestVote
-			}
-
-			daoVote.Votes = append(daoVote.Votes, vote)
+		if !vout.IsProposalVote() && !vout.IsPaymentRequestVote() {
+			continue
 		}
+		vote := explorer.Vote{Hash: vout.ScriptPubKey.Hash, Vote: persuasion(vout.ScriptPubKey.Type)}
+		if vout.IsProposalVote() {
+			vote.Type = explorer.ProposalVote
+		}
+		if vout.IsPaymentRequestVote() {
+			vote.Type = explorer.PaymentRequestVote
+		}
+
+		daoVote.Votes = append(daoVote.Votes, vote)
+	}
+
+	if len(daoVote.Votes) == 0 {
+		return nil
 	}
 
 	return daoVote
@@ -67,12 +73,13 @@ func persuasion(voutType explorer.VoutType) int {
 	switch voutType {
 
 	case explorer.VoutProposalYesVote:
+		return 1
 	case explorer.VoutPaymentRequestYesVote:
 		return 1
-
 	case explorer.VoutProposalNoVote:
+		return -1
 	case explorer.VoutPaymentRequestNoVote:
-		return 1
+		return -1
 	}
 
 	return 0
