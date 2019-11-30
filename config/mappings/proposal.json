@@ -37,6 +37,9 @@
       "notPaidYet": {
         "type": "long"
       },
+      "notRequestedYet": {
+        "type": "long"
+      },
       "userPaidFee": {
         "type": "long"
       },

@@ -9,6 +9,7 @@ type Proposal struct {
 	Description         string  `json:"description"`
 	RequestedAmount     float64 `json:"requestedAmount"`
 	NotPaidYet          float64 `json:"notPaidYet"`
+	NotRequestedYet     float64 `json:"notRequestedYet"`
 	UserPaidFee         float64 `json:"userPaidFee"`
 	PaymentAddress      string  `json:"paymentAddress"`
 	ProposalDuration    uint64  `json:"proposalDuration"`
