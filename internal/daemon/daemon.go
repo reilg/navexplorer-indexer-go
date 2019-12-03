@@ -17,11 +17,16 @@ func Execute() {
 	container.GetElastic().InstallMappings()
 	container.GetSoftforkService().LoadSoftForks()
 
+	container.GetDaoProposalService().LoadVotingProposals()
+
 	if err := container.GetRewinder().RewindToHeight(getHeight()); err != nil {
 		log.WithError(err).Fatal("Failed to rewind index")
 	}
 
+	// Bulk index the backlog
 	container.GetIndexer().BulkIndex()
+
+	// Subscribe to 0MQ
 	container.GetSubscriber().Subscribe()
 }
 
