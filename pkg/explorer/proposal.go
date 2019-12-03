@@ -23,10 +23,32 @@ type Proposal struct {
 	Cycles CfundCycles `json:"cycles"`
 }
 
+func (p *Proposal) LatestCycle() *CfundCycle {
+	if len(p.Cycles) == 0 {
+		return nil
+	}
+
+	return &(p.Cycles)[len(p.Cycles)-1]
+}
+
 type CfundCycles []CfundCycle
 
 type CfundCycle struct {
 	VotingCycle uint `json:"votingCycle"`
 	VotesYes    uint `json:"votesYes"`
 	VotesNo     uint `json:"votesNo"`
+}
+
+func (cfc *CfundCycle) Votes() uint {
+	return cfc.VotesYes + cfc.VotesNo
+}
+
+func (p *Proposal) GetCycle(cycle uint) *CfundCycle {
+	for i, c := range p.Cycles {
+		if c.VotingCycle == cycle {
+			return &p.Cycles[i]
+		}
+	}
+
+	return nil
 }

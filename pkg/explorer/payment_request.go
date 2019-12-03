@@ -17,3 +17,13 @@ type PaymentRequest struct {
 	Height uint64      `json:"height"`
 	Cycles CfundCycles `json:"cycles"`
 }
+
+func (p *PaymentRequest) GetCycle(cycle uint) *CfundCycle {
+	for i, c := range p.Cycles {
+		if c.VotingCycle == cycle {
+			return &p.Cycles[i]
+		}
+	}
+
+	return nil
+}
