@@ -9,6 +9,9 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/address"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/block"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/payment_request"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/proposal"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/vote"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/softfork"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/softfork/signal"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/zeromq"
@@ -145,12 +148,40 @@ var Definitions = []dingo.Def{
 	},
 	{
 		Name: "dao.Indexer",
-		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index) (*dao.Indexer, error) {
+		Build: func(proposalIndexer *proposal.Indexer, paymentRequestIndexer *payment_request.Indexer, voteIndexer *vote.Indexer) (*dao.Indexer, error) {
 			return dao.NewIndexer(
-				navcoin,
-				elastic,
+				proposalIndexer,
+				paymentRequestIndexer,
+				voteIndexer,
 				config.Get().DaoCfundConsensus.BlocksPerVotingCycle,
 				config.Get().DaoCfundConsensus.Quorum,
+			), nil
+		},
+	},
+	{
+		Name: "dao.proposal.Indexer",
+		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index) (*proposal.Indexer, error) {
+			return proposal.NewIndexer(
+				navcoin,
+				elastic,
+				config.Get().DaoCfundConsensus.MaxCountVotingCycleProposals,
+			), nil
+		},
+	},
+	{
+		Name: "dao.payment_request.Indexer",
+		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index) (*payment_request.Indexer, error) {
+			return payment_request.NewIndexer(
+				navcoin,
+				elastic,
+			), nil
+		},
+	},
+	{
+		Name: "dao.vote.Indexer",
+		Build: func(elastic *elastic_cache.Index) (*vote.Indexer, error) {
+			return vote.NewIndexer(
+				elastic,
 			), nil
 		},
 	},
@@ -158,6 +189,30 @@ var Definitions = []dingo.Def{
 		Name: "dao.Rewinder",
 		Build: func(elastic *elastic_cache.Index) (*dao.Rewinder, error) {
 			return dao.NewRewinder(elastic), nil
+		},
+	},
+	{
+		Name: "dao.proposal.Service",
+		Build: func(repo *proposal.Repository) (*proposal.Service, error) {
+			return proposal.NewService(repo), nil
+		},
+	},
+	{
+		Name: "dao.payment_request.Service",
+		Build: func(repo *payment_request.Repository) (*payment_request.Service, error) {
+			return payment_request.NewService(repo), nil
+		},
+	},
+	{
+		Name: "dao.payment_request.repo",
+		Build: func(elastic *elastic_cache.Index) (*payment_request.Repository, error) {
+			return payment_request.NewRepo(elastic.Client), nil
+		},
+	},
+	{
+		Name: "dao.proposal.repo",
+		Build: func(elastic *elastic_cache.Index) (*proposal.Repository, error) {
+			return proposal.NewRepo(elastic.Client), nil
 		},
 	},
 	{

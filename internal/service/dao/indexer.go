@@ -1,72 +1,63 @@
 package dao
 
 import (
-	"fmt"
-	"github.com/NavExplorer/navcoind-go"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/payment_request"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/proposal"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/vote"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	log "github.com/sirupsen/logrus"
 )
 
 type Indexer struct {
-	navcoin       *navcoind.Navcoind
-	elastic       *elastic_cache.Index
-	blocksInCycle uint
-	quorum        uint
+	proposalIndexer       *proposal.Indexer
+	paymentRequestIndexer *payment_request.Indexer
+	voteIndexer           *vote.Indexer
+	blocksInCycle         uint
+	quorum                uint
 }
 
-func NewIndexer(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, blocksInCycle uint, quorum uint) *Indexer {
-	return &Indexer{navcoin, elastic, blocksInCycle, quorum}
+func NewIndexer(
+	proposalIndexer *proposal.Indexer,
+	paymentRequestIndexer *payment_request.Indexer,
+	voteIndexer *vote.Indexer,
+	blocksInCycle uint,
+	quorum uint,
+) *Indexer {
+	return &Indexer{
+		proposalIndexer,
+		paymentRequestIndexer,
+		voteIndexer,
+		blocksInCycle,
+		quorum,
+	}
 }
 
 func (i *Indexer) Index(block *explorer.Block, txs []*explorer.BlockTransaction) {
-	i.indexProposals(txs)
-	i.indexPaymentRequests(txs)
+	i.proposalIndexer.Index(txs)
+	i.paymentRequestIndexer.Index(txs)
 
-	for _, tx := range txs {
-		if tx.IsCoinbase() {
-			i.indexDaoVote(block, tx)
-		}
+	blockCycle := block.BlockCycle(i.blocksInCycle, i.quorum)
+	i.voteIndexer.InitCycles(blockCycle)
+
+	if daoVote := i.voteIndexer.IndexVotes(txs, block); daoVote != nil {
+		i.applyVotes(daoVote, blockCycle)
+	}
+
+	if blockCycle.Index == blockCycle.Size {
+		log.WithFields(log.Fields{"Quorum": blockCycle.Quorum}).Info("Dao - End of voting cycle")
+		i.proposalIndexer.UpdateState(blockCycle)
 	}
 }
 
-func (i *Indexer) indexProposals(txs []*explorer.BlockTransaction) {
-	for _, tx := range txs {
-		if !tx.IsSpend() && tx.Version != 4 {
-			continue
+func (i *Indexer) applyVotes(daoVote *explorer.DaoVote, blockCycle explorer.BlockCycle) {
+	for _, v := range daoVote.Votes {
+		if v.Type == explorer.ProposalVote {
+			i.proposalIndexer.ApplyVote(v, blockCycle)
 		}
 
-		if navP, err := i.navcoin.GetProposal(tx.Hash); err == nil {
-			p := CreateProposal(navP, tx.Height)
-			log.Infof("Index Proposal: %s", p.Hash)
-			i.elastic.AddIndexRequest(elastic_cache.ProposalIndex.Get(), p.Hash, p)
-		}
-	}
-}
+		if v.Type == explorer.PaymentRequestVote {
+			i.paymentRequestIndexer.ApplyVote(v, blockCycle)
 
-func (i *Indexer) indexPaymentRequests(txs []*explorer.BlockTransaction) {
-	for _, tx := range txs {
-		if tx.Version != 5 {
-			continue
-		}
-
-		if navP, err := i.navcoin.GetPaymentRequest(tx.Hash); err == nil {
-			p := CreatePaymentRequest(navP, tx.Height)
-			log.Infof("Index PaymentRequest: %s", p.Hash)
-			i.elastic.AddIndexRequest(elastic_cache.PaymentRequestIndex.Get(), p.Hash, p)
 		}
 	}
-}
-
-func (i *Indexer) indexDaoVote(block *explorer.Block, coinbase *explorer.BlockTransaction) *explorer.DaoVote {
-	if vote := CreateVotes(block, coinbase); vote != nil {
-		i.elastic.AddIndexRequest(
-			elastic_cache.DaoVoteIndex.Get(),
-			fmt.Sprintf("%d-%s", vote.Height, vote.Address),
-			vote,
-		)
-		return vote
-	}
-
-	return nil
 }
