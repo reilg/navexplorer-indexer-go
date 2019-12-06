@@ -16,7 +16,7 @@ import (
 
 type Index struct {
 	Client        *elastic.Client
-	requests      []Request
+	requests      []*Request
 	bulkIndexSize uint
 }
 
@@ -66,7 +66,7 @@ func New() (*Index, error) {
 
 	return &Index{
 		Client:        client,
-		requests:      make([]Request, 0),
+		requests:      make([]*Request, 0),
 		bulkIndexSize: config.Get().BulkIndexSize,
 	}, err
 }
@@ -107,7 +107,7 @@ func (i *Index) AddRequest(index string, name string, doc interface{}, reqType R
 	if request := i.GetRequest(index, name, id); request != nil {
 		request.Doc = doc
 	} else {
-		i.requests = append(i.requests, Request{
+		i.requests = append(i.requests, &Request{
 			Index: index,
 			Name:  name,
 			Doc:   doc,
@@ -118,9 +118,9 @@ func (i *Index) AddRequest(index string, name string, doc interface{}, reqType R
 }
 
 func (i *Index) GetRequest(index string, name string, id string) *Request {
-	for idx, r := range i.requests {
+	for _, r := range i.requests {
 		if r.Index == index && r.Name == name && r.Id == id {
-			return &i.requests[idx]
+			return r
 		}
 	}
 
@@ -153,7 +153,7 @@ func (i *Index) Persist() int {
 		}
 	}
 
-	i.requests = make([]Request, 0)
+	i.requests = make([]*Request, 0)
 
 	return actions
 }
