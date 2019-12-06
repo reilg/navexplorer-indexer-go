@@ -12,6 +12,7 @@ func CreatePaymentRequest(paymentRequest navcoind.PaymentRequest, height uint64)
 		Version:             paymentRequest.Version,
 		Hash:                paymentRequest.Hash,
 		BlockHash:           paymentRequest.BlockHash,
+		ProposalHash:        paymentRequest.ProposalHash,
 		Description:         paymentRequest.Description,
 		RequestedAmount:     convertStringToFloat(paymentRequest.RequestedAmount),
 		Status:              "pending",

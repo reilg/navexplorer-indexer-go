@@ -6,6 +6,7 @@ type PaymentRequest struct {
 	Version             uint32  `json:"version"`
 	Hash                string  `json:"hash"`
 	BlockHash           string  `json:"blockHash"`
+	ProposalHash        string  `json:"proposalHash"`
 	Description         string  `json:"description"`
 	RequestedAmount     float64 `json:"requestedAmount"`
 	Status              string  `json:"status"`
@@ -16,6 +17,14 @@ type PaymentRequest struct {
 	// Custom
 	Height uint64      `json:"height"`
 	Cycles CfundCycles `json:"cycles"`
+}
+
+func (p *PaymentRequest) LatestCycle() *CfundCycle {
+	if len(p.Cycles) == 0 {
+		return nil
+	}
+
+	return &(p.Cycles)[len(p.Cycles)-1]
 }
 
 func (p *PaymentRequest) GetCycle(cycle uint) *CfundCycle {
