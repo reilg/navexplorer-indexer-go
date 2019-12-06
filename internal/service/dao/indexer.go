@@ -44,8 +44,9 @@ func (i *Indexer) Index(block *explorer.Block, txs []*explorer.BlockTransaction)
 	}
 
 	if blockCycle.Index == blockCycle.Size {
-		log.WithFields(log.Fields{"Quorum": blockCycle.Quorum}).Info("Dao - End of voting cycle")
+		log.WithFields(log.Fields{"Quorum": blockCycle.Quorum, "height": block.Height}).Info("Dao - End of voting cycle")
 		i.proposalIndexer.UpdateState(blockCycle)
+		i.paymentRequestIndexer.UpdateState(blockCycle)
 	}
 }
 
