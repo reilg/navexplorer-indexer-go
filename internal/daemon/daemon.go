@@ -17,10 +17,19 @@ func Execute() {
 	container.GetElastic().InstallMappings()
 	container.GetSoftforkService().LoadSoftForks()
 
-	container.GetDaoProposalService().LoadVotingProposals()
-
-	if err := container.GetRewinder().RewindToHeight(getHeight()); err != nil {
+	height := getHeight()
+	if err := container.GetRewinder().RewindToHeight(height); err != nil {
 		log.WithError(err).Fatal("Failed to rewind index")
+	}
+
+	if height != 0 {
+		if block, err := container.GetBlockRepo().GetBlockByHeight(height); err != nil {
+			log.WithError(err).Fatal("Failed to get block")
+		} else {
+			blockCycle := block.BlockCycle(config.Get().DaoCfundConsensus.BlocksPerVotingCycle, config.Get().DaoCfundConsensus.Quorum)
+			container.GetDaoProposalService().LoadVotingProposals(block, blockCycle)
+			container.GetDaoPaymentRequestService().LoadVotingPaymentRequests(block, blockCycle)
+		}
 	}
 
 	// Bulk index the backlog

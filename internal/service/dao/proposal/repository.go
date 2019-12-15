@@ -17,12 +17,17 @@ func NewRepo(client *elastic.Client) *Repository {
 	return &Repository{client}
 }
 
-func (r *Repository) GetProposals(status string) ([]*explorer.Proposal, error) {
+func (r *Repository) GetPossibleVotingProposals(height uint64) ([]*explorer.Proposal, error) {
 	var proposals []*explorer.Proposal
 
+	query := elastic.NewBoolQuery()
+	query = query.Should(elastic.NewMatchQuery("status", "pending accepted"))
+	query = query.Should(elastic.NewRangeQuery("updatedOnBlock").Gte(height))
+
 	results, err := r.Client.Search(elastic_cache.ProposalIndex.Get()).
-		Query(elastic.NewTermsQuery("status", status)).
+		Query(query).
 		Size(9999).
+		Sort("updatedOnBlock", false).
 		Do(context.Background())
 	if err != nil {
 		return nil, err

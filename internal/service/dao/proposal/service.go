@@ -13,22 +13,18 @@ func NewService(repo *Repository) *Service {
 	return &Service{repo}
 }
 
-func (s *Service) LoadVotingProposals() {
-	log.Info("Load Pending Proposals")
-	proposals, err := s.repo.GetProposals("pending")
+func (s *Service) LoadVotingProposals(block *explorer.Block, blockCycle *explorer.BlockCycle) {
+	log.Info("Load Voting Proposals")
+
+	excludeOlderThan := block.Height - (uint64(blockCycle.Size * 2))
+	if excludeOlderThan < 0 {
+		excludeOlderThan = 0
+	}
+
+	proposals, err := s.repo.GetPossibleVotingProposals(excludeOlderThan)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to load pending proposals")
 	}
 
 	Proposals = proposals
-}
-
-func getProposalByHash(hash string) *explorer.Proposal {
-	for idx, _ := range Proposals {
-		if Proposals[idx].Hash == hash {
-			return Proposals[idx]
-		}
-	}
-
-	return nil
 }

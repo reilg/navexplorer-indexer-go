@@ -9,13 +9,13 @@ import (
 )
 
 type Indexer struct {
-	navcoin           *navcoind.Navcoind
-	elastic           *elastic_cache.Index
-	maxProposalCycles uint
+	navcoin   *navcoind.Navcoind
+	elastic   *elastic_cache.Index
+	indexSize uint64
 }
 
-func NewIndexer(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, maxProposalCycles uint) *Indexer {
-	return &Indexer{navcoin, elastic, maxProposalCycles}
+func NewIndexer(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, indexSize uint64) *Indexer {
+	return &Indexer{navcoin, elastic, indexSize}
 }
 
 func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
@@ -28,8 +28,7 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
 			proposal := CreateProposal(navP, tx.Height)
 			log.Infof("Index Proposal: %s", proposal.Hash)
 
-			index := elastic_cache.ProposalIndex.Get()
-			resp, err := i.elastic.Client.Index().Index(index).BodyJson(proposal).Do(context.Background())
+			resp, err := i.elastic.Client.Index().Index(elastic_cache.ProposalIndex.Get()).BodyJson(proposal).Do(context.Background())
 			if err != nil {
 				log.WithError(err).Fatal("Failed to save new proposal")
 			}
@@ -40,34 +39,27 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
 	}
 }
 
-func (i *Indexer) ApplyVote(vote explorer.Vote, blockCycle explorer.BlockCycle) {
-	proposal := getProposalByHash(vote.Hash)
-	if proposal == nil {
-		log.Fatalf("Proposal not found: %s", vote.Hash)
-		return
-	}
-
-	if vote.Vote == 1 {
-		proposal.GetCycle(blockCycle.Cycle).VotesYes++
-	}
-	if vote.Vote == -1 {
-		proposal.GetCycle(blockCycle.Cycle).VotesNo++
-	}
-
-	i.elastic.AddUpdateRequest(elastic_cache.ProposalIndex.Get(), proposal.Hash, proposal, proposal.MetaData.Id)
-}
-
-func (i *Indexer) UpdateState(blockCycle explorer.BlockCycle) {
-	for _, proposal := range Proposals {
-		if proposal.Status == "pending" && proposal.LatestCycle().Votes() >= blockCycle.Quorum {
-			log.WithFields(log.Fields{"Votes": proposal.LatestCycle().Votes()}).Info("Proposal has met Quorum")
+func (i *Indexer) Update(blockCycle *explorer.BlockCycle, block *explorer.Block) {
+	for _, p := range Proposals {
+		if p == nil {
+			continue
 		}
 
-		if len(proposal.Cycles) == int(i.maxProposalCycles)+1 && proposal.Status == "pending" {
-			proposal.Status = "expired"
-			i.elastic.AddUpdateRequest(elastic_cache.ProposalIndex.Get(), proposal.Hash, proposal, proposal.MetaData.Id)
-			Proposals.Delete(proposal.Hash)
-			log.Infof("Proposal Expired: %s", proposal.Hash)
+		navP, err := i.navcoin.GetProposal(p.Hash)
+		if err != nil {
+			log.WithError(err).Fatalf("Failed to find active proposal: %s", p.Hash)
+		}
+
+		UpdateProposal(navP, block.Height, p)
+		if p.UpdatedOnBlock == block.Height {
+			i.elastic.AddUpdateRequest(elastic_cache.ProposalIndex.Get(), p.Hash, p, p.MetaData.Id)
+		}
+
+		if p.Status == explorer.PROPOSAL_EXPIRED || p.Status == explorer.PROPOSAL_REJECTED {
+			if block.Height-p.UpdatedOnBlock >= uint64(blockCycle.Size) {
+				log.Infof("Delete Proposal: %s", p.Hash)
+				Proposals.Delete(p.Hash)
+			}
 		}
 	}
 }

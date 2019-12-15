@@ -21,9 +21,37 @@ func CreateProposal(proposal navcoind.Proposal, height uint64) *explorer.Proposa
 		ProposalDuration:    proposal.ProposalDuration,
 		ExpiresOn:           proposal.ExpiresOn,
 		Status:              "pending",
-		State:               0,
+		State:               proposal.State,
 		StateChangedOnBlock: proposal.StateChangedOnBlock,
 		Height:              height,
+		UpdatedOnBlock:      height,
+	}
+}
+
+func UpdateProposal(proposal navcoind.Proposal, height uint64, p *explorer.Proposal) {
+	if p.NotPaidYet != convertStringToFloat(proposal.RequestedAmount) {
+		p.NotPaidYet = convertStringToFloat(proposal.RequestedAmount)
+		p.UpdatedOnBlock = height
+	}
+
+	if p.NotRequestedYet != convertStringToFloat(proposal.RequestedAmount) {
+		p.NotRequestedYet = convertStringToFloat(proposal.RequestedAmount)
+		p.UpdatedOnBlock = height
+	}
+
+	if p.Status != explorer.ProposalStatus(proposal.Status) {
+		p.Status = explorer.ProposalStatus(proposal.Status)
+		p.UpdatedOnBlock = height
+	}
+
+	if p.State != proposal.State {
+		p.State = proposal.State
+		p.UpdatedOnBlock = height
+	}
+
+	if p.StateChangedOnBlock != proposal.StateChangedOnBlock {
+		p.StateChangedOnBlock = proposal.StateChangedOnBlock
+		p.UpdatedOnBlock = height
 	}
 }
 

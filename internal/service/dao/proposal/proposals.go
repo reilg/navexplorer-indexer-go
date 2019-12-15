@@ -19,7 +19,7 @@ func (p *proposals) GetByHash(hash string) *explorer.Proposal {
 }
 
 func (p *proposals) Delete(hash string) {
-	for i, _ := range Proposals {
+	for i := range Proposals {
 		if Proposals[i].Hash == hash {
 			Proposals[i] = Proposals[len(Proposals)-1]                                     // Copy last element to index i.
 			Proposals[len(Proposals)-1] = nil                                              // Erase last element (write zero value).

@@ -39,23 +39,27 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
 	}
 }
 
-func (i *Indexer) ApplyVote(vote explorer.Vote, blockCycle explorer.BlockCycle) {
-	paymentRequest := getPaymentRequestByHash(vote.Hash)
-	if paymentRequest == nil {
-		log.Fatalf("Payment Request not found: %s", vote.Hash)
-		return
+func (i *Indexer) Update(blockCycle *explorer.BlockCycle, block *explorer.Block) {
+	for _, p := range PaymentRequests {
+		if p == nil {
+			continue
+		}
+
+		navP, err := i.navcoin.GetPaymentRequest(p.Hash)
+		if err != nil {
+			log.WithError(err).Fatalf("Failed to find active proposal: %s", p.Hash)
+		}
+
+		UpdatePaymentRequest(navP, block.Height, p)
+		if p.UpdatedOnBlock == block.Height {
+			i.elastic.AddUpdateRequest(elastic_cache.ProposalIndex.Get(), p.Hash, p, p.MetaData.Id)
+		}
+
+		if p.Status == explorer.PAYMENT_REQUEST_EXPIRED || p.Status == explorer.PAYMENT_REQUEST_REJECTED {
+			if block.Height-p.UpdatedOnBlock >= uint64(blockCycle.Size) {
+				log.Infof("Delete Proposal: %s", p.Hash)
+				PaymentRequests.Delete(p.Hash)
+			}
+		}
 	}
-
-	if vote.Vote == 1 {
-		paymentRequest.GetCycle(blockCycle.Cycle).VotesYes++
-	}
-	if vote.Vote == -1 {
-		paymentRequest.GetCycle(blockCycle.Cycle).VotesNo++
-	}
-
-	i.elastic.AddUpdateRequest(elastic_cache.PaymentRequestIndex.Get(), paymentRequest.Hash, paymentRequest, paymentRequest.MetaData.Id)
-}
-
-func (i *Indexer) updateState(blockCycle explorer.BlockCycle) {
-
 }

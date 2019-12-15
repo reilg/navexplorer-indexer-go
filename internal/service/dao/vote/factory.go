@@ -14,6 +14,7 @@ func CreateVotes(block *explorer.Block, tx *explorer.BlockTransaction) *explorer
 		if !vout.IsProposalVote() && !vout.IsPaymentRequestVote() {
 			continue
 		}
+
 		vote := explorer.Vote{Hash: vout.ScriptPubKey.Hash, Vote: persuasion(vout.ScriptPubKey.Type)}
 		if vout.IsProposalVote() {
 			vote.Type = explorer.ProposalVote

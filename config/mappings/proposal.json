@@ -88,19 +88,8 @@
       "height": {
         "type": "long"
       },
-      "cycles": {
-        "type": "nested",
-        "properties": {
-          "votingCycle": {
-            "type": "long"
-          },
-          "votesYes": {
-            "type": "long"
-          },
-          "votesNo": {
-            "type": "long"
-          }
-        }
+      "updatedOnBlock": {
+        "type": "long"
       }
     }
   },

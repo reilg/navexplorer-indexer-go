@@ -60,6 +60,12 @@ var Definitions = []dingo.Def{
 		},
 	},
 	{
+		Name: "block.repo",
+		Build: func(elastic *elastic_cache.Index) (*block.Repository, error) {
+			return block.NewRepo(elastic.Client), nil
+		},
+	},
+	{
 		Name: "signal.repo",
 		Build: func(elastic *elastic_cache.Index) (*signal.Repository, error) {
 			return signal.NewRepo(elastic.Client), nil
@@ -164,7 +170,7 @@ var Definitions = []dingo.Def{
 			return proposal.NewIndexer(
 				navcoin,
 				elastic,
-				config.Get().DaoCfundConsensus.MaxCountVotingCycleProposals,
+				uint64(config.Get().ReindexSize),
 			), nil
 		},
 	},
@@ -182,6 +188,7 @@ var Definitions = []dingo.Def{
 		Build: func(elastic *elastic_cache.Index) (*vote.Indexer, error) {
 			return vote.NewIndexer(
 				elastic,
+				config.Get().DaoCfundConsensus.MaxCountVotingCycleProposals,
 			), nil
 		},
 	},

@@ -3,36 +3,27 @@ package explorer
 type PaymentRequest struct {
 	MetaData MetaData `json:"-"`
 
-	Version             uint32  `json:"version"`
-	Hash                string  `json:"hash"`
-	BlockHash           string  `json:"blockHash"`
-	ProposalHash        string  `json:"proposalHash"`
-	Description         string  `json:"description"`
-	RequestedAmount     float64 `json:"requestedAmount"`
-	Status              string  `json:"status"`
-	State               uint    `json:"state"`
-	StateChangedOnBlock string  `json:"stateChangedOnBlock,omitempty"`
-	PaidOnBlock         string  `json:"paidOnBlock,omitempty"`
+	Version             uint32               `json:"version"`
+	Hash                string               `json:"hash"`
+	BlockHash           string               `json:"blockHash"`
+	ProposalHash        string               `json:"proposalHash"`
+	Description         string               `json:"description"`
+	RequestedAmount     float64              `json:"requestedAmount"`
+	Status              PaymentRequestStatus `json:"status"`
+	State               uint                 `json:"state"`
+	StateChangedOnBlock string               `json:"stateChangedOnBlock,omitempty"`
+	PaidOnBlock         string               `json:"paidOnBlock,omitempty"`
 
 	// Custom
-	Height uint64      `json:"height"`
-	Cycles CfundCycles `json:"cycles"`
+	Height         uint64 `json:"height"`
+	UpdatedOnBlock uint64 `json:"height"`
 }
 
-func (p *PaymentRequest) LatestCycle() *CfundCycle {
-	if len(p.Cycles) == 0 {
-		return nil
-	}
+type PaymentRequestStatus string
 
-	return &(p.Cycles)[len(p.Cycles)-1]
-}
-
-func (p *PaymentRequest) GetCycle(cycle uint) *CfundCycle {
-	for i, c := range p.Cycles {
-		if c.VotingCycle == cycle {
-			return &p.Cycles[i]
-		}
-	}
-
-	return nil
-}
+var (
+	PAYMENT_REQUEST_PENDING  PaymentRequestStatus = "pending"
+	PAYMENT_REQUEST_ACCEPTED PaymentRequestStatus = "accepted"
+	PAYMENT_REQUEST_REJECTED PaymentRequestStatus = "rejected"
+	PAYMENT_REQUEST_EXPIRED  PaymentRequestStatus = "expired"
+)

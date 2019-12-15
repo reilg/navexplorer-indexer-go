@@ -16,13 +16,17 @@ type Repository struct {
 func NewRepo(client *elastic.Client) *Repository {
 	return &Repository{client}
 }
-
-func (r *Repository) GetPaymentRequests(status string) ([]*explorer.PaymentRequest, error) {
+func (r *Repository) GetPossibleVotingRequests(height uint64) ([]*explorer.PaymentRequest, error) {
 	var paymentRequests []*explorer.PaymentRequest
 
+	query := elastic.NewBoolQuery()
+	query = query.Should(elastic.NewMatchQuery("status", "pending accepted"))
+	query = query.Should(elastic.NewRangeQuery("updatedOnBlock").Gte(height))
+
 	results, err := r.Client.Search(elastic_cache.PaymentRequestIndex.Get()).
-		Query(elastic.NewTermsQuery("status", status)).
+		Query(query).
 		Size(9999).
+		Sort("updatedOnBlock", false).
 		Do(context.Background())
 	if err != nil {
 		return nil, err
@@ -34,7 +38,7 @@ func (r *Repository) GetPaymentRequests(status string) ([]*explorer.PaymentReque
 	for _, hit := range results.Hits.Hits {
 		var paymentRequest *explorer.PaymentRequest
 		if err := json.Unmarshal(hit.Source, &paymentRequest); err != nil {
-			log.WithError(err).Fatal("Failed to unmarshall proposal")
+			log.WithError(err).Fatal("Failed to unmarshall payment request")
 		}
 		paymentRequest.MetaData = explorer.NewMetaData(hit.Id, hit.Index)
 		paymentRequests = append(paymentRequests, paymentRequest)

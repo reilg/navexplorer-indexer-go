@@ -33,32 +33,15 @@ func NewIndexer(
 }
 
 func (i *Indexer) Index(block *explorer.Block, txs []*explorer.BlockTransaction) {
+	blockCycle := block.BlockCycle(i.blocksInCycle, i.quorum)
+
 	i.proposalIndexer.Index(txs)
 	i.paymentRequestIndexer.Index(txs)
+	i.voteIndexer.IndexVotes(txs, block)
 
-	blockCycle := block.BlockCycle(i.blocksInCycle, i.quorum)
-	i.voteIndexer.InitCycles(blockCycle)
-
-	if daoVote := i.voteIndexer.IndexVotes(txs, block); daoVote != nil {
-		i.applyVotes(daoVote, blockCycle)
-	}
-
-	if blockCycle.Index == blockCycle.Size {
+	if blockCycle.IsEnd() {
 		log.WithFields(log.Fields{"Quorum": blockCycle.Quorum, "height": block.Height}).Info("Dao - End of voting cycle")
-		i.proposalIndexer.UpdateState(blockCycle)
-		i.paymentRequestIndexer.UpdateState(blockCycle)
-	}
-}
-
-func (i *Indexer) applyVotes(daoVote *explorer.DaoVote, blockCycle explorer.BlockCycle) {
-	for _, v := range daoVote.Votes {
-		if v.Type == explorer.ProposalVote {
-			i.proposalIndexer.ApplyVote(v, blockCycle)
-		}
-
-		if v.Type == explorer.PaymentRequestVote {
-			i.paymentRequestIndexer.ApplyVote(v, blockCycle)
-
-		}
+		i.proposalIndexer.Update(blockCycle, block)
+		i.paymentRequestIndexer.Update(blockCycle, block)
 	}
 }
