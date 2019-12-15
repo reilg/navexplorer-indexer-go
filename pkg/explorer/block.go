@@ -42,15 +42,19 @@ type BlockCycle struct {
 	Quorum uint
 }
 
-func (b *Block) BlockCycle(size uint, quorum uint) BlockCycle {
+func (b *Block) BlockCycle(size uint, quorum uint) *BlockCycle {
 	cycle := GetCycleForHeight(b.Height, size)
 
-	return BlockCycle{
+	return &BlockCycle{
 		Size:   size,
 		Cycle:  cycle,
 		Index:  GetCycleIndex(b.Height, cycle, size),
 		Quorum: GetQuorum(size, quorum),
 	}
+}
+
+func (b *BlockCycle) IsEnd() bool {
+	return b.Index == b.Size
 }
 
 func GetCycleForHeight(height uint64, size uint) uint {
