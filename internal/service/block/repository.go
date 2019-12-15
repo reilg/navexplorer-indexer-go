@@ -36,3 +36,25 @@ func (r *Repository) GetHeight() (uint64, error) {
 	}
 	return block.Height, nil
 }
+
+func (r *Repository) GetBlockByHeight(height uint64) (*explorer.Block, error) {
+	results, err := r.Client.
+		Search(elastic_cache.AddressIndex.Get()).
+		Query(elastic.NewMatchQuery("height", height)).
+		Size(1).
+		Do(context.Background())
+	if err != nil || results == nil {
+		return nil, err
+	}
+
+	if len(results.Hits.Hits) == 0 {
+		return nil, elastic_cache.ErrRecordNotFound
+	}
+
+	var block *explorer.Block
+	if err = json.Unmarshal(results.Hits.Hits[0].Source, &block); err != nil {
+		return nil, err
+	}
+
+	return block, nil
+}
