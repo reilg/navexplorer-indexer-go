@@ -119,6 +119,11 @@ func (i *Index) AddRequest(index string, name string, doc interface{}, reqType R
 
 func (i *Index) GetRequest(index string, name string, id string) *Request {
 	for _, r := range i.requests {
+		if r == nil {
+			logrus.WithFields(logrus.Fields{"index": index, "name": name}).Error("Request not found")
+			return nil
+		}
+
 		if r.Index == index && r.Name == name && r.Id == id {
 			return r
 		}
