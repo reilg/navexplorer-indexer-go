@@ -5,7 +5,6 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/redis"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/address"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/block"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao"
@@ -29,17 +28,6 @@ var Definitions = []dingo.Def{
 				log.WithError(err).Fatal("Failed to initialize Navcoind")
 			}
 			return navcoin, nil
-		},
-	},
-	{
-		Name: "redis",
-		Build: func() (*redis.Redis, error) {
-			return redis.NewRedis(
-				config.Get().Redis.Host,
-				config.Get().Redis.Password,
-				config.Get().Redis.Db,
-				config.Get().Network,
-				config.Get().ReindexSize), nil
 		},
 	},
 	{
@@ -80,7 +68,6 @@ var Definitions = []dingo.Def{
 	{
 		Name: "indexer",
 		Build: func(
-			redis *redis.Redis,
 			elastic *elastic_cache.Index,
 			blockIndexer *block.Indexer,
 			addressIndexer *address.Indexer,
@@ -88,20 +75,19 @@ var Definitions = []dingo.Def{
 			daoIndexer *dao.Indexer,
 			rewinder *indexer.Rewinder,
 		) (*indexer.Indexer, error) {
-			return indexer.NewIndexer(redis, elastic, blockIndexer, addressIndexer, softForkIndexer, daoIndexer, rewinder), nil
+			return indexer.NewIndexer(elastic, blockIndexer, addressIndexer, softForkIndexer, daoIndexer, rewinder), nil
 		},
 	},
 	{
 		Name: "rewinder",
 		Build: func(
-			redis *redis.Redis,
 			elastic *elastic_cache.Index,
 			addressRewinder *address.Rewinder,
 			blockRewinder *block.Rewinder,
 			softforkRewinder *softfork.Rewinder,
 			daoRewinder *dao.Rewinder,
 		) (*indexer.Rewinder, error) {
-			return indexer.NewRewinder(redis, elastic, blockRewinder, addressRewinder, softforkRewinder, daoRewinder), nil
+			return indexer.NewRewinder(elastic, blockRewinder, addressRewinder, softforkRewinder, daoRewinder), nil
 		},
 	},
 	{

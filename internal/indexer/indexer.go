@@ -2,7 +2,6 @@ package indexer
 
 import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/redis"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/address"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/block"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao"
@@ -12,7 +11,6 @@ import (
 )
 
 type Indexer struct {
-	redis           *redis.Redis
 	elastic         *elastic_cache.Index
 	blockIndexer    *block.Indexer
 	addressIndexer  *address.Indexer
@@ -24,12 +22,12 @@ type Indexer struct {
 type IndexOption int
 
 var (
-	SingleIndex IndexOption = 1
-	BatchIndex  IndexOption = 2
+	SingleIndex      IndexOption = 1
+	BatchIndex       IndexOption = 2
+	LastBlockIndexed uint64      = 0
 )
 
 func NewIndexer(
-	redis *redis.Redis,
 	elastic *elastic_cache.Index,
 	blockIndexer *block.Indexer,
 	addressIndexer *address.Indexer,
@@ -38,7 +36,6 @@ func NewIndexer(
 	rewinder *Rewinder,
 ) *Indexer {
 	return &Indexer{
-		redis,
 		elastic,
 		blockIndexer,
 		addressIndexer,
@@ -59,17 +56,12 @@ func (i *Indexer) BulkIndex() {
 }
 
 func (i *Indexer) Index(option IndexOption) error {
-	lastBlockIndexed, err := i.redis.GetLastBlockIndexed()
-	if err != nil {
-		log.WithError(err).Fatal("Indexer failed to get last block indexed from redis")
-	}
-
-	if err = i.index(lastBlockIndexed+1, option); err != block.ErrOrphanBlockFound {
+	if err := i.index(LastBlockIndexed+1, option); err != block.ErrOrphanBlockFound {
 		// Unexpected indexing error
 		return err
 	}
 
-	if err = i.rewinder.RewindToHeight(lastBlockIndexed - 9); err != nil {
+	if err := i.rewinder.RewindToHeight(LastBlockIndexed - 9); err != nil {
 		// Unable to rewind blocks
 		return err
 	}
@@ -103,10 +95,7 @@ func (i *Indexer) index(height uint64, option IndexOption) error {
 
 	wg.Wait()
 
-	if err := i.redis.SetLastBlock(height); err != nil {
-		log.WithError(err).Fatal("Failed to set last block indexed")
-		return err
-	}
+	LastBlockIndexed = height
 
 	if option == BatchIndex {
 		i.elastic.BatchPersist(height)

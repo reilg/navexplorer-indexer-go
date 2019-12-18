@@ -18,7 +18,6 @@ type Config struct {
 	SoftForkQuorum     uint
 	Navcoind           NavcoindConfig
 	ElasticSearch      ElasticSearchConfig
-	Redis              RedisConfig
 	ZeroMq             ZeroMqConfig
 	DaoCfundConsensus  DaoCfundConsensusConfig
 }
@@ -39,12 +38,6 @@ type ElasticSearchConfig struct {
 	Username    string
 	Password    string
 	MappingDir  string
-}
-
-type RedisConfig struct {
-	Host     string
-	Password string
-	Db       int
 }
 
 type ZeroMqConfig struct {
@@ -94,11 +87,6 @@ func Get() *Config {
 			Username:    getString("ELASTIC_SEARCH_USERNAME", "/data/mappings"),
 			Password:    getString("ELASTIC_SEARCH_PASSWORD", "/data/mappings"),
 			MappingDir:  getString("ELASTIC_SEARCH_MAPPING_DIR", "/data/mappings"),
-		},
-		Redis: RedisConfig{
-			Host:     getString("REDIS_HOST", ""),
-			Password: getString("REDIS_PASSWORD", ""),
-			Db:       getInt("REDIS_DB", 0),
 		},
 		ZeroMq: ZeroMqConfig{
 			Address: getString("ZEROMQ_ADDRESS", "tcp://navcoind:28332"),

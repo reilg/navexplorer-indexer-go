@@ -2,7 +2,6 @@ package indexer
 
 import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/redis"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/address"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/block"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao"
@@ -11,7 +10,6 @@ import (
 )
 
 type Rewinder struct {
-	redis            *redis.Redis
 	elastic          *elastic_cache.Index
 	blockRewinder    *block.Rewinder
 	addressRewinder  *address.Rewinder
@@ -20,7 +18,6 @@ type Rewinder struct {
 }
 
 func NewRewinder(
-	redis *redis.Redis,
 	elastic *elastic_cache.Index,
 	blockRewinder *block.Rewinder,
 	addressRewinder *address.Rewinder,
@@ -28,7 +25,6 @@ func NewRewinder(
 	daoRewinder *dao.Rewinder,
 ) *Rewinder {
 	return &Rewinder{
-		redis,
 		elastic,
 		blockRewinder,
 		addressRewinder,
@@ -53,11 +49,7 @@ func (r *Rewinder) RewindToHeight(height uint64) error {
 		return err
 	}
 
-	if err := r.redis.SetLastBlock(height); err != nil {
-		log.WithError(err).Fatal("Failed to set last block indexed")
-		return err
-	}
-
+	LastBlockIndexed = height
 	r.elastic.Persist()
 
 	return nil

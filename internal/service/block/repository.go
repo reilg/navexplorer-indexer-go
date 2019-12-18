@@ -34,6 +34,7 @@ func (r *Repository) GetHeight() (uint64, error) {
 	if err = json.Unmarshal(results.Hits.Hits[0].Source, &block); err != nil {
 		return 0, err
 	}
+
 	return block.Height, nil
 }
 
