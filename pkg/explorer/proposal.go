@@ -31,3 +31,17 @@ var (
 	PROPOSAL_REJECTED ProposalStatus = "rejected"
 	PROPOSAL_EXPIRED  ProposalStatus = "expired"
 )
+
+func ProposalStatusIsValid(status string) bool {
+	switch true {
+	case status == string(PROPOSAL_PENDING):
+		return true
+	case status == string(PROPOSAL_ACCEPTED):
+		return true
+	case status == string(PROPOSAL_REJECTED):
+		return true
+	case status == string(PROPOSAL_EXPIRED):
+		return true
+	}
+	return false
+}
