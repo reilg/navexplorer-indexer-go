@@ -27,3 +27,17 @@ var (
 	PAYMENT_REQUEST_REJECTED PaymentRequestStatus = "rejected"
 	PAYMENT_REQUEST_EXPIRED  PaymentRequestStatus = "expired"
 )
+
+func PaymentRequestStatusIsValid(status string) bool {
+	switch true {
+	case status == string(PAYMENT_REQUEST_PENDING):
+		return true
+	case status == string(PAYMENT_REQUEST_ACCEPTED):
+		return true
+	case status == string(PAYMENT_REQUEST_REJECTED):
+		return true
+	case status == string(PAYMENT_REQUEST_EXPIRED):
+		return true
+	}
+	return false
+}
