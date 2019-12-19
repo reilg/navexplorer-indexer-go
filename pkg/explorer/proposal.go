@@ -1,6 +1,6 @@
 package explorer
 
-type Proposal struct {
+type RawProposal struct {
 	MetaData MetaData `json:"-"`
 
 	Version             uint32         `json:"version"`
@@ -17,31 +17,10 @@ type Proposal struct {
 	Status              ProposalStatus `json:"status"`
 	State               uint           `json:"state"`
 	StateChangedOnBlock string         `json:"stateChangedOnBlock,omitempty"`
-
-	// Custom
-	Height         uint64 `json:"height"`
-	UpdatedOnBlock uint64 `json:"updatedOnBlock"`
 }
 
-type ProposalStatus string
-
-var (
-	PROPOSAL_PENDING  ProposalStatus = "pending"
-	PROPOSAL_ACCEPTED ProposalStatus = "accepted"
-	PROPOSAL_REJECTED ProposalStatus = "rejected"
-	PROPOSAL_EXPIRED  ProposalStatus = "expired"
-)
-
-func ProposalStatusIsValid(status string) bool {
-	switch true {
-	case status == string(PROPOSAL_PENDING):
-		return true
-	case status == string(PROPOSAL_ACCEPTED):
-		return true
-	case status == string(PROPOSAL_REJECTED):
-		return true
-	case status == string(PROPOSAL_EXPIRED):
-		return true
-	}
-	return false
+type Proposal struct {
+	RawProposal
+	Height         uint64 `json:"height"`
+	UpdatedOnBlock uint64 `json:"updatedOnBlock"`
 }

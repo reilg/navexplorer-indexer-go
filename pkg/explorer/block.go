@@ -1,8 +1,6 @@
 package explorer
 
 type RawBlock struct {
-	MetaData MetaData `json:"-"`
-
 	Hash              string   `json:"hash"`
 	Confirmations     uint64   `json:"confirmations"`
 	StrippedSize      uint64   `json:"strippedsize"`
@@ -25,6 +23,9 @@ type RawBlock struct {
 
 type Block struct {
 	RawBlock
+
+	MetaData MetaData `json:"-"`
+
 	Stake       uint64 `json:"stake"`
 	StakedBy    string `json:"stakedBy"`
 	Spend       uint64 `json:"spend"`
