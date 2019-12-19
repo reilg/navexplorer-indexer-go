@@ -9,22 +9,24 @@ import (
 
 func CreateProposal(proposal navcoind.Proposal, height uint64) *explorer.Proposal {
 	return &explorer.Proposal{
-		Version:             proposal.Version,
-		Hash:                proposal.Hash,
-		BlockHash:           proposal.BlockHash,
-		Description:         proposal.Description,
-		RequestedAmount:     convertStringToFloat(proposal.RequestedAmount),
-		NotPaidYet:          convertStringToFloat(proposal.RequestedAmount),
-		NotRequestedYet:     convertStringToFloat(proposal.RequestedAmount),
-		UserPaidFee:         convertStringToFloat(proposal.UserPaidFee),
-		PaymentAddress:      proposal.PaymentAddress,
-		ProposalDuration:    proposal.ProposalDuration,
-		ExpiresOn:           proposal.ExpiresOn,
-		Status:              "pending",
-		State:               proposal.State,
-		StateChangedOnBlock: proposal.StateChangedOnBlock,
-		Height:              height,
-		UpdatedOnBlock:      height,
+		RawProposal: explorer.RawProposal{
+			Version:             proposal.Version,
+			Hash:                proposal.Hash,
+			BlockHash:           proposal.BlockHash,
+			Description:         proposal.Description,
+			RequestedAmount:     convertStringToFloat(proposal.RequestedAmount),
+			NotPaidYet:          convertStringToFloat(proposal.RequestedAmount),
+			NotRequestedYet:     convertStringToFloat(proposal.RequestedAmount),
+			UserPaidFee:         convertStringToFloat(proposal.UserPaidFee),
+			PaymentAddress:      proposal.PaymentAddress,
+			ProposalDuration:    proposal.ProposalDuration,
+			ExpiresOn:           proposal.ExpiresOn,
+			Status:              "pending",
+			State:               proposal.State,
+			StateChangedOnBlock: proposal.StateChangedOnBlock,
+		},
+		Height:         height,
+		UpdatedOnBlock: height,
 	}
 }
 

@@ -9,18 +9,20 @@ import (
 
 func CreatePaymentRequest(paymentRequest navcoind.PaymentRequest, height uint64) *explorer.PaymentRequest {
 	return &explorer.PaymentRequest{
-		Version:             paymentRequest.Version,
-		Hash:                paymentRequest.Hash,
-		BlockHash:           paymentRequest.BlockHash,
-		ProposalHash:        paymentRequest.ProposalHash,
-		Description:         paymentRequest.Description,
-		RequestedAmount:     convertStringToFloat(paymentRequest.RequestedAmount),
-		Status:              "pending",
-		State:               paymentRequest.State,
-		StateChangedOnBlock: paymentRequest.StateChangedOnBlock,
-		PaidOnBlock:         paymentRequest.PaidOnBlock,
-		Height:              height,
-		UpdatedOnBlock:      height,
+		RawPaymentRequest: explorer.RawPaymentRequest{
+			Version:             paymentRequest.Version,
+			Hash:                paymentRequest.Hash,
+			BlockHash:           paymentRequest.BlockHash,
+			ProposalHash:        paymentRequest.ProposalHash,
+			Description:         paymentRequest.Description,
+			RequestedAmount:     convertStringToFloat(paymentRequest.RequestedAmount),
+			Status:              "pending",
+			State:               paymentRequest.State,
+			StateChangedOnBlock: paymentRequest.StateChangedOnBlock,
+			PaidOnBlock:         paymentRequest.PaidOnBlock,
+		},
+		Height:         height,
+		UpdatedOnBlock: height,
 	}
 }
 
