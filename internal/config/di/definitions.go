@@ -8,6 +8,7 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/address"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/block"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/consensus"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/payment_request"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/proposal"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/vote"
@@ -140,42 +141,39 @@ var Definitions = []dingo.Def{
 	},
 	{
 		Name: "dao.Indexer",
-		Build: func(proposalIndexer *proposal.Indexer, paymentRequestIndexer *payment_request.Indexer, voteIndexer *vote.Indexer) (*dao.Indexer, error) {
+		Build: func(proposalIndexer *proposal.Indexer, paymentRequestIndexer *payment_request.Indexer, voteIndexer *vote.Indexer, consensusIndexer *consensus.Indexer) (*dao.Indexer, error) {
 			return dao.NewIndexer(
 				proposalIndexer,
 				paymentRequestIndexer,
 				voteIndexer,
+				consensusIndexer,
 				config.Get().DaoCfundConsensus.BlocksPerVotingCycle,
 				config.Get().DaoCfundConsensus.Quorum,
 			), nil
 		},
 	},
 	{
+		Name: "dao.consensus.Indexer",
+		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, repo *consensus.Repository) (*consensus.Indexer, error) {
+			return consensus.NewIndexer(navcoin, elastic, repo), nil
+		},
+	},
+	{
 		Name: "dao.proposal.Indexer",
 		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index) (*proposal.Indexer, error) {
-			return proposal.NewIndexer(
-				navcoin,
-				elastic,
-				uint64(config.Get().ReindexSize),
-			), nil
+			return proposal.NewIndexer(navcoin, elastic, uint64(config.Get().ReindexSize)), nil
 		},
 	},
 	{
 		Name: "dao.payment_request.Indexer",
 		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index) (*payment_request.Indexer, error) {
-			return payment_request.NewIndexer(
-				navcoin,
-				elastic,
-			), nil
+			return payment_request.NewIndexer(navcoin, elastic), nil
 		},
 	},
 	{
 		Name: "dao.vote.Indexer",
 		Build: func(elastic *elastic_cache.Index) (*vote.Indexer, error) {
-			return vote.NewIndexer(
-				elastic,
-				config.Get().DaoCfundConsensus.MaxCountVotingCycleProposals,
-			), nil
+			return vote.NewIndexer(elastic, config.Get().DaoCfundConsensus.MaxCountVotingCycleProposals), nil
 		},
 	},
 	{
@@ -200,6 +198,12 @@ var Definitions = []dingo.Def{
 		Name: "dao.payment_request.repo",
 		Build: func(elastic *elastic_cache.Index) (*payment_request.Repository, error) {
 			return payment_request.NewRepo(elastic.Client), nil
+		},
+	},
+	{
+		Name: "dao.consensus.repo",
+		Build: func(elastic *elastic_cache.Index) (*consensus.Repository, error) {
+			return consensus.NewRepo(elastic.Client), nil
 		},
 	},
 	{

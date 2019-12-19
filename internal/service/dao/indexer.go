@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/consensus"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/payment_request"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/proposal"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/vote"
@@ -12,6 +13,7 @@ type Indexer struct {
 	proposalIndexer       *proposal.Indexer
 	paymentRequestIndexer *payment_request.Indexer
 	voteIndexer           *vote.Indexer
+	consensusIndexer      *consensus.Indexer
 	blocksInCycle         uint
 	quorum                uint
 }
@@ -20,6 +22,7 @@ func NewIndexer(
 	proposalIndexer *proposal.Indexer,
 	paymentRequestIndexer *payment_request.Indexer,
 	voteIndexer *vote.Indexer,
+	consensusIndexer *consensus.Indexer,
 	blocksInCycle uint,
 	quorum uint,
 ) *Indexer {
@@ -27,6 +30,7 @@ func NewIndexer(
 		proposalIndexer,
 		paymentRequestIndexer,
 		voteIndexer,
+		consensusIndexer,
 		blocksInCycle,
 		quorum,
 	}
@@ -43,5 +47,6 @@ func (i *Indexer) Index(block *explorer.Block, txs []*explorer.BlockTransaction)
 		log.WithFields(log.Fields{"Quorum": blockCycle.Quorum, "height": block.Height}).Info("Dao - End of voting cycle")
 		i.proposalIndexer.Update(blockCycle, block)
 		i.paymentRequestIndexer.Update(blockCycle, block)
+		i.consensusIndexer.Index()
 	}
 }
