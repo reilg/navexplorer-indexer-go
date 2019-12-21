@@ -17,7 +17,7 @@ func NewRepo(client *elastic.Client) *Repository {
 }
 
 func (r *Repository) GetConsensus() (*explorer.Consensus, error) {
-	results, err := r.Client.Search(elastic_cache.ProposalIndex.Get()).
+	results, err := r.Client.Search(elastic_cache.ConsensusIndex.Get()).
 		Size(1).
 		Do(context.Background())
 	if err != nil || results == nil {

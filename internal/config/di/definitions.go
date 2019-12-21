@@ -159,6 +159,12 @@ var Definitions = []dingo.Def{
 		},
 	},
 	{
+		Name: "dao.consensus.Rewinder",
+		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, repo *consensus.Repository) (*consensus.Rewinder, error) {
+			return consensus.NewRewinder(navcoin, elastic, repo), nil
+		},
+	},
+	{
 		Name: "dao.proposal.Indexer",
 		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index) (*proposal.Indexer, error) {
 			return proposal.NewIndexer(navcoin, elastic, uint64(config.Get().ReindexSize)), nil
@@ -178,8 +184,8 @@ var Definitions = []dingo.Def{
 	},
 	{
 		Name: "dao.Rewinder",
-		Build: func(elastic *elastic_cache.Index) (*dao.Rewinder, error) {
-			return dao.NewRewinder(elastic), nil
+		Build: func(elastic *elastic_cache.Index, consensusRewinder *consensus.Rewinder) (*dao.Rewinder, error) {
+			return dao.NewRewinder(elastic, consensusRewinder), nil
 		},
 	},
 	{
