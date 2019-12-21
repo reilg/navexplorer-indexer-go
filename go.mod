@@ -3,7 +3,7 @@ module github.com/NavExplorer/navexplorer-indexer-go
 go 1.13
 
 require (
-	github.com/NavExplorer/navcoind-go v0.1.1
+	github.com/NavExplorer/navcoind-go v0.1.3
 	github.com/joho/godotenv v1.3.0
 	github.com/olivere/elastic/v7 v7.0.9
 	github.com/pebbe/zmq4 v1.0.0

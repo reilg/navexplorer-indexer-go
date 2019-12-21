@@ -6,7 +6,7 @@ type RawPaymentRequest struct {
 	Version             uint32               `json:"version"`
 	Hash                string               `json:"hash"`
 	BlockHash           string               `json:"blockHash"`
-	ProposalHash        string               `json:"proposalHash"`
+	ProposalHash        string               `json:"proposalHash,omitempty"`
 	Description         string               `json:"description"`
 	RequestedAmount     float64              `json:"requestedAmount"`
 	Status              PaymentRequestStatus `json:"status"`
