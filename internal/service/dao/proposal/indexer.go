@@ -26,7 +26,6 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
 
 		if navP, err := i.navcoin.GetProposal(tx.Hash); err == nil {
 			proposal := CreateProposal(navP, tx.Height)
-			log.Infof("Index Proposal: %s", proposal.Hash)
 
 			resp, err := i.elastic.Client.Index().Index(elastic_cache.ProposalIndex.Get()).BodyJson(proposal).Do(context.Background())
 			if err != nil {
@@ -57,7 +56,6 @@ func (i *Indexer) Update(blockCycle *explorer.BlockCycle, block *explorer.Block)
 
 		if p.Status == explorer.ProposalExpired || p.Status == explorer.ProposalRejected {
 			if block.Height-p.UpdatedOnBlock >= uint64(blockCycle.Size) {
-				log.Infof("Delete Proposal: %s", p.Hash)
 				Proposals.Delete(p.Hash)
 			}
 		}

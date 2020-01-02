@@ -25,7 +25,6 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
 
 		if navP, err := i.navcoin.GetPaymentRequest(tx.Hash); err == nil {
 			paymentRequest := CreatePaymentRequest(navP, tx.Height)
-			log.Infof("Index PaymentRequest: %s", paymentRequest.Hash)
 
 			index := elastic_cache.PaymentRequestIndex.Get()
 			resp, err := i.elastic.Client.Index().Index(index).BodyJson(paymentRequest).Do(context.Background())
@@ -57,7 +56,6 @@ func (i *Indexer) Update(blockCycle *explorer.BlockCycle, block *explorer.Block)
 
 		if p.Status == explorer.PaymentRequestExpired || p.Status == explorer.PaymentRequestRejected {
 			if block.Height-p.UpdatedOnBlock >= uint64(blockCycle.Size) {
-				log.Infof("Delete Proposal: %s", p.Hash)
 				PaymentRequests.Delete(p.Hash)
 			}
 		}

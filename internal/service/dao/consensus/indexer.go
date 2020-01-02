@@ -38,7 +38,6 @@ func (i *Indexer) Index() error {
 		}
 	} else {
 		UpdateConsensus(&cfundStats, consensus)
-		log.Info("Index Update Cfund Consensus")
 		i.elastic.AddUpdateRequest(elastic_cache.ConsensusIndex.Get(), "consensus", consensus, consensus.MetaData.Id)
 	}
 
