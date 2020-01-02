@@ -14,30 +14,33 @@ type Indexer struct {
 	paymentRequestIndexer *payment_request.Indexer
 	voteIndexer           *vote.Indexer
 	consensusIndexer      *consensus.Indexer
-	blocksInCycle         uint
-	quorum                uint
 }
+
+var Consensus *explorer.Consensus
 
 func NewIndexer(
 	proposalIndexer *proposal.Indexer,
 	paymentRequestIndexer *payment_request.Indexer,
 	voteIndexer *vote.Indexer,
 	consensusIndexer *consensus.Indexer,
-	blocksInCycle uint,
-	quorum uint,
 ) *Indexer {
 	return &Indexer{
 		proposalIndexer,
 		paymentRequestIndexer,
 		voteIndexer,
 		consensusIndexer,
-		blocksInCycle,
-		quorum,
 	}
 }
 
 func (i *Indexer) Index(block *explorer.Block, txs []*explorer.BlockTransaction) {
-	blockCycle := block.BlockCycle(i.blocksInCycle, i.quorum)
+	if Consensus == nil {
+		err := i.consensusIndexer.Index()
+		if err != nil {
+			log.WithError(err).Fatal("Failed to get Consensus")
+		}
+	}
+
+	blockCycle := block.BlockCycle(Consensus.BlocksPerVotingCycle, Consensus.MinSumVotesPerVotingCycle)
 
 	i.proposalIndexer.Index(txs)
 	i.paymentRequestIndexer.Index(txs)

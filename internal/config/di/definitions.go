@@ -147,8 +147,6 @@ var Definitions = []dingo.Def{
 				paymentRequestIndexer,
 				voteIndexer,
 				consensusIndexer,
-				config.Get().DaoCfundConsensus.BlocksPerVotingCycle,
-				config.Get().DaoCfundConsensus.Quorum,
 			), nil
 		},
 	},
@@ -179,7 +177,7 @@ var Definitions = []dingo.Def{
 	{
 		Name: "dao.vote.Indexer",
 		Build: func(elastic *elastic_cache.Index) (*vote.Indexer, error) {
-			return vote.NewIndexer(elastic, config.Get().DaoCfundConsensus.MaxCountVotingCycleProposals), nil
+			return vote.NewIndexer(elastic), nil
 		},
 	},
 	{

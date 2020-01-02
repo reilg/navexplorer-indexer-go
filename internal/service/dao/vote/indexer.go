@@ -7,12 +7,11 @@ import (
 )
 
 type Indexer struct {
-	elastic           *elastic_cache.Index
-	maxProposalCycles uint
+	elastic *elastic_cache.Index
 }
 
-func NewIndexer(elastic *elastic_cache.Index, maxProposalCycles uint) *Indexer {
-	return &Indexer{elastic, maxProposalCycles}
+func NewIndexer(elastic *elastic_cache.Index) *Indexer {
+	return &Indexer{elastic}
 }
 
 func (i *Indexer) IndexVotes(txs []*explorer.BlockTransaction, block *explorer.Block) {

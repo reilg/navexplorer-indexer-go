@@ -26,9 +26,12 @@ func Execute() {
 		if block, err := container.GetBlockRepo().GetBlockByHeight(indexer.LastBlockIndexed); err != nil {
 			log.WithError(err).Fatal("Failed to get block")
 		} else {
-			blockCycle := block.BlockCycle(config.Get().DaoCfundConsensus.BlocksPerVotingCycle, config.Get().DaoCfundConsensus.Quorum)
-			container.GetDaoProposalService().LoadVotingProposals(block, blockCycle)
-			container.GetDaoPaymentRequestService().LoadVotingPaymentRequests(block, blockCycle)
+			consensus, err := container.GetDaoConsensusRepo().GetConsensus()
+			if err == nil {
+				blockCycle := block.BlockCycle(consensus.BlocksPerVotingCycle, consensus.MinSumVotesPerVotingCycle)
+				container.GetDaoProposalService().LoadVotingProposals(block, blockCycle)
+				container.GetDaoPaymentRequestService().LoadVotingPaymentRequests(block, blockCycle)
+			}
 		}
 	}
 
