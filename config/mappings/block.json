@@ -56,12 +56,10 @@
         }
       },
       "time": {
-        "type": "date",
-        "format": "epoch_second"
+        "type": "date"
       },
       "mediantime": {
-        "type": "date",
-        "format": "epoch_second"
+        "type": "date"
       },
       "nonce": {
         "type": "long"

@@ -213,8 +213,7 @@
         "type": "long"
       },
       "time": {
-        "type": "date",
-        "format": "epoch_second"
+        "type": "date"
       },
       "blocktime": {
         "type": "date"
