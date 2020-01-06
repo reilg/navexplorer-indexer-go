@@ -74,7 +74,6 @@
             "type": "integer"
           },
           "scriptSig": {
-            "type": "nested",
             "properties": {
               "asm": {
                 "type": "text",
@@ -115,7 +114,6 @@
             "type": "long"
           },
           "previousOutput": {
-            "type": "nested",
             "properties": {
               "height": {
                 "type": "long"
@@ -146,7 +144,6 @@
             "type": "integer"
           },
           "scriptPubKey": {
-            "type": "nested",
             "properties": {
               "asm": {
                 "type": "text",

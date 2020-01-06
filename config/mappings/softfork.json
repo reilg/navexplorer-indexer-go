@@ -30,7 +30,6 @@
         "type": "long"
       },
       "cycles": {
-        "type": "nested",
         "properties": {
           "cycle": {
             "type": "long"
