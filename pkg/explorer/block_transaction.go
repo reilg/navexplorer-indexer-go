@@ -1,19 +1,21 @@
 package explorer
 
+import "time"
+
 type RawBlockTransaction struct {
-	Hex             string `json:"hex"`
-	Txid            string `json:"txid"`
-	Hash            string `json:"hash"`
-	Size            uint64 `json:"size"`
-	VSize           uint64 `json:"vsize"`
-	Version         uint32 `json:"version"`
-	LockTime        uint32 `json:"locktime"`
-	AnonDestination string `json:"anon-destination"`
-	BlockHash       string `json:"blockhash, omitempty"`
-	Height          uint64 `json:"height"`
-	Confirmations   uint64 `json:"confirmations, omitempty"`
-	Time            int64  `json:"time, omitempty"`
-	BlockTime       int64  `json:"blocktime, omitempty"`
+	Hex             string    `json:"hex"`
+	Txid            string    `json:"txid"`
+	Hash            string    `json:"hash"`
+	Size            uint64    `json:"size"`
+	VSize           uint64    `json:"vsize"`
+	Version         uint32    `json:"version"`
+	LockTime        uint32    `json:"locktime"`
+	AnonDestination string    `json:"anon-destination"`
+	BlockHash       string    `json:"blockhash, omitempty"`
+	Height          uint64    `json:"height"`
+	Confirmations   uint64    `json:"confirmations, omitempty"`
+	Time            time.Time `json:"time, omitempty"`
+	BlockTime       time.Time `json:"blocktime, omitempty"`
 
 	Vin  RawVins  `json:"vin"`
 	Vout RawVouts `json:"vout"`

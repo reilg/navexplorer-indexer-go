@@ -1,12 +1,14 @@
 package explorer
 
+import "time"
+
 type AddressTransaction struct {
 	MetaData MetaData `json:"-"`
 
 	Hash   string       `json:"hash"`
 	Txid   string       `json:"txid"`
 	Height uint64       `json:"height"`
-	Time   int64        `json:"time, omitempty"`
+	Time   time.Time    `json:"time, omitempty"`
 	Type   TransferType `json:"type"`
 	Input  uint64       `json:"input"`
 	Output uint64       `json:"output"`
