@@ -13,7 +13,7 @@ type RawProposal struct {
 	UserPaidFee         float64        `json:"userPaidFee"`
 	PaymentAddress      string         `json:"paymentAddress"`
 	ProposalDuration    uint64         `json:"proposalDuration"`
-	ExpiresOn           uint64         `json:"expiresOn"`
+	ExpiresOn           uint64         `json:"expiresOn,omitempty"`
 	Status              ProposalStatus `json:"status"`
 	State               uint           `json:"state"`
 	StateChangedOnBlock string         `json:"stateChangedOnBlock,omitempty"`
