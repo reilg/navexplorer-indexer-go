@@ -45,7 +45,7 @@ func (i *Indexer) Index(block *explorer.Block, txs []*explorer.BlockTransaction)
 	i.voteIndexer.IndexVotes(txs, block)
 
 	if blockCycle.IsEnd() {
-		log.WithFields(log.Fields{"Quorum": blockCycle.Quorum, "height": block.Height}).Info("Dao - End of voting cycle")
+		log.WithFields(log.Fields{"Quorum": blockCycle.Quorum, "height": block.Height}).Debug("Dao - End of voting cycle")
 		i.proposalIndexer.Update(blockCycle, block)
 		i.paymentRequestIndexer.Update(blockCycle, block)
 		i.consensusIndexer.Index()
