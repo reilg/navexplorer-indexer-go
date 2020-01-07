@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"time"
 )
 
 func CreateBlock(block *navcoind.Block) *explorer.Block {
@@ -18,14 +19,14 @@ func CreateBlock(block *navcoind.Block) *explorer.Block {
 			VersionHex:                 block.VersionHex,
 			Merkleroot:                 block.Merkleroot,
 			Tx:                         block.Tx,
-			TxCount:                    block.TxCount,
+			TxCount:                    uint(len(block.Tx)),
 			ProposalCount:              block.ProposalCount,
 			PaymentRequestCount:        block.PaymentRequestCount,
 			ProposalVotesCount:         block.ProposalVotesCount,
 			PaymentRequestVotesCount:   block.PaymentRequestVotesCount,
 			PaymentRequestPayoutsCount: block.PaymentRequestPayoutsCount,
-			Time:                       block.Time,
-			MedianTime:                 block.MedianTime,
+			Time:                       time.Unix(block.Time, 0),
+			MedianTime:                 time.Unix(block.MedianTime, 0),
 			Nonce:                      block.Nonce,
 			Bits:                       block.Bits,
 			Difficulty:                 block.Difficulty,
@@ -50,8 +51,8 @@ func CreateBlockTransaction(navTx navcoind.RawTransaction) *explorer.BlockTransa
 			BlockHash:       navTx.BlockHash,
 			Height:          navTx.Height,
 			Confirmations:   navTx.Confirmations,
-			Time:            navTx.Time,
-			BlockTime:       navTx.BlockTime,
+			Time:            time.Unix(navTx.Time, 0),
+			BlockTime:       time.Unix(navTx.BlockTime, 0),
 		},
 		Vin:  createVin(navTx.Vin),
 		Vout: createVout(navTx.Vout),
