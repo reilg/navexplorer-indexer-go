@@ -90,7 +90,9 @@ func (i *Indexer) index(height uint64, option IndexOption) error {
 
 	go func() {
 		defer wg.Done()
-		i.daoIndexer.Index(b, txs)
+		if softfork.SoftForks.GetSoftFork("communityfund").State == "active" {
+			i.daoIndexer.Index(b, txs)
+		}
 	}()
 
 	wg.Wait()
