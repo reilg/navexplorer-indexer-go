@@ -32,17 +32,16 @@ func (r *Repository) GetPossibleVotingProposals(height uint64) ([]*explorer.Prop
 	if err != nil {
 		return nil, err
 	}
-	if results == nil {
-		return nil, elastic_cache.ErrResultsNotFound
-	}
 
-	for _, hit := range results.Hits.Hits {
-		var proposal *explorer.Proposal
-		if err := json.Unmarshal(hit.Source, &proposal); err != nil {
-			log.WithError(err).Fatal("Failed to unmarshall proposal")
+	if results != nil {
+		for _, hit := range results.Hits.Hits {
+			var proposal *explorer.Proposal
+			if err := json.Unmarshal(hit.Source, &proposal); err != nil {
+				log.WithError(err).Fatal("Failed to unmarshall proposal")
+			}
+			proposal.MetaData = explorer.NewMetaData(hit.Id, hit.Index)
+			proposals = append(proposals, proposal)
 		}
-		proposal.MetaData = explorer.NewMetaData(hit.Id, hit.Index)
-		proposals = append(proposals, proposal)
 	}
 
 	return proposals, nil

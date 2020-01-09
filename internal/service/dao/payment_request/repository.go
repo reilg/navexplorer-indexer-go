@@ -31,17 +31,15 @@ func (r *Repository) GetPossibleVotingRequests(height uint64) ([]*explorer.Payme
 	if err != nil {
 		return nil, err
 	}
-	if results == nil {
-		return nil, elastic_cache.ErrResultsNotFound
-	}
-
-	for _, hit := range results.Hits.Hits {
-		var paymentRequest *explorer.PaymentRequest
-		if err := json.Unmarshal(hit.Source, &paymentRequest); err != nil {
-			log.WithError(err).Fatal("Failed to unmarshall payment request")
+	if results != nil {
+		for _, hit := range results.Hits.Hits {
+			var paymentRequest *explorer.PaymentRequest
+			if err := json.Unmarshal(hit.Source, &paymentRequest); err != nil {
+				log.WithError(err).Fatal("Failed to unmarshall payment request")
+			}
+			paymentRequest.MetaData = explorer.NewMetaData(hit.Id, hit.Index)
+			paymentRequests = append(paymentRequests, paymentRequest)
 		}
-		paymentRequest.MetaData = explorer.NewMetaData(hit.Id, hit.Index)
-		paymentRequests = append(paymentRequests, paymentRequest)
 	}
 
 	return paymentRequests, nil
