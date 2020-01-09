@@ -23,7 +23,7 @@ func (s *Service) LoadVotingProposals(block *explorer.Block, blockCycle *explore
 
 	proposals, err := s.repo.GetPossibleVotingProposals(excludeOlderThan)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to load pending proposals")
+		log.WithError(err).Error("Failed to load pending proposals")
 	}
 
 	Proposals = proposals
