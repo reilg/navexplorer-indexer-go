@@ -9,31 +9,26 @@ import (
 func CreateBlock(block *navcoind.Block) *explorer.Block {
 	return &explorer.Block{
 		RawBlock: explorer.RawBlock{
-			Hash:                       block.Hash,
-			Confirmations:              block.Confirmations,
-			StrippedSize:               block.StrippedSize,
-			Size:                       block.Size,
-			Weight:                     block.Weight,
-			Height:                     block.Height,
-			Version:                    block.Version,
-			VersionHex:                 block.VersionHex,
-			Merkleroot:                 block.Merkleroot,
-			Tx:                         block.Tx,
-			TxCount:                    uint(len(block.Tx)),
-			ProposalCount:              block.ProposalCount,
-			PaymentRequestCount:        block.PaymentRequestCount,
-			ProposalVotesCount:         block.ProposalVotesCount,
-			PaymentRequestVotesCount:   block.PaymentRequestVotesCount,
-			PaymentRequestPayoutsCount: block.PaymentRequestPayoutsCount,
-			Time:                       time.Unix(block.Time, 0),
-			MedianTime:                 time.Unix(block.MedianTime, 0),
-			Nonce:                      block.Nonce,
-			Bits:                       block.Bits,
-			Difficulty:                 block.Difficulty,
-			Chainwork:                  block.Chainwork,
-			Previousblockhash:          block.Previousblockhash,
-			Nextblockhash:              block.Nextblockhash,
+			Hash:              block.Hash,
+			Confirmations:     block.Confirmations,
+			StrippedSize:      block.StrippedSize,
+			Size:              block.Size,
+			Weight:            block.Weight,
+			Height:            block.Height,
+			Version:           block.Version,
+			VersionHex:        block.VersionHex,
+			Merkleroot:        block.Merkleroot,
+			Tx:                block.Tx,
+			Time:              time.Unix(block.Time, 0),
+			MedianTime:        time.Unix(block.MedianTime, 0),
+			Nonce:             block.Nonce,
+			Bits:              block.Bits,
+			Difficulty:        block.Difficulty,
+			Chainwork:         block.Chainwork,
+			Previousblockhash: block.Previousblockhash,
+			Nextblockhash:     block.Nextblockhash,
 		},
+		TxCount: uint(len(block.Tx)),
 	}
 }
 
@@ -122,7 +117,7 @@ func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
 
 	if tx.IsAnyStaking() {
 		if tx.Height >= 2761920 {
-			tx.Stake = 2 // hard coded to 2 as static rewards arrived after block_indexer 2761920
+			tx.Stake = 200000000 // hard coded to 2 as static rewards arrived after block_indexer 2761920
 			block.Stake += tx.Stake
 		} else {
 			tx.Stake = tx.Vout.GetAmount() - tx.Vin.GetAmount()
@@ -130,7 +125,7 @@ func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
 		}
 	} else if tx.IsCoinbase() {
 		for _, o := range tx.Vout {
-			if o.ScriptPubKey.Type == explorer.VoutPubkey {
+			if o.ScriptPubKey.Type == explorer.VoutPubkeyhash {
 				tx.Stake = o.ValueSat
 				block.Stake = o.ValueSat
 			}
