@@ -38,11 +38,11 @@ func (i *Indexer) Index(height uint64, option int) (*explorer.Block, []*explorer
 			return nil, nil, err
 		}
 		tx := CreateBlockTransaction(rawTx.(navcoind.RawTransaction))
-		i.indexPreviousTxData(tx, block)
 		applyType(tx)
 		applyStaking(tx, block)
 		applySpend(tx, block)
 		applyCFundPayout(tx, block)
+		i.indexPreviousTxData(*tx)
 
 		txs = append(txs, tx)
 		i.elastic.AddIndexRequest(elastic_cache.BlockTransactionIndex.Get(), tx.Hash, tx)
@@ -53,10 +53,10 @@ func (i *Indexer) Index(height uint64, option int) (*explorer.Block, []*explorer
 	return block, txs, err
 }
 
-func (i *Indexer) indexPreviousTxData(tx *explorer.BlockTransaction, block *explorer.Block) {
+func (i *Indexer) indexPreviousTxData(tx explorer.BlockTransaction) {
 	vin := tx.Vin
 
-	for vdx, _ := range vin {
+	for vdx := range vin {
 		if vin[vdx].Vout == nil || vin[vdx].Txid == nil {
 			continue
 		}
@@ -78,6 +78,8 @@ func (i *Indexer) indexPreviousTxData(tx *explorer.BlockTransaction, block *expl
 		vin[vdx].PreviousOutput.Type = previousOutput.ScriptPubKey.Type
 		vin[vdx].PreviousOutput.Height = prevTx.Height
 	}
+
+	i.elastic.AddIndexRequest(elastic_cache.BlockTransactionIndex.Get(), tx.Hash, tx)
 }
 
 func (i *Indexer) getBlockAtHeight(height uint64) (*navcoind.Block, error) {

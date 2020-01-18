@@ -18,13 +18,27 @@ func Execute() {
 	container.GetSoftforkService().LoadSoftForks()
 
 	indexer.LastBlockIndexed = getHeight()
+	//location := getHeight()
+	//target := uint64(2772750)
+	//
+	//for {
+	//	if target < location {
+	//		location = location - 400
+	//		if err := container.GetRewinder().RewindToHeight(location); err != nil {
+	//			log.WithError(err).Fatal("Failed to rewind index")
+	//		}
+	//	} else {
+	//		break
+	//	}
+	//}
+
 	if err := container.GetRewinder().RewindToHeight(indexer.LastBlockIndexed); err != nil {
 		log.WithError(err).Fatal("Failed to rewind index")
 	}
 
 	if indexer.LastBlockIndexed != 0 {
 		if block, err := container.GetBlockRepo().GetBlockByHeight(indexer.LastBlockIndexed); err != nil {
-			log.WithError(err).Fatal("Failed to get block")
+			log.WithError(err).Fatal("Failed to get block at height: ", indexer.LastBlockIndexed)
 		} else {
 			consensus, err := container.GetDaoConsensusRepo().GetConsensus()
 			if err == nil {
@@ -46,6 +60,9 @@ func getHeight() uint64 {
 	if height, err := container.GetBlockRepo().GetHeight(); err != nil {
 		log.WithError(err).Fatal("Failed to get block height")
 	} else {
+		if height == 2772753 {
+			log.Fatal("DIE HERE")
+		}
 		if height >= uint64(config.Get().BulkIndexSize) {
 			return height - uint64(config.Get().BulkIndexSize)
 		}

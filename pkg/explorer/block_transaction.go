@@ -105,18 +105,24 @@ func (tx *BlockTransaction) HasColdInput(address string) bool {
 }
 
 func (tx *BlockTransaction) HasColdStakeStake(address string) bool {
-	for _, o := range tx.Vout {
-		if o.ScriptPubKey.Type == VoutColdStaking && o.ScriptPubKey.Addresses[0] == address {
-			return true
-		}
-	}
-	return false
+	return len(tx.Vout) > 1 && tx.Vout[1].IsColdStaking() && tx.Vout[1].ScriptPubKey.Addresses[0] == address
 }
 
 func (tx *BlockTransaction) HasColdStakeSpend(address string) bool {
 	for _, o := range tx.Vout {
 		if o.ScriptPubKey.Type == VoutColdStaking && o.ScriptPubKey.Addresses[1] == address {
 			return true
+		}
+	}
+	return false
+}
+
+func (tx *BlockTransaction) HasColdStakeReceive(address string) bool {
+	if tx.IsSpend() {
+		for _, o := range tx.Vout {
+			if o.ScriptPubKey.Type == VoutColdStaking && o.ScriptPubKey.Addresses[0] == address {
+				return true
+			}
 		}
 	}
 	return false

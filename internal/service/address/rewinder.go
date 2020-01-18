@@ -19,10 +19,10 @@ func (r *Rewinder) Rewind(height uint64) error {
 	log.Infof("Address Rewinder: Rewinding address index to height: %d", height)
 
 	addresses, err := r.repo.GetAddressesHeightGt(height)
-	log.Infof("Address Rewinder: Rewinding %d addresses", len(addresses))
 	if err != nil {
 		return err
 	}
+	log.Infof("Address Rewinder: Rewinding %d addresses", len(addresses))
 
 	err = r.elastic.DeleteHeightGT(height, elastic_cache.AddressTransactionIndex.Get())
 	if err != nil {
@@ -35,6 +35,7 @@ func (r *Rewinder) Rewind(height uint64) error {
 			return err
 		}
 		address = ResetAddress(address)
+		address.Height = height
 
 		log.Infof("Address Rewinder: Reindexing address index for %s", hash)
 		addressTxs, _ := r.repo.GetTxsRangeForAddress(hash, 0, height)

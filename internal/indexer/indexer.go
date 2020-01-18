@@ -106,5 +106,9 @@ func (i *Indexer) index(height uint64, option IndexOption) error {
 		log.Infof("Indexed height: %d", height)
 	}
 
+	//if height == 2772801 {
+	//	log.Fatal("Reached Height: ", 2772801)
+	//}
+
 	return i.index(height+1, option)
 }

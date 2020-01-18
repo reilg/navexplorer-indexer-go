@@ -1,6 +1,7 @@
 package address
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
@@ -27,12 +28,6 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
 
 	hashes := make([]string, 0)
 	for _, addressTx := range CreateAddressTransactions(txs) {
-		i.elastic.AddIndexRequest(
-			elastic_cache.AddressTransactionIndex.Get(),
-			fmt.Sprintf("%s-%s-%t", addressTx.Hash, addressTx.Txid, addressTx.Cold),
-			addressTx,
-		)
-
 		if addresses[addressTx.Hash] == nil {
 			address, err := i.repo.GetOrCreateAddress(addressTx.Hash)
 			if err != nil {
@@ -40,22 +35,30 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
 			}
 			addresses[addressTx.Hash] = address
 		}
-
-		ApplyTxToAddress(addresses[addressTx.Hash], addressTx)
-		addresses[addressTx.Hash].Height = addressTx.Height
-
+		addressTx.Balance = addresses[addressTx.Hash].Balance + addressTx.Total
 		i.elastic.AddIndexRequest(
 			elastic_cache.AddressTransactionIndex.Get(),
 			fmt.Sprintf("%s-%s-%t", addressTx.Hash, addressTx.Txid, addressTx.Cold),
 			addressTx,
 		)
 
+		ApplyTxToAddress(addresses[addressTx.Hash], addressTx)
 		i.elastic.AddUpdateRequest(
 			elastic_cache.AddressIndex.Get(),
 			fmt.Sprintf("%s-%d", addressTx.Hash, addressTx.Height),
 			addresses[addressTx.Hash],
 			addresses[addressTx.Hash].MetaData.Id,
 		)
+
+		if txs[0].Height == 2772753 {
+			bt, _ := json.Marshal(addressTx)
+			log.WithFields(log.Fields{"tx": string(bt)}).Info("\n\nAddress TX")
+		}
+	}
+
+	if txs[0].Height == 2772753 {
+		bt, _ := json.Marshal(addresses["Ndam1iebnsrwY6hDKaiFyg9pnKzB1gMw7Q"])
+		log.WithFields(log.Fields{"tx": string(bt)}).Info("\n\nAddress TX")
 	}
 
 	if _, err := i.repo.GetAddresses(hashes); err != nil {

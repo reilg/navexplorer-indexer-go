@@ -69,6 +69,16 @@ func createVin(vins []navcoind.Vin) []explorer.Vin {
 			input.Txid = &vins[idx].Txid
 			input.Vout = &vins[idx].Vout
 		}
+
+		if vins[idx].Value != 0 {
+			input.Value = vins[idx].Value
+			input.ValueSat = vins[idx].ValueSat
+		}
+
+		if vins[idx].Address != "" {
+			input.Addresses = []string{vins[idx].Address}
+		}
+
 		inputs = append(inputs, input)
 	}
 
@@ -103,7 +113,7 @@ func applyType(tx *explorer.BlockTransaction) {
 		tx.Type = explorer.TxCoinbase
 	} else if tx.Vout.GetAmount() <= tx.Vin.GetAmount() {
 		tx.Type = explorer.TxSpend
-	} else if tx.Vout.HasOutputOfType(explorer.VoutColdStaking) {
+	} else if len(tx.Vout) > 1 && tx.Vout[1].IsColdStaking() {
 		tx.Type = explorer.TxColdStaking
 	} else {
 		tx.Type = explorer.TxStaking
@@ -134,7 +144,16 @@ func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
 
 	voutsWithAddresses := tx.Vout.FilterWithAddresses()
 	vinsWithAddresses := tx.Vin.FilterWithAddresses()
-	if len(vinsWithAddresses) != 0 {
+
+	if tx.IsColdStaking() {
+		for _, vout := range tx.Vout {
+			if vout.ScriptPubKey.Type == explorer.VoutColdStaking {
+				block.StakedBy = vout.ScriptPubKey.Addresses[0]
+				break
+			}
+		}
+		block.StakedBy = voutsWithAddresses[0].ScriptPubKey.Addresses[0]
+	} else if len(vinsWithAddresses) != 0 {
 		block.StakedBy = vinsWithAddresses[0].Addresses[0]
 	} else if len(voutsWithAddresses) != 0 {
 		block.StakedBy = voutsWithAddresses[0].ScriptPubKey.Addresses[0]
