@@ -13,6 +13,18 @@ func (vouts *Vouts) HasOutputOfType(txType VoutType) bool {
 	return false
 }
 
+func (vouts *Vouts) HasAddress(address string) bool {
+	for _, vout := range *vouts {
+		for _, a := range vout.ScriptPubKey.Addresses {
+			if a == address {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 func (vouts *Vouts) GetAmount() uint64 {
 	var amount uint64 = 0
 	for _, o := range *vouts {
