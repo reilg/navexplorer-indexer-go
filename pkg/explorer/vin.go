@@ -21,6 +21,16 @@ type PreviousOutput struct {
 	Type   VoutType `json:"type"`
 }
 
+func (i *Vin) HasAddress(address string) bool {
+	for idx := range i.Addresses {
+		if i.Addresses[idx] == address {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (i *Vin) IsCoinbase() bool {
 	return i.Coinbase != ""
 }
