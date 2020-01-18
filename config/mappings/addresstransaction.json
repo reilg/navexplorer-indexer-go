@@ -37,6 +37,9 @@
       "input": {"type": "long"},
       "output": {"type": "long"},
       "total": {"type": "long"},
+      "balance": {
+        "type": "long"
+      },
       "cold": {"type": "boolean"}
     }
   },
