@@ -18,7 +18,7 @@ func NewRepo(Client *elastic.Client) *Repository {
 
 func (r *Repository) GetHeight() (uint64, error) {
 	results, err := r.Client.
-		Search(elastic_cache.AddressIndex.Get()).
+		Search(elastic_cache.BlockIndex.Get()).
 		Sort("height", false).
 		Size(1).
 		Do(context.Background())
@@ -40,7 +40,7 @@ func (r *Repository) GetHeight() (uint64, error) {
 
 func (r *Repository) GetBlockByHeight(height uint64) (*explorer.Block, error) {
 	results, err := r.Client.
-		Search(elastic_cache.AddressIndex.Get()).
+		Search(elastic_cache.BlockIndex.Get()).
 		Query(elastic.NewMatchQuery("height", height)).
 		Size(1).
 		Do(context.Background())
