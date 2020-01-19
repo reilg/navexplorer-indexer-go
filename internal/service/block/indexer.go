@@ -31,13 +31,13 @@ func (i *Indexer) Index(height uint64, option int) (*explorer.Block, []*explorer
 	}
 
 	var txs = make([]*explorer.BlockTransaction, 0)
-	for _, txHash := range block.Tx {
+	for idx, txHash := range block.Tx {
 		rawTx, err := i.navcoin.GetRawTransaction(txHash, true)
 		if err != nil {
 			log.WithFields(log.Fields{"hash": block.Hash, "txHash": txHash, "height": height}).WithError(err).Error("Failed to GetRawTransaction")
 			return nil, nil, err
 		}
-		tx := CreateBlockTransaction(rawTx.(navcoind.RawTransaction))
+		tx := CreateBlockTransaction(rawTx.(navcoind.RawTransaction), uint(idx))
 		applyType(tx)
 		applyStaking(tx, block)
 		applySpend(tx, block)
@@ -66,7 +66,7 @@ func (i *Indexer) indexPreviousTxData(tx explorer.BlockTransaction) {
 			log.WithFields(log.Fields{"hash": *vin[vdx].Txid}).WithError(err).Fatal("Failed to get previous transaction")
 		}
 
-		prevTx := CreateBlockTransaction(rawTx.(navcoind.RawTransaction))
+		prevTx := CreateBlockTransaction(rawTx.(navcoind.RawTransaction), 0)
 		if len(prevTx.Vout) <= *vin[vdx].Vout {
 			log.WithFields(log.Fields{"index": vdx, "tx": prevTx.Hash}).Fatal("Vout does not exist")
 		}

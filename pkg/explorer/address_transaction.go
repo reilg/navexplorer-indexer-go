@@ -8,6 +8,7 @@ type AddressTransaction struct {
 	Hash    string       `json:"hash"`
 	Txid    string       `json:"txid"`
 	Height  uint64       `json:"height"`
+	Index   uint         `json:"height"`
 	Time    time.Time    `json:"time, omitempty"`
 	Type    TransferType `json:"type"`
 	Input   uint64       `json:"input"`

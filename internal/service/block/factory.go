@@ -32,7 +32,7 @@ func CreateBlock(block *navcoind.Block) *explorer.Block {
 	}
 }
 
-func CreateBlockTransaction(navTx navcoind.RawTransaction) *explorer.BlockTransaction {
+func CreateBlockTransaction(navTx navcoind.RawTransaction, index uint) *explorer.BlockTransaction {
 	tx := &explorer.BlockTransaction{
 		RawBlockTransaction: explorer.RawBlockTransaction{
 			Hex:             navTx.Hex,
@@ -49,8 +49,9 @@ func CreateBlockTransaction(navTx navcoind.RawTransaction) *explorer.BlockTransa
 			Time:            time.Unix(navTx.Time, 0),
 			BlockTime:       time.Unix(navTx.BlockTime, 0),
 		},
-		Vin:  createVin(navTx.Vin),
-		Vout: createVout(navTx.Vout),
+		Index: index,
+		Vin:   createVin(navTx.Vin),
+		Vout:  createVout(navTx.Vout),
 	}
 
 	return tx

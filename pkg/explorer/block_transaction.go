@@ -25,8 +25,9 @@ type BlockTransaction struct {
 	MetaData MetaData `json:"-"`
 
 	RawBlockTransaction
-	Vin  Vins  `json:"vin"`
-	Vout Vouts `json:"vout"`
+	Index uint  `json:"index"`
+	Vin   Vins  `json:"vin"`
+	Vout  Vouts `json:"vout"`
 
 	Type  BlockTransactionType `json:"type"`
 	Stake uint64               `json:"stake"`

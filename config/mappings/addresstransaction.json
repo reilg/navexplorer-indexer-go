@@ -22,6 +22,9 @@
       "height": {
         "type": "long"
       },
+      "index": {
+        "type": "integer"
+      },
       "time": {
         "type": "date"
       },
