@@ -35,7 +35,7 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
 			}
 			addresses[addressTx.Hash] = address
 		}
-		addressTx.Balance = addresses[addressTx.Hash].Balance + addressTx.Total
+		addressTx.Balance = uint64(int64(addresses[addressTx.Hash].Balance) + addressTx.Total)
 		i.elastic.AddIndexRequest(
 			elastic_cache.AddressTransactionIndex.Get(),
 			fmt.Sprintf("%s-%s-%t", addressTx.Hash, addressTx.Txid, addressTx.Cold),
@@ -50,15 +50,10 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
 			addresses[addressTx.Hash].MetaData.Id,
 		)
 
-		if txs[0].Height == 2772753 {
+		if txs[0].Height == 293 {
 			bt, _ := json.Marshal(addressTx)
 			log.WithFields(log.Fields{"tx": string(bt)}).Info("\n\nAddress TX")
 		}
-	}
-
-	if txs[0].Height == 2772753 {
-		bt, _ := json.Marshal(addresses["Ndam1iebnsrwY6hDKaiFyg9pnKzB1gMw7Q"])
-		log.WithFields(log.Fields{"tx": string(bt)}).Info("\n\nAddress TX")
 	}
 
 	if _, err := i.repo.GetAddresses(hashes); err != nil {

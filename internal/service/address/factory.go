@@ -18,9 +18,9 @@ func ApplyTxToAddress(address *explorer.Address, tx *explorer.AddressTransaction
 	address.Height = tx.Height
 
 	if tx.Cold == true {
-		address.ColdBalance += tx.Total
+		address.ColdBalance = uint64(int64(address.ColdBalance) + tx.Total)
 		if explorer.IsColdStake(tx.Type) {
-			address.ColdStaked += tx.Total
+			address.ColdStaked = uint64(int64(address.ColdStaked) + tx.Total)
 			address.ColdStakedCount++
 		} else if tx.Type == explorer.TransferSend {
 			address.ColdSent += tx.Input
@@ -30,9 +30,9 @@ func ApplyTxToAddress(address *explorer.Address, tx *explorer.AddressTransaction
 			address.ColdReceivedCount++
 		}
 	} else {
-		address.Balance += tx.Total
+		address.Balance = uint64(int64(address.Balance) + tx.Total)
 		if explorer.IsStake(tx.Type) || explorer.IsColdStake(tx.Type) {
-			address.Staked += tx.Total
+			address.Staked = uint64(int64(address.Staked) + tx.Total)
 			address.StakedCount++
 		} else if tx.Type == explorer.TransferSend {
 			address.Sent += tx.Input
@@ -41,7 +41,7 @@ func ApplyTxToAddress(address *explorer.Address, tx *explorer.AddressTransaction
 			address.Received += tx.Output
 			address.ReceivedCount++
 		} else if tx.Type == explorer.TransferPoolFee {
-			address.Staked += tx.Total
+			address.Staked = uint64(int64(address.Staked) + tx.Total)
 			address.StakedCount++
 		}
 	}
@@ -55,6 +55,10 @@ func CreateAddressTransactions(txs []*explorer.BlockTransaction) []*explorer.Add
 	addressTxs := make([]*explorer.AddressTransaction, 0)
 	for _, tx := range txs {
 		for _, address := range tx.GetAllAddresses() {
+			if tx.Height == 293 {
+				log.Infof("Address %s in tx %s in block 293: ", address, tx.Hash)
+			}
+
 			if tx.HasColdInput(address) || tx.HasColdStakeStake(address) || tx.HasColdStakeReceive(address) {
 				if coldAddressTx := createColdTransaction(address, tx); coldAddressTx != nil {
 					addressTxs = append(addressTxs, coldAddressTx)
@@ -62,6 +66,17 @@ func CreateAddressTransactions(txs []*explorer.BlockTransaction) []*explorer.Add
 			}
 			if addressTx := createTransaction(address, tx); addressTx != nil {
 				addressTxs = append(addressTxs, addressTx)
+				if tx.Height == 293 {
+					bt, _ := json.Marshal(addressTx)
+					log.WithFields(log.Fields{"tx": string(bt)}).Info("Transaction")
+				}
+			} else {
+				if tx.Height == 293 {
+					log.Infof("Transaction not created for %s - %s", address, tx.Hash)
+				}
+			}
+			if tx.Height == 293 {
+				log.Info("")
 			}
 		}
 	}
@@ -85,7 +100,7 @@ func createTransaction(address string, tx *explorer.BlockTransaction) *explorer.
 		Cold:   false,
 		Input:  input,
 		Output: output,
-		Total:  output - input,
+		Total:  int64(output - input),
 	}
 
 	if tx.IsStaking() {
@@ -151,7 +166,7 @@ func createColdTransaction(address string, tx *explorer.BlockTransaction) *explo
 		Cold:   true,
 		Input:  input,
 		Output: output,
-		Total:  output - input,
+		Total:  int64(output - input),
 	}
 
 	if tx.IsSpend() {

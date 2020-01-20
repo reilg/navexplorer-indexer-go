@@ -13,7 +13,7 @@ type AddressTransaction struct {
 	Type    TransferType `json:"type"`
 	Input   uint64       `json:"input"`
 	Output  uint64       `json:"output"`
-	Total   uint64       `json:"total"`
+	Total   int64        `json:"total"`
 	Balance uint64       `json:"balance"`
 	Cold    bool         `json:"cold"`
 }
