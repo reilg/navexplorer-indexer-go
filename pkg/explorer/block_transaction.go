@@ -48,25 +48,31 @@ func (blockTransactions *BlockTransactions) GetCoinbase() *BlockTransaction {
 }
 
 func (tx *BlockTransaction) GetAllAddresses() []string {
-	var addressMap = make(map[string]struct{})
-	for _, vin := range tx.Vin {
-		for _, a := range vin.Addresses {
-			if _, ok := addressMap[a]; !ok {
-				addressMap[a] = struct{}{}
+	addresses := make([]string, 0)
+
+	exists := func(address string, addresses []string) bool {
+		for i := range addresses {
+			if addresses[i] == address {
+				return true
 			}
 		}
+		return false
 	}
-	for _, vout := range tx.Vout {
-		for _, a := range vout.ScriptPubKey.Addresses {
-			if _, ok := addressMap[a]; !ok {
-				addressMap[a] = struct{}{}
+
+	for _, vin := range tx.Vin {
+		for _, address := range vin.Addresses {
+			if !exists(address, addresses) {
+				addresses = append(addresses, address)
 			}
 		}
 	}
 
-	var addresses = make([]string, 0)
-	for address, _ := range addressMap {
-		addresses = append(addresses, address)
+	for _, vout := range tx.Vout {
+		for _, address := range vout.ScriptPubKey.Addresses {
+			if !exists(address, addresses) {
+				addresses = append(addresses, address)
+			}
+		}
 	}
 
 	return addresses
