@@ -20,3 +20,7 @@ type PaymentRequest struct {
 	Height         uint64 `json:"height"`
 	UpdatedOnBlock uint64 `json:"height"`
 }
+
+func (p *PaymentRequest) GetHeight() uint64 {
+	return p.Height
+}

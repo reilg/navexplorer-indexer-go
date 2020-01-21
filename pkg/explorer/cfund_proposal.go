@@ -24,3 +24,7 @@ type Proposal struct {
 	Height         uint64 `json:"height"`
 	UpdatedOnBlock uint64 `json:"updatedOnBlock"`
 }
+
+func (p *Proposal) GetHeight() uint64 {
+	return p.Height
+}
