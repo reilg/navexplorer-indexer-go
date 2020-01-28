@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	log "github.com/sirupsen/logrus"
 )
@@ -11,20 +12,21 @@ type Indexer struct {
 	navcoin       *navcoind.Navcoind
 	elastic       *elastic_cache.Index
 	orphanService *OrphanService
+	repository    *Repository
 }
 
-func NewIndexer(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, orphanService *OrphanService) *Indexer {
-	return &Indexer{navcoin, elastic, orphanService}
+func NewIndexer(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, orphanService *OrphanService, repository *Repository) *Indexer {
+	return &Indexer{navcoin, elastic, orphanService, repository}
 }
 
-func (i *Indexer) Index(height uint64, option int) (*explorer.Block, []*explorer.BlockTransaction, error) {
+func (i *Indexer) Index(height uint64, option indexer.IndexOption) (*explorer.Block, []*explorer.BlockTransaction, error) {
 	navBlock, err := i.getBlockAtHeight(height)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	block := CreateBlock(navBlock)
-	if option == 1 {
+	if option == indexer.SingleIndex {
 		if orphan, err := i.orphanService.IsOrphanBlock(block); orphan == true || err != nil {
 			return nil, nil, ErrOrphanBlockFound
 		}
@@ -43,6 +45,10 @@ func (i *Indexer) Index(height uint64, option int) (*explorer.Block, []*explorer
 		applySpend(tx, block)
 		applyCFundPayout(tx, block)
 		i.indexPreviousTxData(*tx)
+
+		if option == indexer.SingleIndex {
+			i.updateNextHashOfPreviousBlock(block)
+		}
 
 		txs = append(txs, tx)
 		i.elastic.AddIndexRequest(elastic_cache.BlockTransactionIndex.Get(), tx.Hash, tx)
@@ -98,4 +104,11 @@ func (i *Indexer) getBlockAtHeight(height uint64) (*navcoind.Block, error) {
 	}
 
 	return &block, nil
+}
+
+func (i *Indexer) updateNextHashOfPreviousBlock(block *explorer.Block) {
+	if prevBlock, err := i.repository.GetBlockByHeight(block.Height - 1); err == nil {
+		prevBlock.Nextblockhash = block.Hash
+		i.elastic.AddUpdateRequest(elastic_cache.BlockIndex.Get(), prevBlock.Hash, prevBlock, prevBlock.MetaData.Id)
+	}
 }

@@ -26,11 +26,11 @@ func (r *Repository) GetHeight() (uint64, error) {
 		return 0, err
 	}
 
-	var block *explorer.Block
 	if len(results.Hits.Hits) == 0 {
 		return 0, nil
 	}
 
+	var block *explorer.Block
 	if err = json.Unmarshal(results.Hits.Hits[0].Source, &block); err != nil {
 		return 0, err
 	}
@@ -53,9 +53,11 @@ func (r *Repository) GetBlockByHeight(height uint64) (*explorer.Block, error) {
 	}
 
 	var block *explorer.Block
-	if err = json.Unmarshal(results.Hits.Hits[0].Source, &block); err != nil {
+	hit := results.Hits.Hits[0]
+	if err = json.Unmarshal(hit.Source, &block); err != nil {
 		return nil, err
 	}
+	block.MetaData = explorer.NewMetaData(hit.Id, hit.Index)
 
 	return block, nil
 }

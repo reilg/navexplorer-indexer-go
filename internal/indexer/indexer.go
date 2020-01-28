@@ -70,7 +70,7 @@ func (i *Indexer) Index(option IndexOption) error {
 }
 
 func (i *Indexer) index(height uint64, option IndexOption) error {
-	b, txs, err := i.blockIndexer.Index(height, int(option))
+	b, txs, err := i.blockIndexer.Index(height, option)
 	if err != nil {
 		return err
 	}
