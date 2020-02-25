@@ -36,7 +36,13 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
 			}
 			addresses[addressTx.Hash] = address
 		}
-		addressTx.Balance = uint64(int64(addresses[addressTx.Hash].Balance) + addressTx.Total)
+
+		if addressTx.Cold == true {
+			addressTx.Balance = uint64(int64(addresses[addressTx.Hash].ColdBalance) + addressTx.Total)
+		} else {
+			addressTx.Balance = uint64(int64(addresses[addressTx.Hash].Balance) + addressTx.Total)
+		}
+
 		i.elastic.AddIndexRequest(
 			elastic_cache.AddressTransactionIndex.Get(),
 			fmt.Sprintf("%s-%s-%t", addressTx.Hash, addressTx.Txid, addressTx.Cold),
