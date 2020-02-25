@@ -131,7 +131,7 @@ func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
 			tx.Stake = 200000000 // hard coded to 2 as static rewards arrived after block_indexer 2761920
 			block.Stake += tx.Stake
 		} else {
-			tx.Stake = tx.Vout.GetAmount() - tx.Vin.GetAmount()
+			tx.Stake = tx.Vout.GetSpendableAmount() - tx.Vin.GetAmount()
 			block.Stake += tx.Stake
 		}
 	} else if tx.IsCoinbase() {

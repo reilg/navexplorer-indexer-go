@@ -25,6 +25,18 @@ func (vouts *Vouts) HasAddress(address string) bool {
 	return false
 }
 
+func (vouts *Vouts) GetSpendableAmount() uint64 {
+	var amount uint64 = 0
+	for _, o := range *vouts {
+		if o.ScriptPubKey.Type == VoutCfundContribution {
+			continue
+		}
+		amount += o.ValueSat
+	}
+
+	return amount
+}
+
 func (vouts *Vouts) GetAmount() uint64 {
 	var amount uint64 = 0
 	for _, o := range *vouts {
