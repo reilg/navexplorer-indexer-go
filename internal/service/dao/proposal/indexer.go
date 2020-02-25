@@ -5,6 +5,7 @@ import (
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/getsentry/raven-go"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -29,6 +30,7 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
 
 			resp, err := i.elastic.Client.Index().Index(elastic_cache.ProposalIndex.Get()).BodyJson(proposal).Do(context.Background())
 			if err != nil {
+				raven.CaptureError(err, nil)
 				log.WithError(err).Fatal("Failed to save new proposal")
 			}
 
@@ -46,6 +48,7 @@ func (i *Indexer) Update(blockCycle *explorer.BlockCycle, block *explorer.Block)
 
 		navP, err := i.navcoin.GetProposal(p.Hash)
 		if err != nil {
+			raven.CaptureError(err, nil)
 			log.WithError(err).Fatalf("Failed to find active proposal: %s", p.Hash)
 		}
 

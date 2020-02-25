@@ -2,6 +2,7 @@ package proposal
 
 import (
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/getsentry/raven-go"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -23,6 +24,7 @@ func (s *Service) LoadVotingProposals(block *explorer.Block, blockCycle *explore
 
 	proposals, err := s.repo.GetPossibleVotingProposals(excludeOlderThan)
 	if err != nil {
+		raven.CaptureError(err, nil)
 		log.WithError(err).Error("Failed to load pending proposals")
 	}
 

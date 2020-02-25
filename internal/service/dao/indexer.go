@@ -6,6 +6,7 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/proposal"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/vote"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/getsentry/raven-go"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -34,6 +35,7 @@ func (i *Indexer) Index(block *explorer.Block, txs []*explorer.BlockTransaction)
 	if consensus.Consensus == nil {
 		err := i.consensusIndexer.Index()
 		if err != nil {
+			raven.CaptureError(err, nil)
 			log.WithError(err).Fatal("Failed to get Consensus")
 		}
 	}

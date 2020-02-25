@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/getsentry/raven-go"
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
@@ -29,6 +30,7 @@ func (r *Repository) GetPossibleVotingRequests(height uint64) ([]*explorer.Payme
 		Sort("updatedOnBlock", false).
 		Do(context.Background())
 	if err != nil {
+		raven.CaptureError(err, nil)
 		return nil, err
 	}
 	if results != nil {

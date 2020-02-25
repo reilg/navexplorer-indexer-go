@@ -5,6 +5,7 @@ import (
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/getsentry/raven-go"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -23,6 +24,7 @@ func (r *Rewinder) Rewind() error {
 
 	cfundStats, err := r.navcoin.CfundStats()
 	if err != nil {
+		raven.CaptureError(err, nil)
 		log.WithError(err).Error("Failed to get CfundStats from Navcoind")
 		return err
 	}
@@ -33,6 +35,7 @@ func (r *Rewinder) Rewind() error {
 		UpdateConsensus(&cfundStats, consensus)
 		_, err := r.elastic.Client.Index().Index(elastic_cache.ConsensusIndex.Get()).BodyJson(consensus).Do(context.Background())
 		if err != nil {
+			raven.CaptureError(err, nil)
 			log.WithError(err).Fatalf("Failed to persist consensus")
 		}
 	} else {

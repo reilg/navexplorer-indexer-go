@@ -4,6 +4,7 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/generated/dic"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer"
+	"github.com/getsentry/raven-go"
 	"github.com/sarulabs/dingo/v3"
 	log "github.com/sirupsen/logrus"
 )
@@ -17,20 +18,11 @@ func Execute() {
 	container.GetElastic().InstallMappings()
 	container.GetSoftforkService().LoadSoftForks()
 
+	if config.Get().Sentry.Active {
+		_ = raven.SetDSN(config.Get().Sentry.DSN)
+	}
+
 	indexer.LastBlockIndexed = getHeight()
-	//location := getHeight()
-	//target := uint64(2772750)
-	//
-	//for {
-	//	if target < location {
-	//		location = location - 400
-	//		if err := container.GetRewinder().RewindToHeight(location); err != nil {
-	//			log.WithError(err).Fatal("Failed to rewind index")
-	//		}
-	//	} else {
-	//		break
-	//	}
-	//}
 
 	if err := container.GetRewinder().RewindToHeight(indexer.LastBlockIndexed); err != nil {
 		log.WithError(err).Fatal("Failed to rewind index")

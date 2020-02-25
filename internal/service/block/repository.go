@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/getsentry/raven-go"
 	"github.com/olivere/elastic/v7"
 )
 
@@ -45,16 +46,19 @@ func (r *Repository) GetBlockByHeight(height uint64) (*explorer.Block, error) {
 		Size(1).
 		Do(context.Background())
 	if err != nil || results == nil {
+		raven.CaptureError(err, nil)
 		return nil, err
 	}
 
 	if len(results.Hits.Hits) == 0 {
+		raven.CaptureError(err, nil)
 		return nil, elastic_cache.ErrRecordNotFound
 	}
 
 	var block *explorer.Block
 	hit := results.Hits.Hits[0]
 	if err = json.Unmarshal(hit.Source, &block); err != nil {
+		raven.CaptureError(err, nil)
 		return nil, err
 	}
 	block.MetaData = explorer.NewMetaData(hit.Id, hit.Index)

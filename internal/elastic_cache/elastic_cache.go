@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
+	"github.com/getsentry/raven-go"
 	"github.com/olivere/elastic/v7"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -154,6 +155,7 @@ func (i *Index) Persist() int {
 	actions := bulk.NumberOfActions()
 	if actions != 0 {
 		if _, err := bulk.Do(context.Background()); err != nil {
+			raven.CaptureError(err, nil)
 			logrus.WithError(err).Fatal("Failed to persist requests")
 		}
 	}
@@ -168,6 +170,7 @@ func (i *Index) DeleteHeightGT(height uint64, indices ...string) error {
 		Query(elastic.NewRangeQuery("height").Gt(height)).
 		Do(context.Background())
 	if err != nil {
+		raven.CaptureError(err, nil)
 		logrus.WithError(err).Errorf("Could not rewind to %d", height)
 	}
 
@@ -182,6 +185,7 @@ func (i *Index) createIndex(index string, mapping []byte) error {
 
 	exists, err := client.IndexExists(index).Do(ctx)
 	if err != nil {
+		raven.CaptureError(err, nil)
 		return err
 	}
 
@@ -189,6 +193,7 @@ func (i *Index) createIndex(index string, mapping []byte) error {
 		logrus.Infof("Deleting Index: %s", index)
 		_, err = client.DeleteIndex(index).Do(ctx)
 		if err != nil {
+			raven.CaptureError(err, nil)
 			return err
 		}
 		exists = false
@@ -197,6 +202,7 @@ func (i *Index) createIndex(index string, mapping []byte) error {
 	if !exists {
 		createIndex, err := client.CreateIndex(index).BodyString(string(mapping)).Do(ctx)
 		if err != nil {
+			raven.CaptureError(err, nil)
 			return err
 		}
 

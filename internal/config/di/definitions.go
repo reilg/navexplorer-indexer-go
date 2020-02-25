@@ -93,8 +93,8 @@ var Definitions = []dingo.Def{
 	},
 	{
 		Name: "block.indexer",
-		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, orphanedService *block.OrphanService) (*block.Indexer, error) {
-			return block.NewIndexer(navcoin, elastic, orphanedService), nil
+		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, orphanedService *block.OrphanService, repository *block.Repository) (*block.Indexer, error) {
+			return block.NewIndexer(navcoin, elastic, orphanedService, repository), nil
 		},
 	},
 	{

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/getsentry/raven-go"
 	"github.com/olivere/elastic/v7"
 	"strings"
 )
@@ -48,6 +49,7 @@ func (r *Repository) GetAddressesHeightGt(height uint64) ([]string, error) {
 		Size(0).
 		Do(context.Background())
 	if err != nil || results == nil {
+		raven.CaptureError(err, nil)
 		return nil, err
 	}
 
@@ -68,6 +70,7 @@ func (r *Repository) GetOrCreateAddress(hash string) (*explorer.Address, error) 
 		Size(1).
 		Do(context.Background())
 	if err != nil || results == nil {
+		raven.CaptureError(err, nil)
 		return nil, err
 	}
 
@@ -98,6 +101,7 @@ func (r *Repository) GetAddress(hash string) (*explorer.Address, error) {
 		Size(1).
 		Do(context.Background())
 	if err != nil {
+		raven.CaptureError(err, nil)
 		return nil, err
 	}
 
@@ -125,6 +129,7 @@ func (r *Repository) GetTxsRangeForAddress(hash string, from uint64, to uint64) 
 		Sort("height", true).
 		Do(context.Background())
 	if err != nil {
+		raven.CaptureError(err, nil)
 		return nil, err
 	}
 
@@ -132,6 +137,7 @@ func (r *Repository) GetTxsRangeForAddress(hash string, from uint64, to uint64) 
 	for _, hit := range results.Hits.Hits {
 		var tx *explorer.AddressTransaction
 		if err = json.Unmarshal(hit.Source, &tx); err != nil {
+			raven.CaptureError(err, nil)
 			return nil, err
 		}
 		txs = append(txs, tx)
@@ -148,6 +154,7 @@ func (r *Repository) GetTxsForAddress(hash string) ([]*explorer.AddressTransacti
 		Sort("height", true).
 		Do(context.Background())
 	if err != nil {
+		raven.CaptureError(err, nil)
 		return nil, err
 	}
 
@@ -155,6 +162,7 @@ func (r *Repository) GetTxsForAddress(hash string) ([]*explorer.AddressTransacti
 	for _, hit := range results.Hits.Hits {
 		var tx *explorer.AddressTransaction
 		if err = json.Unmarshal(hit.Source, &tx); err != nil {
+			raven.CaptureError(err, nil)
 			return nil, err
 		}
 		txs = append(txs, tx)

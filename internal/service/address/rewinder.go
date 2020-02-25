@@ -3,6 +3,7 @@ package address
 import (
 	"context"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
+	"github.com/getsentry/raven-go"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -20,12 +21,14 @@ func (r *Rewinder) Rewind(height uint64) error {
 
 	addresses, err := r.repo.GetAddressesHeightGt(height)
 	if err != nil {
+		raven.CaptureError(err, nil)
 		return err
 	}
 	log.Infof("Address Rewinder: Rewinding %d addresses", len(addresses))
 
 	err = r.elastic.DeleteHeightGT(height, elastic_cache.AddressTransactionIndex.Get())
 	if err != nil {
+		raven.CaptureError(err, nil)
 		return err
 	}
 
@@ -50,6 +53,7 @@ func (r *Rewinder) Rewind(height uint64) error {
 			Id(address.MetaData.Id).
 			Do(context.Background())
 		if err != nil {
+			raven.CaptureError(err, nil)
 			return err
 		}
 	}

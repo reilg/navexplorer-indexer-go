@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/getsentry/raven-go"
 	"github.com/olivere/elastic/v7"
 )
 
@@ -21,6 +22,7 @@ func (r *Repository) GetConsensus() (*explorer.Consensus, error) {
 		Size(1).
 		Do(context.Background())
 	if err != nil || results == nil {
+		raven.CaptureError(err, nil)
 		return nil, err
 	}
 
@@ -31,6 +33,7 @@ func (r *Repository) GetConsensus() (*explorer.Consensus, error) {
 	var consensus *explorer.Consensus
 	hit := results.Hits.Hits[0]
 	if err = json.Unmarshal(hit.Source, &consensus); err != nil {
+		raven.CaptureError(err, nil)
 		return nil, err
 	}
 	consensus.MetaData = explorer.NewMetaData(hit.Id, hit.Index)

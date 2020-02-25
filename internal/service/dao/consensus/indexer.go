@@ -5,6 +5,7 @@ import (
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/getsentry/raven-go"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -23,6 +24,7 @@ func NewIndexer(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, repo *
 func (i *Indexer) Index() error {
 	cfundStats, err := i.navcoin.CfundStats()
 	if err != nil {
+		raven.CaptureError(err, nil)
 		log.WithError(err).Error("Failed to get CfundStats")
 		return err
 	}
@@ -33,6 +35,7 @@ func (i *Indexer) Index() error {
 		UpdateConsensus(&cfundStats, consensus)
 		_, err := i.elastic.Client.Index().Index(elastic_cache.ConsensusIndex.Get()).BodyJson(consensus).Do(context.Background())
 		if err != nil {
+			raven.CaptureError(err, nil)
 			log.WithError(err).Fatalf("Failed to persist consensus")
 			return err
 		}

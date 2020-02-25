@@ -19,6 +19,7 @@ type Config struct {
 	Navcoind           NavcoindConfig
 	ElasticSearch      ElasticSearchConfig
 	ZeroMq             ZeroMqConfig
+	Sentry             SentryConfig
 }
 
 type NavcoindConfig struct {
@@ -41,6 +42,11 @@ type ElasticSearchConfig struct {
 
 type ZeroMqConfig struct {
 	Address string
+}
+
+type SentryConfig struct {
+	Active bool
+	DSN    string
 }
 
 func Init() {
@@ -78,6 +84,10 @@ func Get() *Config {
 		},
 		ZeroMq: ZeroMqConfig{
 			Address: getString("ZEROMQ_ADDRESS", "tcp://navcoind:28332"),
+		},
+		Sentry: SentryConfig{
+			Active: getBool("SENTRY_ACTIVE", false),
+			DSN:    getString("SENTRY_DSN", ""),
 		},
 	}
 }

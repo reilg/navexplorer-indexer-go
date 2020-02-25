@@ -2,10 +2,12 @@ package indexer
 
 import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer/IndexOption"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/address"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/block"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/softfork"
+	"github.com/getsentry/raven-go"
 	log "github.com/sirupsen/logrus"
 	"sync"
 )
@@ -19,12 +21,8 @@ type Indexer struct {
 	rewinder        *Rewinder
 }
 
-type IndexOption int
-
 var (
-	SingleIndex      IndexOption = 1
-	BatchIndex       IndexOption = 2
-	LastBlockIndexed uint64      = 0
+	LastBlockIndexed uint64 = 0
 )
 
 func NewIndexer(
@@ -46,7 +44,7 @@ func NewIndexer(
 }
 
 func (i *Indexer) BulkIndex() {
-	if err := i.Index(BatchIndex); err != nil {
+	if err := i.Index(IndexOption.BatchIndex); err != nil {
 		if err.Error() == "-8: Block height out of range" {
 			i.elastic.Persist()
 		} else {
@@ -55,13 +53,16 @@ func (i *Indexer) BulkIndex() {
 	}
 }
 
-func (i *Indexer) Index(option IndexOption) error {
-	if err := i.index(LastBlockIndexed+1, option); err != block.ErrOrphanBlockFound {
+func (i *Indexer) Index(option IndexOption.IndexOption) error {
+	err := i.index(LastBlockIndexed+1, option)
+	if err != block.ErrOrphanBlockFound {
+		raven.CaptureError(err, nil)
 		// Unexpected indexing error
 		return err
 	}
 
 	if err := i.rewinder.RewindToHeight(LastBlockIndexed - 9); err != nil {
+		raven.CaptureError(err, nil)
 		// Unable to rewind blocks
 		return err
 	}
@@ -69,9 +70,10 @@ func (i *Indexer) Index(option IndexOption) error {
 	return i.Index(option)
 }
 
-func (i *Indexer) index(height uint64, option IndexOption) error {
+func (i *Indexer) index(height uint64, option IndexOption.IndexOption) error {
 	b, txs, err := i.blockIndexer.Index(height, option)
 	if err != nil {
+		raven.CaptureError(err, nil)
 		return err
 	}
 
@@ -99,16 +101,12 @@ func (i *Indexer) index(height uint64, option IndexOption) error {
 
 	LastBlockIndexed = height
 
-	if option == BatchIndex {
+	if option == IndexOption.BatchIndex {
 		i.elastic.BatchPersist(height)
 	} else {
 		i.elastic.Persist()
 		log.Infof("Indexed height: %d", height)
 	}
-
-	//if height == 2772801 {
-	//	log.Fatal("Reached Height: ", 2772801)
-	//}
 
 	return i.index(height+1, option)
 }

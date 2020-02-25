@@ -1,10 +1,10 @@
 package address
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/getsentry/raven-go"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -31,6 +31,7 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
 		if addresses[addressTx.Hash] == nil {
 			address, err := i.repo.GetOrCreateAddress(addressTx.Hash)
 			if err != nil {
+				raven.CaptureError(err, nil)
 				log.WithError(err).Fatalf("Could not get or create address: %s", addressTx.Hash)
 			}
 			addresses[addressTx.Hash] = address
@@ -49,14 +50,10 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
 			addresses[addressTx.Hash],
 			addresses[addressTx.Hash].MetaData.Id,
 		)
-
-		if txs[0].Height == 293 {
-			bt, _ := json.Marshal(addressTx)
-			log.WithFields(log.Fields{"tx": string(bt)}).Info("\n\nAddress TX")
-		}
 	}
 
 	if _, err := i.repo.GetAddresses(hashes); err != nil {
+		raven.CaptureError(err, nil)
 		log.WithError(err).Fatalf("Could not get addresses for txs at height %d", txs[0].Height)
 		//addresses = i.createNewAddresses(hashes, addresses)
 	}
