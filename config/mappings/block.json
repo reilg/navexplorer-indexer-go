@@ -74,7 +74,7 @@
         }
       },
       "difficulty": {
-        "type": "long"
+        "type": "float"
       },
       "chainwork": {
         "type": "text",
