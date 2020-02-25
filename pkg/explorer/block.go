@@ -37,9 +37,6 @@ type Block struct {
 
 	// Transient
 	Best bool `json:"best,omitempty"`
-
-	// Legacy
-	Created string `json:"created,omitempty"`
 }
 
 type BlockCycle struct {
