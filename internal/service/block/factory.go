@@ -1,6 +1,7 @@
 package block
 
 import (
+	"fmt"
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	"time"
@@ -23,7 +24,7 @@ func CreateBlock(block *navcoind.Block) *explorer.Block {
 			MedianTime:        time.Unix(block.MedianTime, 0),
 			Nonce:             block.Nonce,
 			Bits:              block.Bits,
-			Difficulty:        block.Difficulty,
+			Difficulty:        fmt.Sprintf("%f", block.Difficulty),
 			Chainwork:         block.Chainwork,
 			Previousblockhash: block.Previousblockhash,
 			Nextblockhash:     block.Nextblockhash,

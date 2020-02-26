@@ -17,7 +17,7 @@ type RawBlock struct {
 	MedianTime        time.Time `json:"mediantime"`
 	Nonce             uint64    `json:"nonce"`
 	Bits              string    `json:"bits"`
-	Difficulty        float64   `json:"difficulty"`
+	Difficulty        string    `json:"difficulty"`
 	Chainwork         string    `json:"chainwork,omitempty"`
 	Previousblockhash string    `json:"previousblockhash"`
 	Nextblockhash     string    `json:"nextblockhash"`
