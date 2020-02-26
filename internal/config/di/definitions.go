@@ -117,8 +117,8 @@ var Definitions = []dingo.Def{
 	},
 	{
 		Name: "block.orphan.service",
-		Build: func(navcoin *navcoind.Navcoind) (*block.OrphanService, error) {
-			return block.NewOrphanService(navcoin), nil
+		Build: func(blockRepository *block.Repository) (*block.OrphanService, error) {
+			return block.NewOrphanService(blockRepository), nil
 		},
 	},
 	{

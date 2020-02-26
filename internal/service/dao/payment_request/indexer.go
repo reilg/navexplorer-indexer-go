@@ -54,7 +54,7 @@ func (i *Indexer) Update(blockCycle *explorer.BlockCycle, block *explorer.Block)
 
 		UpdatePaymentRequest(navP, block.Height, p)
 		if p.UpdatedOnBlock == block.Height {
-			i.elastic.AddUpdateRequest(elastic_cache.ProposalIndex.Get(), p.Hash, p, p.MetaData.Id)
+			i.elastic.AddUpdateRequest(elastic_cache.PaymentRequestIndex.Get(), p.Hash, p, p.MetaData.Id)
 		}
 
 		if p.Status == explorer.PaymentRequestExpired || p.Status == explorer.PaymentRequestRejected {

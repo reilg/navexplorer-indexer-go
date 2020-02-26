@@ -28,11 +28,12 @@ func (i *Indexer) Index(height uint64, option IndexOption.IndexOption) (*explore
 	}
 
 	block := CreateBlock(navBlock)
-	//if option == indexer.SingleIndex {
-	if orphan, err := i.orphanService.IsOrphanBlock(block); orphan == true || err != nil {
-		return nil, nil, ErrOrphanBlockFound
+	if option == IndexOption.SingleIndex {
+		orphan, err := i.orphanService.IsOrphanBlock(block)
+		if orphan == true || err != nil {
+			return nil, nil, ErrOrphanBlockFound
+		}
 	}
-	//}
 
 	var txs = make([]*explorer.BlockTransaction, 0)
 	for idx, txHash := range block.Tx {
