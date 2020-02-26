@@ -31,13 +31,13 @@ func CreateProposal(proposal navcoind.Proposal, height uint64) *explorer.Proposa
 }
 
 func UpdateProposal(proposal navcoind.Proposal, height uint64, p *explorer.Proposal) {
-	if p.NotPaidYet != convertStringToFloat(proposal.RequestedAmount) {
-		p.NotPaidYet = convertStringToFloat(proposal.RequestedAmount)
+	if p.NotPaidYet != convertStringToFloat(proposal.NotPaidYet) {
+		p.NotPaidYet = convertStringToFloat(proposal.NotPaidYet)
 		p.UpdatedOnBlock = height
 	}
 
-	if p.NotRequestedYet != convertStringToFloat(proposal.RequestedAmount) {
-		p.NotRequestedYet = convertStringToFloat(proposal.RequestedAmount)
+	if p.NotRequestedYet != convertStringToFloat(proposal.NotRequestedYet) {
+		p.NotRequestedYet = convertStringToFloat(proposal.NotRequestedYet)
 		p.UpdatedOnBlock = height
 	}
 
