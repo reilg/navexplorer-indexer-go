@@ -154,7 +154,14 @@ func (i *Index) Persist() int {
 
 	actions := bulk.NumberOfActions()
 	if actions != 0 {
-		if _, err := bulk.Do(context.Background()); err != nil {
+		response, err := bulk.Do(context.Background())
+		if response.Errors == true {
+			for _, failed := range response.Failed() {
+				raven.CaptureMessage(failed.Error.Reason, nil)
+				logrus.Fatal(failed.Error.Reason)
+			}
+		}
+		if err != nil {
 			raven.CaptureError(err, nil)
 			logrus.WithError(err).Fatal("Failed to persist requests")
 		}
