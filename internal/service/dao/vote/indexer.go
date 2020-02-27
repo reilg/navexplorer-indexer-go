@@ -2,6 +2,7 @@ package vote
 
 import (
 	"fmt"
+	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 )
@@ -14,13 +15,13 @@ func NewIndexer(elastic *elastic_cache.Index) *Indexer {
 	return &Indexer{elastic}
 }
 
-func (i *Indexer) IndexVotes(txs []*explorer.BlockTransaction, block *explorer.Block) {
+func (i *Indexer) IndexVotes(txs []*explorer.BlockTransaction, block *explorer.Block, blockHeader *navcoind.BlockHeader) {
 	for _, tx := range txs {
 		if !tx.IsCoinbase() {
 			continue
 		}
 
-		if v := CreateVotes(block, tx); v != nil {
+		if v := CreateVotes(block, tx, blockHeader); v != nil {
 			i.elastic.AddIndexRequest(elastic_cache.DaoVoteIndex.Get(), fmt.Sprintf("%d-%s", v.Height, v.Address), v)
 			return
 		}

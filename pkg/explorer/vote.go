@@ -1,6 +1,6 @@
 package explorer
 
-type DaoVote struct {
+type DaoVotes struct {
 	MetaData MetaData `json:"-"`
 
 	Height  uint64 `json:"height"`
@@ -19,4 +19,6 @@ type VoteType string
 var (
 	ProposalVote       VoteType = "Proposal"
 	PaymentRequestVote VoteType = "PaymentRequest"
+	DaoSupport         VoteType = "DaoSupport"
+	DaoVote            VoteType = "DaoVote"
 )

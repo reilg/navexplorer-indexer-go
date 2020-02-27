@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	log "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -18,16 +19,16 @@ func CreateBlock(block *navcoind.Block) *explorer.Block {
 			Height:            block.Height,
 			Version:           block.Version,
 			VersionHex:        block.VersionHex,
-			Merkleroot:        block.Merkleroot,
+			Merkleroot:        block.MerkleRoot,
 			Tx:                block.Tx,
 			Time:              time.Unix(block.Time, 0),
 			MedianTime:        time.Unix(block.MedianTime, 0),
 			Nonce:             block.Nonce,
 			Bits:              block.Bits,
 			Difficulty:        fmt.Sprintf("%f", block.Difficulty),
-			Chainwork:         block.Chainwork,
-			Previousblockhash: block.Previousblockhash,
-			Nextblockhash:     block.Nextblockhash,
+			Chainwork:         block.ChainWork,
+			Previousblockhash: block.PreviousBlockHash,
+			Nextblockhash:     block.NextBlockHash,
 		},
 		TxCount: uint(len(block.Tx)),
 	}
@@ -105,6 +106,10 @@ func createVout(vouts []navcoind.Vout) []explorer.Vout {
 				},
 			},
 		})
+		if output[len(output)-1].ScriptPubKey.Type == explorer.VoutProposalYesVote {
+			log.Infof("ProposalYesVote: %s", output[len(output)-1].ScriptPubKey.Hash)
+		}
+
 	}
 
 	return output

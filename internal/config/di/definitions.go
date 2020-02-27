@@ -141,12 +141,13 @@ var Definitions = []dingo.Def{
 	},
 	{
 		Name: "dao.Indexer",
-		Build: func(proposalIndexer *proposal.Indexer, paymentRequestIndexer *payment_request.Indexer, voteIndexer *vote.Indexer, consensusIndexer *consensus.Indexer) (*dao.Indexer, error) {
+		Build: func(proposalIndexer *proposal.Indexer, paymentRequestIndexer *payment_request.Indexer, voteIndexer *vote.Indexer, consensusIndexer *consensus.Indexer, navcoin *navcoind.Navcoind) (*dao.Indexer, error) {
 			return dao.NewIndexer(
 				proposalIndexer,
 				paymentRequestIndexer,
 				voteIndexer,
 				consensusIndexer,
+				navcoin,
 			), nil
 		},
 	},
