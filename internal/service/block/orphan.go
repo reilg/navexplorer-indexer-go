@@ -26,6 +26,9 @@ func (o *OrphanService) IsOrphanBlock(block *explorer.Block) (bool, error) {
 
 	previousBlock, err := o.repository.GetBlockByHeight(block.Height - 1)
 	if err != nil {
+		if err.Error() == "Record not found" {
+			return true, nil
+		}
 		raven.CaptureError(err, nil)
 		log.WithError(err).Fatal("OrphanService: Failed to get previous block hash")
 	}
