@@ -62,7 +62,7 @@ func (b *BlockCycle) IsEnd() bool {
 }
 
 func GetCycleForHeight(height uint64, size uint) uint {
-	return ((uint(height) - 1) / size) + 1
+	return (uint(height) / size) + 1
 }
 
 func GetCycleIndex(height uint64, cycle uint, size uint) uint {
