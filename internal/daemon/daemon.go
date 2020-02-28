@@ -13,6 +13,10 @@ var container *dic.Container
 
 func Execute() {
 	config.Init()
+	if config.Get().Debug {
+		log.SetLevel(log.DebugLevel)
+	}
+
 	container, _ = dic.NewContainer(dingo.App)
 
 	container.GetElastic().InstallMappings()
@@ -52,9 +56,6 @@ func getHeight() uint64 {
 	if height, err := container.GetBlockRepo().GetHeight(); err != nil {
 		log.WithError(err).Fatal("Failed to get block height")
 	} else {
-		if height == 2772753 {
-			log.Fatal("DIE HERE")
-		}
 		if height >= uint64(config.Get().BulkIndexSize) {
 			return height - uint64(config.Get().BulkIndexSize)
 		}
