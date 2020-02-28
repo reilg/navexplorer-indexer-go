@@ -13,27 +13,27 @@ func CreateVotes(block *explorer.Block, tx *explorer.BlockTransaction, header *n
 
 	daoVote := &explorer.DaoVotes{Height: tx.Height, Address: block.StakedBy}
 
-	for _, cfundVote := range header.CfundVotes {
-		vote := explorer.Vote{Type: explorer.ProposalVote, Hash: cfundVote.Hash, Vote: cfundVote.Vote}
-		log.Infof("Adding cfund proposal vote for %s - %d", cfundVote.Hash, cfundVote.Vote)
+	for _, v := range header.CfundVotes {
+		vote := explorer.Vote{Type: explorer.ProposalVote, Hash: v.Hash, Vote: v.Vote}
+		log.Debugf("%d Adding cfund proposal vote for %s - %d", block.Height, v.Hash, v.Vote)
 		daoVote.Votes = append(daoVote.Votes, vote)
 	}
 
-	for _, cfundVote := range header.CfundRequestVotes {
-		vote := explorer.Vote{Type: explorer.PaymentRequestVote, Hash: cfundVote.Hash, Vote: cfundVote.Vote}
-		log.Infof("Adding cfund payment request vote for %s - %d", cfundVote.Hash, cfundVote.Vote)
+	for _, v := range header.CfundRequestVotes {
+		vote := explorer.Vote{Type: explorer.PaymentRequestVote, Hash: v.Hash, Vote: v.Vote}
+		log.Debugf("%d Adding cfund payment request vote for %s - %d", block.Height, v.Hash, v.Vote)
 		daoVote.Votes = append(daoVote.Votes, vote)
 	}
 
-	for _, cfundVote := range header.DaoSupport {
-		vote := explorer.Vote{Type: explorer.DaoSupport, Hash: cfundVote.Hash, Vote: cfundVote.Vote}
-		log.Infof("Adding dao support for %s - %d", cfundVote.Hash, cfundVote.Vote)
+	for _, v := range header.DaoSupport {
+		vote := explorer.Vote{Type: explorer.DaoSupport, Hash: v}
+		log.Debugf("%d Adding dao support for %s", block.Height, v)
 		daoVote.Votes = append(daoVote.Votes, vote)
 	}
 
-	for _, cfundVote := range header.DaoVotes {
-		vote := explorer.Vote{Type: explorer.DaoVote, Hash: cfundVote.Hash, Vote: cfundVote.Vote}
-		log.Infof("Adding dao vote for %s - %d", cfundVote.Hash, cfundVote.Vote)
+	for _, v := range header.DaoVotes {
+		vote := explorer.Vote{Type: explorer.DaoVote, Hash: v.Hash, Vote: v.Vote}
+		log.Debugf("%d Adding dao vote for %s - %d", block.Height, v.Hash, v.Vote)
 		daoVote.Votes = append(daoVote.Votes, vote)
 	}
 
