@@ -18,7 +18,7 @@ type RawPaymentRequest struct {
 type PaymentRequest struct {
 	RawPaymentRequest
 	Height         uint64 `json:"height"`
-	UpdatedOnBlock uint64 `json:"height"`
+	UpdatedOnBlock uint64 `json:"updatedOnBlock"`
 }
 
 func (p *PaymentRequest) GetHeight() uint64 {
