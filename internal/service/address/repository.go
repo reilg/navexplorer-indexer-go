@@ -8,6 +8,7 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	"github.com/getsentry/raven-go"
 	"github.com/olivere/elastic/v7"
+	log "github.com/sirupsen/logrus"
 	"strings"
 )
 
@@ -20,6 +21,8 @@ func NewRepo(Client *elastic.Client) *Repository {
 }
 
 func (r *Repository) GetAddresses(hashes []string) ([]*explorer.Address, error) {
+	log.Debugf("GetAddresses([%s])", strings.Join(hashes, ","))
+
 	results, err := r.Client.Search(elastic_cache.AddressIndex.Get()).
 		Query(elastic.NewMatchQuery("hash", strings.Join(hashes, " "))).
 		Size(len(hashes)).
@@ -42,6 +45,8 @@ func (r *Repository) GetAddresses(hashes []string) ([]*explorer.Address, error) 
 }
 
 func (r *Repository) GetAddressesHeightGt(height uint64) ([]string, error) {
+	log.Debugf("GetAddressesHeightGt(height:%d)", height)
+
 	results, err := r.Client.
 		Search(elastic_cache.AddressTransactionIndex.Get()).
 		Query(elastic.NewRangeQuery("height").Gt(height)).
@@ -64,6 +69,8 @@ func (r *Repository) GetAddressesHeightGt(height uint64) ([]string, error) {
 }
 
 func (r *Repository) GetOrCreateAddress(hash string) (*explorer.Address, error) {
+	log.Debugf("GetOrCreateAddress(hash:%s)", hash)
+
 	results, err := r.Client.
 		Search(elastic_cache.AddressIndex.Get()).
 		Query(elastic.NewMatchQuery("hash", hash)).
@@ -95,6 +102,8 @@ func (r *Repository) GetOrCreateAddress(hash string) (*explorer.Address, error) 
 }
 
 func (r *Repository) GetAddress(hash string) (*explorer.Address, error) {
+	log.Debugf("GetAddress(hash:%s)", hash)
+
 	results, err := r.Client.
 		Search(elastic_cache.AddressIndex.Get()).
 		Query(elastic.NewTermQuery("hash", hash)).
@@ -118,6 +127,8 @@ func (r *Repository) GetAddress(hash string) (*explorer.Address, error) {
 }
 
 func (r *Repository) GetTxsRangeForAddress(hash string, from uint64, to uint64) ([]*explorer.AddressTransaction, error) {
+	log.Debugf("GetTxsRangeForAddress(hash:%s, from:%d, to:%d)", hash, from, to)
+
 	query := elastic.NewBoolQuery()
 	query = query.Must(elastic.NewMatchQuery("hash", hash))
 	query = query.Must(elastic.NewRangeQuery("height").Gt(from).Lte(to))
@@ -147,6 +158,8 @@ func (r *Repository) GetTxsRangeForAddress(hash string, from uint64, to uint64) 
 }
 
 func (r *Repository) GetTxsForAddress(hash string) ([]*explorer.AddressTransaction, error) {
+	log.Debugf("GetTxsForAddress(hash:%s)", hash)
+
 	results, err := r.Client.
 		Search(elastic_cache.AddressTransactionIndex.Get()).
 		Query(elastic.NewMatchQuery("hash", hash)).
