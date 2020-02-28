@@ -9,6 +9,8 @@ github.com/NavExplorer/navcoind-go v0.1.4 h1:DRbDt8nzPZ/sOnQ7TaXpO0A8n8qz04/CTCq
 github.com/NavExplorer/navcoind-go v0.1.4/go.mod h1:SkiAvsIfYh0pWBox2yOOiDaPOucS/bayAVkMUNR0Sv0=
 github.com/NavExplorer/navcoind-go v0.1.5 h1:AFKRBOJjhnNB8+y28xUXzzdQqUKHIRRSZJtxw9t2x4o=
 github.com/NavExplorer/navcoind-go v0.1.5/go.mod h1:SkiAvsIfYh0pWBox2yOOiDaPOucS/bayAVkMUNR0Sv0=
+github.com/NavExplorer/navcoind-go v0.1.6 h1:2zLrs95lonSS/Z02ITVHdYi17ZoLv3GnZc86jxVu/dE=
+github.com/NavExplorer/navcoind-go v0.1.6/go.mod h1:SkiAvsIfYh0pWBox2yOOiDaPOucS/bayAVkMUNR0Sv0=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
