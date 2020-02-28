@@ -58,10 +58,12 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
 		)
 	}
 
-	if _, err := i.repo.GetAddresses(hashes); err != nil {
-		raven.CaptureError(err, nil)
-		log.WithError(err).Fatalf("Could not get addresses for txs at height %d", txs[0].Height)
-		//addresses = i.createNewAddresses(hashes, addresses)
+	if len(hashes) > 0 {
+		if _, err := i.repo.GetAddresses(hashes); err != nil {
+			raven.CaptureError(err, nil)
+			log.WithError(err).Fatalf("Could not get addresses for txs at height %d", txs[0].Height)
+			//addresses = i.createNewAddresses(hashes, addresses)
+		}
 	}
 }
 
