@@ -83,17 +83,20 @@ func (i *Indexer) index(height uint64, option IndexOption.IndexOption) error {
 
 	go func() {
 		defer wg.Done()
+		log.Debugf("Index addresses at height %d", height)
 		i.addressIndexer.Index(txs)
 	}()
 
 	go func() {
 		defer wg.Done()
+		log.Debugf("Index soft forks at height %d", height)
 		i.softForkIndexer.Index(b)
 	}()
 
 	go func() {
 		defer wg.Done()
 		if softfork.SoftForks.GetSoftFork("communityfund").State == "active" {
+			log.Debugf("Index dao at height %d", height)
 			i.daoIndexer.Index(b, txs)
 		}
 	}()

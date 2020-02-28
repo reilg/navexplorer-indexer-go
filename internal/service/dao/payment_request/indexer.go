@@ -54,6 +54,7 @@ func (i *Indexer) Update(blockCycle *explorer.BlockCycle, block *explorer.Block)
 
 		UpdatePaymentRequest(navP, block.Height, p)
 		if p.UpdatedOnBlock == block.Height {
+			log.Debugf("Payment Request %s updated on block %d", p.Hash, block.Height)
 			i.elastic.AddUpdateRequest(elastic_cache.PaymentRequestIndex.Get(), p.Hash, p, p.MetaData.Id)
 		}
 

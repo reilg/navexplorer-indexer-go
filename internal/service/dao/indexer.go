@@ -52,8 +52,13 @@ func (i *Indexer) Index(block *explorer.Block, txs []*explorer.BlockTransaction)
 
 	blockCycle := block.BlockCycle(consensus.Consensus.BlocksPerVotingCycle, consensus.Consensus.MinSumVotesPerVotingCycle)
 
+	log.Debugf("Index dao proposals at height %d", block.Height)
 	i.proposalIndexer.Index(txs)
+
+	log.Debugf("Index dao payment requests at height %d", block.Height)
 	i.paymentRequestIndexer.Index(txs)
+
+	log.Debugf("Index dao votes requests at height %d", block.Height)
 	i.voteIndexer.IndexVotes(txs, block, header)
 
 	if blockCycle.IsEnd() {
