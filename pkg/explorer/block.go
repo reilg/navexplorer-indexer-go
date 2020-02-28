@@ -58,7 +58,7 @@ func (b *Block) BlockCycle(size uint, quorum uint) *BlockCycle {
 }
 
 func (b *BlockCycle) IsEnd() bool {
-	return b.Index == b.Size
+	return b.Index == b.Size-1
 }
 
 func GetCycleForHeight(height uint64, size uint) uint {
