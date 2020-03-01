@@ -40,6 +40,15 @@
       "locktime": {
         "type": "long"
       },
+      "strdzeel": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
       "anonDestination": {
         "type": "text",
         "fields": {

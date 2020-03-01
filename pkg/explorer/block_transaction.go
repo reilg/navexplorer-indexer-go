@@ -10,6 +10,7 @@ type RawBlockTransaction struct {
 	VSize           uint64    `json:"vsize"`
 	Version         uint32    `json:"version"`
 	LockTime        uint32    `json:"locktime"`
+	Strdzeel        string    `json:"strdzeel"`
 	AnonDestination string    `json:"anon-destination"`
 	BlockHash       string    `json:"blockhash, omitempty"`
 	Height          uint64    `json:"height"`

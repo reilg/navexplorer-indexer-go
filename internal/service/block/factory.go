@@ -44,6 +44,7 @@ func CreateBlockTransaction(navTx navcoind.RawTransaction, index uint) *explorer
 			VSize:           navTx.VSize,
 			Version:         navTx.Version,
 			LockTime:        navTx.LockTime,
+			Strdzeel:        navTx.Strdzeel,
 			AnonDestination: navTx.AnonDestination,
 			BlockHash:       navTx.BlockHash,
 			Height:          navTx.Height,
