@@ -55,20 +55,19 @@ func (i *Indexer) BulkIndex() {
 
 func (i *Indexer) Index(option IndexOption.IndexOption) error {
 	err := i.index(LastBlockIndexed+1, option)
-	if err != block.ErrOrphanBlockFound {
-		raven.CaptureError(err, nil)
-		log.WithError(err).Error("Failed to index block")
-		// Unexpected indexing error
-		return err
+	if err == nil {
+		return i.Index(option)
 	}
 
-	if err := i.rewinder.RewindToHeight(LastBlockIndexed - 9); err != nil {
-		raven.CaptureError(err, nil)
-		// Unable to rewind blocks
-		return err
+	if err == block.ErrOrphanBlockFound {
+		if err := i.rewinder.RewindToHeight(LastBlockIndexed - 9); err != nil {
+			raven.CaptureError(err, nil)
+			// Unable to rewind blocks
+			return err
+		}
 	}
 
-	return i.Index(option)
+	return err
 }
 
 func (i *Indexer) index(height uint64, option IndexOption.IndexOption) error {
@@ -84,7 +83,7 @@ func (i *Indexer) index(height uint64, option IndexOption.IndexOption) error {
 	go func() {
 		defer wg.Done()
 		log.Debugf("Index addresses at height %d", height)
-		i.addressIndexer.Index(txs)
+		i.addressIndexer.Index(txs, b)
 	}()
 
 	go func() {

@@ -49,7 +49,7 @@ func (i *Indexer) Update(blockCycle *explorer.BlockCycle, block *explorer.Block)
 		navP, err := i.navcoin.GetPaymentRequest(p.Hash)
 		if err != nil {
 			raven.CaptureError(err, nil)
-			log.WithError(err).Fatalf("Failed to find active proposal: %s", p.Hash)
+			log.WithError(err).Fatalf("Failed to find active payment request: %s", p.Hash)
 		}
 
 		UpdatePaymentRequest(navP, block.Height, p)
@@ -58,7 +58,7 @@ func (i *Indexer) Update(blockCycle *explorer.BlockCycle, block *explorer.Block)
 			i.elastic.AddUpdateRequest(elastic_cache.PaymentRequestIndex.Get(), p.Hash, p, p.MetaData.Id)
 		}
 
-		if p.Status == explorer.PaymentRequestExpired || p.Status == explorer.PaymentRequestRejected {
+		if p.Status == explorer.PaymentRequestPaid || p.Status == explorer.PaymentRequestExpired || p.Status == explorer.PaymentRequestRejected {
 			if block.Height-p.UpdatedOnBlock >= uint64(blockCycle.Size) {
 				PaymentRequests.Delete(p.Hash)
 			}

@@ -21,13 +21,13 @@ func NewIndexer(elastic *elastic_cache.Index, repo *Repository) *Indexer {
 	return &Indexer{elastic, repo}
 }
 
-func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
+func (i *Indexer) Index(txs []*explorer.BlockTransaction, block *explorer.Block) {
 	if len(txs) == 0 {
 		return
 	}
 
 	hashes := make([]string, 0)
-	for _, addressTx := range CreateAddressTransactions(txs) {
+	for _, addressTx := range CreateAddressTransactions(txs, block) {
 		if addresses[addressTx.Hash] == nil {
 			address, err := i.repo.GetOrCreateAddress(addressTx.Hash)
 			if err != nil {

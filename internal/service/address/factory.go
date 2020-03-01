@@ -47,7 +47,7 @@ func ApplyTxToAddress(address *explorer.Address, tx *explorer.AddressTransaction
 	}
 }
 
-func CreateAddressTransactions(txs []*explorer.BlockTransaction) []*explorer.AddressTransaction {
+func CreateAddressTransactions(txs []*explorer.BlockTransaction, block *explorer.Block) []*explorer.AddressTransaction {
 	if len(txs) == 0 {
 		return nil
 	}
@@ -60,7 +60,7 @@ func CreateAddressTransactions(txs []*explorer.BlockTransaction) []*explorer.Add
 					addressTxs = append(addressTxs, coldAddressTx)
 				}
 			}
-			if addressTx := createTransaction(address, tx); addressTx != nil {
+			if addressTx := createTransaction(address, tx, block); addressTx != nil {
 				addressTxs = append(addressTxs, addressTx)
 			}
 		}
@@ -69,7 +69,7 @@ func CreateAddressTransactions(txs []*explorer.BlockTransaction) []*explorer.Add
 	return addressTxs
 }
 
-func createTransaction(address string, tx *explorer.BlockTransaction) *explorer.AddressTransaction {
+func createTransaction(address string, tx *explorer.BlockTransaction, block *explorer.Block) *explorer.AddressTransaction {
 	_, input := tx.Vin.GetAmountByAddress(address, false)
 	_, output := tx.Vout.GetAmountByAddress(address, false)
 	if input+output == 0 {
@@ -95,7 +95,7 @@ func createTransaction(address string, tx *explorer.BlockTransaction) *explorer.
 			addressTransaction.Type = explorer.TransferDelegateStake
 		}
 	} else if tx.IsCoinbase() {
-		if tx.Version == 1 || tx.Stake != 0 {
+		if block.StakedBy == address {
 			// POW block_indexer
 			addressTransaction.Type = explorer.TransferStake
 		} else if tx.Version == 3 {
