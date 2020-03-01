@@ -19,7 +19,6 @@ func CreatePaymentRequest(paymentRequest navcoind.PaymentRequest, height uint64)
 			Status:              "pending",
 			State:               paymentRequest.State,
 			StateChangedOnBlock: paymentRequest.StateChangedOnBlock,
-			PaidOnBlock:         paymentRequest.PaidOnBlock,
 		},
 		Height:         height,
 		UpdatedOnBlock: height,
@@ -37,10 +36,6 @@ func UpdatePaymentRequest(paymentRequest navcoind.PaymentRequest, height uint64,
 	}
 	if p.StateChangedOnBlock != paymentRequest.StateChangedOnBlock {
 		p.StateChangedOnBlock = paymentRequest.StateChangedOnBlock
-		p.UpdatedOnBlock = height
-	}
-	if p.PaidOnBlock != paymentRequest.PaidOnBlock {
-		p.PaidOnBlock = paymentRequest.PaidOnBlock
 		p.UpdatedOnBlock = height
 	}
 }
