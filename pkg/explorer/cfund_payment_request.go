@@ -12,7 +12,6 @@ type RawPaymentRequest struct {
 	Status              PaymentRequestStatus `json:"status"`
 	State               uint                 `json:"state"`
 	StateChangedOnBlock string               `json:"stateChangedOnBlock,omitempty"`
-	PaidOnBlock         string               `json:"paidOnBlock,omitempty"`
 }
 
 type PaymentRequest struct {
