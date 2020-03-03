@@ -47,7 +47,7 @@ func (s *Subscriber) Subscribe() {
 			log.Info("New Block found")
 			if err := s.indexer.Index(IndexOption.SingleIndex); err != nil {
 				if err.Error() != "-8: Block height out of range" {
-					raven.CaptureError(err, nil)
+					raven.CaptureErrorAndWait(err, nil)
 					log.WithError(err).Fatal("Failed to index subscribed block")
 				}
 			}
