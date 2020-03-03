@@ -101,7 +101,12 @@ func (i *Index) AddIndexRequest(index string, name string, doc interface{}) {
 }
 
 func (i *Index) AddUpdateRequest(index string, name string, doc interface{}, id string) {
-	i.AddRequest(index, name, doc, "update", id)
+	reqType := UpdateRequest
+	if id == "" {
+		reqType = IndexRequest
+	}
+
+	i.AddRequest(index, name, doc, reqType, id)
 }
 
 func (i *Index) AddRequest(index string, name string, doc interface{}, reqType RequestType, id string) {
