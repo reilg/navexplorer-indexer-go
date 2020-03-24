@@ -163,7 +163,7 @@ func (i *Index) Persist() int {
 		if response.Errors == true {
 			for _, failed := range response.Failed() {
 				raven.CaptureMessage(failed.Error.Reason, nil)
-				logrus.Fatal(failed.Error.Reason)
+				logrus.WithField("error", failed.Error).Fatal(failed.Error.Reason)
 			}
 		}
 		if err != nil {
