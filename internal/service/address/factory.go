@@ -18,7 +18,6 @@ func ApplyTxToAddress(address *explorer.Address, tx *explorer.AddressTransaction
 	address.Height = tx.Height
 
 	if tx.Cold == true {
-		address.ColdBalance = uint64(int64(address.ColdBalance) + tx.Total)
 		if explorer.IsColdStake(tx.Type) {
 			address.ColdStaked = uint64(int64(address.ColdStaked) + tx.Total)
 			address.ColdStakedCount++
@@ -30,7 +29,6 @@ func ApplyTxToAddress(address *explorer.Address, tx *explorer.AddressTransaction
 			address.ColdReceivedCount++
 		}
 	} else {
-		address.Balance = uint64(int64(address.Balance) + tx.Total)
 		if explorer.IsStake(tx.Type) || explorer.IsColdStake(tx.Type) {
 			address.Staked = uint64(int64(address.Staked) + tx.Total)
 			address.StakedCount++
@@ -45,24 +43,21 @@ func ApplyTxToAddress(address *explorer.Address, tx *explorer.AddressTransaction
 			address.StakedCount++
 		}
 	}
+
+	log.WithFields(log.Fields{"address": address.Hash, "tx": tx.Txid}).
+		Debugf("Balance at height %d: %d", tx.Height, tx.Balance)
 }
 
-func CreateAddressTransactions(txs []*explorer.BlockTransaction, block *explorer.Block) []*explorer.AddressTransaction {
-	if len(txs) == 0 {
-		return nil
-	}
-
+func CreateAddressTransaction(tx *explorer.BlockTransaction, block *explorer.Block) []*explorer.AddressTransaction {
 	addressTxs := make([]*explorer.AddressTransaction, 0)
-	for _, tx := range txs {
-		for _, address := range tx.GetAllAddresses() {
-			if tx.HasColdInput(address) || tx.HasColdStakeStake(address) || tx.HasColdStakeReceive(address) {
-				if coldAddressTx := createColdTransaction(address, tx); coldAddressTx != nil {
-					addressTxs = append(addressTxs, coldAddressTx)
-				}
+	for _, address := range tx.GetAllAddresses() {
+		if tx.HasColdInput(address) || tx.HasColdStakeStake(address) || tx.HasColdStakeReceive(address) {
+			if coldAddressTx := createColdTransaction(address, tx); coldAddressTx != nil {
+				addressTxs = append(addressTxs, coldAddressTx)
 			}
-			if addressTx := createTransaction(address, tx, block); addressTx != nil {
-				addressTxs = append(addressTxs, addressTx)
-			}
+		}
+		if addressTx := createTransaction(address, tx, block); addressTx != nil {
+			addressTxs = append(addressTxs, addressTx)
 		}
 	}
 
