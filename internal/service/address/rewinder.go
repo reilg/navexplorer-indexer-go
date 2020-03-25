@@ -64,9 +64,9 @@ func (r *Rewinder) RewindAddressToHeight(address *explorer.Address, height uint6
 	for _, addressTx := range addressTxs {
 		ApplyTxToAddress(address, addressTx)
 		if addressTx.Cold == true {
-			address.ColdBalance = addressTx.Balance
+			address.ColdBalance = int64(addressTx.Balance)
 		} else {
-			address.Balance = addressTx.Balance
+			address.Balance = int64(addressTx.Balance)
 		}
 		address.Height = addressTx.Height
 	}
@@ -76,7 +76,7 @@ func (r *Rewinder) RewindAddressToHeight(address *explorer.Address, height uint6
 	_, err = r.elastic.Client.Index().
 		Index(elastic_cache.AddressIndex.Get()).
 		BodyJson(address).
-		Id(address.MetaData.Id).
+		Id(address.Slug()).
 		Do(context.Background())
 
 	if err != nil {

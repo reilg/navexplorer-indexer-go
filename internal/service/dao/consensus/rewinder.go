@@ -20,7 +20,7 @@ func NewRewinder(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, repo 
 }
 
 func (r *Rewinder) Rewind() error {
-	log.Infof("Rewinding DAO consensus")
+	log.Debug("Rewind consensus")
 
 	cfundStats, err := r.navcoin.CfundStats()
 	if err != nil {
@@ -33,7 +33,11 @@ func (r *Rewinder) Rewind() error {
 	if consensus == nil {
 		consensus = new(explorer.Consensus)
 		UpdateConsensus(&cfundStats, consensus)
-		_, err := r.elastic.Client.Index().Index(elastic_cache.ConsensusIndex.Get()).BodyJson(consensus).Do(context.Background())
+		_, err := r.elastic.Client.Index().
+			Index(elastic_cache.ConsensusIndex.Get()).
+			Id("consensus").
+			BodyJson(consensus).
+			Do(context.Background())
 		if err != nil {
 			raven.CaptureError(err, nil)
 			log.WithError(err).Fatalf("Failed to persist consensus")
@@ -41,7 +45,7 @@ func (r *Rewinder) Rewind() error {
 	} else {
 		UpdateConsensus(&cfundStats, consensus)
 		log.Info("Index Update Cfund Consensus")
-		r.elastic.AddUpdateRequest(elastic_cache.ConsensusIndex.Get(), "consensus", consensus, consensus.MetaData.Id)
+		r.elastic.AddUpdateRequest(elastic_cache.ConsensusIndex.Get(), "consensus", consensus)
 	}
 
 	return nil

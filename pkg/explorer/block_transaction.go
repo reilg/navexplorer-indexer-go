@@ -1,6 +1,10 @@
 package explorer
 
-import "time"
+import (
+	"fmt"
+	"github.com/gosimple/slug"
+	"time"
+)
 
 type RawBlockTransaction struct {
 	Hex             string    `json:"hex"`
@@ -23,8 +27,6 @@ type RawBlockTransaction struct {
 }
 
 type BlockTransaction struct {
-	MetaData MetaData `json:"-"`
-
 	RawBlockTransaction
 	Index uint  `json:"index"`
 	Vin   Vins  `json:"vin"`
@@ -34,6 +36,10 @@ type BlockTransaction struct {
 	Stake uint64               `json:"stake"`
 	Spend uint64               `json:"spend"`
 	Fees  uint64               `json:"fees"`
+}
+
+func (tx *BlockTransaction) Slug() string {
+	return slug.Make(fmt.Sprintf("blocktx-%s", tx.Hash))
 }
 
 type BlockTransactions []*BlockTransaction

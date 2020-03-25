@@ -1,7 +1,6 @@
 package address
 
 import (
-	"fmt"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	"github.com/getsentry/raven-go"
@@ -50,22 +49,21 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction, block *explorer.Block)
 
 			i.elastic.AddIndexRequest(
 				elastic_cache.AddressTransactionIndex.Get(),
-				fmt.Sprintf("%s-%s-%t", addressTx.Hash, addressTx.Txid, addressTx.Cold),
+				addressTx.Slug(),
 				addressTx,
 			)
 
 			ApplyTxToAddress(addresses[addressTx.Hash], addressTx)
 			if addressTx.Cold == true {
-				addresses[addressTx.Hash].ColdBalance = uint64(int64(addresses[addressTx.Hash].ColdBalance) + addressTx.Total)
+				addresses[addressTx.Hash].ColdBalance += addressTx.Total
 			} else {
-				addresses[addressTx.Hash].Balance = uint64(int64(addresses[addressTx.Hash].Balance) + addressTx.Total)
+				addresses[addressTx.Hash].Balance += addressTx.Total
 			}
 
 			i.elastic.AddUpdateRequest(
 				elastic_cache.AddressIndex.Get(),
-				fmt.Sprintf("%s-%d", addressTx.Hash, addressTx.Height),
+				addresses[addressTx.Hash].Slug(),
 				addresses[addressTx.Hash],
-				addresses[addressTx.Hash].MetaData.Id,
 			)
 		}
 	}

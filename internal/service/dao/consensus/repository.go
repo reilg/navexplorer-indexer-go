@@ -36,7 +36,6 @@ func (r *Repository) GetConsensus() (*explorer.Consensus, error) {
 		raven.CaptureError(err, nil)
 		return nil, err
 	}
-	consensus.MetaData = explorer.NewMetaData(hit.Id, hit.Index)
 
 	return consensus, nil
 }

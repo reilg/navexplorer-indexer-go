@@ -33,7 +33,11 @@ func (i *Indexer) Index() error {
 	if consensus == nil {
 		consensus = new(explorer.Consensus)
 		UpdateConsensus(&cfundStats, consensus)
-		_, err := i.elastic.Client.Index().Index(elastic_cache.ConsensusIndex.Get()).BodyJson(consensus).Do(context.Background())
+		_, err := i.elastic.Client.Index().
+			Index(elastic_cache.ConsensusIndex.Get()).
+			Id("consensus").
+			BodyJson(consensus).
+			Do(context.Background())
 		if err != nil {
 			raven.CaptureError(err, nil)
 			log.WithError(err).Fatalf("Failed to persist consensus")
@@ -41,7 +45,7 @@ func (i *Indexer) Index() error {
 		}
 	} else {
 		UpdateConsensus(&cfundStats, consensus)
-		i.elastic.AddUpdateRequest(elastic_cache.ConsensusIndex.Get(), "consensus", consensus, consensus.MetaData.Id)
+		i.elastic.AddUpdateRequest(elastic_cache.ConsensusIndex.Get(), "consensus", consensus)
 	}
 
 	Consensus = consensus

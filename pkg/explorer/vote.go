@@ -1,11 +1,18 @@
 package explorer
 
-type DaoVotes struct {
-	MetaData MetaData `json:"-"`
+import (
+	"fmt"
+	"github.com/gosimple/slug"
+)
 
+type DaoVotes struct {
 	Height  uint64 `json:"height"`
 	Address string `json:"address"`
 	Votes   []Vote `json:"votes"`
+}
+
+func (v *DaoVotes) Slug() string {
+	return slug.Make(fmt.Sprintf("vote-%d-%s", v.Height, v.Address))
 }
 
 type Vote struct {

@@ -1,8 +1,6 @@
 package explorer
 
 type Consensus struct {
-	MetaData MetaData `json:"-"`
-
 	BlocksPerVotingCycle                uint    `json:"blocksPerVotingCycle"`
 	MinSumVotesPerVotingCycle           uint    `json:"minSumVotesPerVotingCycle"`
 	MaxCountVotingCycleProposals        uint    `json:"maxCountVotingCycleProposals"`

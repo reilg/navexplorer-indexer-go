@@ -1,14 +1,14 @@
 package explorer
 
 import (
+	"fmt"
+	"github.com/gosimple/slug"
 	"log"
 )
 
 type SoftForks []*SoftFork
 
 type SoftFork struct {
-	MetaData MetaData `json:"-"`
-
 	Name             string         `json:"name"`
 	SignalBit        uint           `json:"signalBit"`
 	State            SoftForkState  `json:"state"`
@@ -16,6 +16,10 @@ type SoftFork struct {
 	ActivationHeight uint64         `json:"activationheight,omitempty"`
 	SignalHeight     uint64         `json:"signalheight,omitempty"`
 	Cycles           SoftForkCycles `json:"cycles,omitempty"`
+}
+
+func (s *SoftFork) Slug() string {
+	return slug.Make(fmt.Sprintf("softfork-%s", s.Name))
 }
 
 type SoftForkCycles []SoftForkCycle

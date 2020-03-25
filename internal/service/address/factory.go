@@ -11,7 +11,7 @@ func CreateAddress(hash string) *explorer.Address {
 }
 
 func ResetAddress(address *explorer.Address) *explorer.Address {
-	return &explorer.Address{MetaData: address.MetaData, Hash: address.Hash}
+	return &explorer.Address{Hash: address.Hash}
 }
 
 func ApplyTxToAddress(address *explorer.Address, tx *explorer.AddressTransaction) {
@@ -19,27 +19,27 @@ func ApplyTxToAddress(address *explorer.Address, tx *explorer.AddressTransaction
 
 	if tx.Cold == true {
 		if explorer.IsColdStake(tx.Type) {
-			address.ColdStaked = uint64(int64(address.ColdStaked) + tx.Total)
+			address.ColdStaked = address.ColdStaked + tx.Total
 			address.ColdStakedCount++
 		} else if tx.Type == explorer.TransferSend {
-			address.ColdSent += tx.Input
+			address.ColdSent += int64(tx.Input)
 			address.ColdSentCount++
 		} else if tx.Type == explorer.TransferReceive {
-			address.ColdReceived += tx.Output
+			address.ColdReceived += int64(tx.Output)
 			address.ColdReceivedCount++
 		}
 	} else {
 		if explorer.IsStake(tx.Type) || explorer.IsColdStake(tx.Type) {
-			address.Staked = uint64(int64(address.Staked) + tx.Total)
+			address.Staked += tx.Total
 			address.StakedCount++
 		} else if tx.Type == explorer.TransferSend {
-			address.Sent += tx.Input
+			address.Sent += int64(tx.Input)
 			address.SentCount++
 		} else if tx.Type == explorer.TransferReceive {
-			address.Received += tx.Output
+			address.Received += int64(tx.Output)
 			address.ReceivedCount++
 		} else if tx.Type == explorer.TransferPoolFee {
-			address.Staked = uint64(int64(address.Staked) + tx.Total)
+			address.Staked += tx.Total
 			address.StakedCount++
 		}
 	}
@@ -53,6 +53,10 @@ func CreateAddressTransaction(tx *explorer.BlockTransaction, block *explorer.Blo
 	for _, address := range tx.GetAllAddresses() {
 		if tx.HasColdInput(address) || tx.HasColdStakeStake(address) || tx.HasColdStakeReceive(address) {
 			if coldAddressTx := createColdTransaction(address, tx); coldAddressTx != nil {
+				if address == "NhBwtXLdiXt6jpUwetFAZUao25dN652uwj" && tx.Txid == "1e69e85891afe5d3a2baf1a3bc63e3625844059d7a2d4246651ed65e1d070e90" {
+					log.WithField("tx", coldAddressTx).
+						Debugf("NhBwtXLdiXt6jpUwetFAZUao25dN652uwj has a cold TX at height %d", block.Height)
+				}
 				addressTxs = append(addressTxs, coldAddressTx)
 			}
 		}

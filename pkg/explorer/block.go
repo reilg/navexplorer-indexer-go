@@ -1,6 +1,10 @@
 package explorer
 
-import "time"
+import (
+	"fmt"
+	"github.com/gosimple/slug"
+	"time"
+)
 
 type RawBlock struct {
 	Hash              string    `json:"hash"`
@@ -26,8 +30,6 @@ type RawBlock struct {
 type Block struct {
 	RawBlock
 
-	MetaData MetaData `json:"-"`
-
 	TxCount     uint   `json:"tx_count"`
 	Stake       uint64 `json:"stake"`
 	StakedBy    string `json:"stakedBy"`
@@ -37,6 +39,10 @@ type Block struct {
 
 	// Transient
 	Best bool `json:"best,omitempty"`
+}
+
+func (b *Block) Slug() string {
+	return slug.Make(fmt.Sprintf("block-%s", b.Hash))
 }
 
 type BlockCycle struct {
