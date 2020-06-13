@@ -17,9 +17,10 @@ func NewRepo(client *elastic.Client) *Repository {
 	return &Repository{client}
 }
 
-func (r *Repository) GetConsensus() (*explorer.Consensus, error) {
+func (r *Repository) GetConsensusParameters() ([]*explorer.ConsensusParameter, error) {
 	results, err := r.Client.Search(elastic_cache.ConsensusIndex.Get()).
-		Size(1).
+		Sort("id", true).
+		Size(10000).
 		Do(context.Background())
 	if err != nil || results == nil {
 		raven.CaptureError(err, nil)
@@ -30,12 +31,14 @@ func (r *Repository) GetConsensus() (*explorer.Consensus, error) {
 		return nil, elastic_cache.ErrRecordNotFound
 	}
 
-	var consensus *explorer.Consensus
-	hit := results.Hits.Hits[0]
-	if err = json.Unmarshal(hit.Source, &consensus); err != nil {
-		raven.CaptureError(err, nil)
-		return nil, err
+	var consensusParameters []*explorer.ConsensusParameter
+	for _, hit := range results.Hits.Hits {
+		var consensusParameter *explorer.ConsensusParameter
+		if err = json.Unmarshal(hit.Source, &consensusParameter); err != nil {
+			return nil, err
+		}
+		consensusParameters = append(consensusParameters, consensusParameter)
 	}
 
-	return consensus, nil
+	return consensusParameters, nil
 }

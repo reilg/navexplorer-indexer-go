@@ -11,7 +11,7 @@ func CreateVotes(block *explorer.Block, tx *explorer.BlockTransaction, header *n
 		return nil
 	}
 
-	daoVote := &explorer.DaoVotes{Height: tx.Height, Address: block.StakedBy}
+	daoVote := &explorer.DaoVotes{Cycle: block.BlockCycle.Cycle, Height: tx.Height, Address: block.StakedBy}
 
 	for _, v := range header.CfundVotes {
 		vote := explorer.Vote{Type: explorer.ProposalVote, Hash: v.Hash, Vote: v.Vote}
@@ -37,9 +37,45 @@ func CreateVotes(block *explorer.Block, tx *explorer.BlockTransaction, header *n
 		daoVote.Votes = append(daoVote.Votes, vote)
 	}
 
-	if len(daoVote.Votes) == 0 {
-		return nil
+	if len(daoVote.Votes) != 0 {
+		return daoVote
 	}
 
-	return daoVote
+	// Legacy support
+	daoVote = &explorer.DaoVotes{Height: tx.Height, Address: block.StakedBy}
+	for _, vout := range tx.Vout {
+		if !vout.IsProposalVote() && !vout.IsPaymentRequestVote() {
+			continue
+		}
+		vote := explorer.Vote{Hash: vout.ScriptPubKey.Hash, Vote: persuasion(vout.ScriptPubKey.Type)}
+		if vout.IsProposalVote() {
+			vote.Type = explorer.ProposalVote
+		}
+		if vout.IsPaymentRequestVote() {
+			vote.Type = explorer.PaymentRequestVote
+		}
+		daoVote.Votes = append(daoVote.Votes, vote)
+	}
+
+	if len(daoVote.Votes) != 0 {
+		return daoVote
+	}
+
+	return nil
+}
+
+func persuasion(voutType explorer.VoutType) int {
+	switch voutType {
+
+	case explorer.VoutProposalYesVote:
+		return 1
+	case explorer.VoutPaymentRequestYesVote:
+		return 1
+	case explorer.VoutProposalNoVote:
+		return -1
+	case explorer.VoutPaymentRequestNoVote:
+		return -1
+	}
+
+	return 0
 }

@@ -9,10 +9,10 @@ import (
 type Indexer struct {
 	elastic       *elastic_cache.Index
 	blocksInCycle uint
-	quorum        uint
+	quorum        int
 }
 
-func NewIndexer(elastic *elastic_cache.Index, blocksInCycle uint, quorum uint) *Indexer {
+func NewIndexer(elastic *elastic_cache.Index, blocksInCycle uint, quorum int) *Indexer {
 	return &Indexer{elastic, blocksInCycle, quorum}
 }
 
@@ -25,7 +25,7 @@ func (i *Indexer) Index(block *explorer.Block) {
 	i.updateState(block)
 
 	for _, softFork := range SoftForks {
-		i.elastic.AddUpdateRequest(elastic_cache.SoftForkIndex.Get(), softFork.Slug(), softFork)
+		i.elastic.AddUpdateRequest(elastic_cache.SoftForkIndex.Get(), softFork)
 	}
 
 	if signal != nil {
@@ -35,7 +35,7 @@ func (i *Indexer) Index(block *explorer.Block) {
 			}
 		}
 		if len(signal.SoftForks) > 0 {
-			i.elastic.AddIndexRequest(elastic_cache.SignalIndex.Get(), signal.Slug(), signal)
+			i.elastic.AddIndexRequest(elastic_cache.SignalIndex.Get(), signal)
 		}
 	}
 
@@ -45,7 +45,7 @@ func (i *Indexer) updateSoftForks(signal *explorer.Signal, block *explorer.Block
 	if signal == nil || !signal.IsSignalling() {
 		return
 	}
-	blockCycle := block.BlockCycle(i.blocksInCycle, i.quorum)
+	blockCycle := GetSoftForkBlockCycle(i.blocksInCycle, block.Height)
 
 	for _, s := range signal.SoftForks {
 		softFork := SoftForks.GetSoftFork(s)
@@ -69,15 +69,13 @@ func (i *Indexer) updateSoftForks(signal *explorer.Signal, block *explorer.Block
 }
 
 func (i *Indexer) updateState(block *explorer.Block) {
-	blockCycle := explorer.GetCycleForHeight(block.Height, i.blocksInCycle)
-
 	for idx, s := range SoftForks {
 		if s.Cycles == nil {
 			continue
 		}
 
 		if s.State == explorer.SoftForkStarted && s.LatestCycle().BlocksSignalling >= explorer.GetQuorum(i.blocksInCycle, i.quorum) {
-			SoftForks[idx].LockedInHeight = uint64(i.blocksInCycle * blockCycle)
+			SoftForks[idx].LockedInHeight = uint64(i.blocksInCycle * GetSoftForkBlockCycle(i.blocksInCycle, block.Height).Cycle)
 			SoftForks[idx].ActivationHeight = SoftForks[idx].LockedInHeight + uint64(i.blocksInCycle)
 		}
 

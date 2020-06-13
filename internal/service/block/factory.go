@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func CreateBlock(block *navcoind.Block) *explorer.Block {
+func CreateBlock(block *navcoind.Block, previousBlock *explorer.Block, cycleSize uint) *explorer.Block {
 	return &explorer.Block{
 		RawBlock: explorer.RawBlock{
 			Hash:              block.Hash,
@@ -29,8 +29,39 @@ func CreateBlock(block *navcoind.Block) *explorer.Block {
 			Previousblockhash: block.PreviousBlockHash,
 			Nextblockhash:     block.NextBlockHash,
 		},
-		TxCount: uint(len(block.Tx)),
+		BlockCycle: createBlockCycle(cycleSize, previousBlock),
+		TxCount:    uint(len(block.Tx)),
 	}
+}
+
+func createBlockCycle(size uint, previousBlock *explorer.Block) *explorer.BlockCycle {
+	if previousBlock == nil {
+		return &explorer.BlockCycle{
+			Size:  size,
+			Cycle: 1,
+			Index: 1,
+		}
+	}
+
+	if !previousBlock.BlockCycle.IsEnd() {
+		return &explorer.BlockCycle{
+			Size:  size,
+			Cycle: previousBlock.BlockCycle.Cycle,
+			Index: previousBlock.BlockCycle.Index + 1,
+		}
+	}
+
+	bc := &explorer.BlockCycle{
+		Size:  size,
+		Cycle: previousBlock.BlockCycle.Cycle + 1,
+		Index: uint(previousBlock.Height+1) % size,
+	}
+	if bc.Index != 0 {
+		bc.Transitory = true
+		bc.TransitorySize = size - bc.Index
+	}
+
+	return bc
 }
 
 func CreateBlockTransaction(navTx navcoind.RawTransaction, index uint) *explorer.BlockTransaction {
@@ -116,8 +147,10 @@ func applyType(tx *explorer.BlockTransaction) {
 		tx.Type = explorer.TxCoinbase
 	} else if tx.Vout.GetAmount() <= tx.Vin.GetAmount() {
 		tx.Type = explorer.TxSpend
-	} else if len(tx.Vout) > 1 && tx.Vout[1].IsColdStaking() {
+	} else if len(tx.Vout) > 1 && tx.Vout[1].ScriptPubKey.Type == explorer.VoutColdStaking {
 		tx.Type = explorer.TxColdStaking
+	} else if len(tx.Vout) > 1 && tx.Vout[1].ScriptPubKey.Type == explorer.VoutColdStakingV2 {
+		tx.Type = explorer.TxColdStakingV2
 	} else {
 		tx.Type = explorer.TxStaking
 	}

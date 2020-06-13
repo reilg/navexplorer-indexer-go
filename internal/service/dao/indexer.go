@@ -2,7 +2,9 @@ package dao
 
 import (
 	"github.com/NavExplorer/navcoind-go"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/cfund"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/consensus"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/consultation"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/payment_request"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/proposal"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/vote"
@@ -12,23 +14,29 @@ import (
 )
 
 type Indexer struct {
+	cfundIndexer          *cfund.Indexer
 	proposalIndexer       *proposal.Indexer
 	paymentRequestIndexer *payment_request.Indexer
+	consultationIndexer   *consultation.Indexer
 	voteIndexer           *vote.Indexer
 	consensusIndexer      *consensus.Indexer
 	navcoin               *navcoind.Navcoind
 }
 
 func NewIndexer(
+	cfundIndexer *cfund.Indexer,
 	proposalIndexer *proposal.Indexer,
 	paymentRequestIndexer *payment_request.Indexer,
+	consultationIndexer *consultation.Indexer,
 	voteIndexer *vote.Indexer,
 	consensusIndexer *consensus.Indexer,
 	navcoin *navcoind.Navcoind,
 ) *Indexer {
 	return &Indexer{
+		cfundIndexer,
 		proposalIndexer,
 		paymentRequestIndexer,
+		consultationIndexer,
 		voteIndexer,
 		consensusIndexer,
 		navcoin,
@@ -36,7 +44,7 @@ func NewIndexer(
 }
 
 func (i *Indexer) Index(block *explorer.Block, txs []*explorer.BlockTransaction) {
-	if consensus.Consensus == nil {
+	if consensus.Parameters == nil {
 		err := i.consensusIndexer.Index()
 		if err != nil {
 			raven.CaptureError(err, nil)
@@ -44,27 +52,27 @@ func (i *Indexer) Index(block *explorer.Block, txs []*explorer.BlockTransaction)
 		}
 	}
 
+	i.proposalIndexer.Index(txs)
+	i.paymentRequestIndexer.Index(txs)
+	i.consultationIndexer.Index(txs)
+
 	header, err := i.navcoin.GetBlockheader(block.Hash)
 	if err != nil {
 		raven.CaptureError(err, nil)
 		log.WithError(err).Fatal("Failed to get blockHeader")
 	}
 
-	blockCycle := block.BlockCycle(consensus.Consensus.BlocksPerVotingCycle, consensus.Consensus.MinSumVotesPerVotingCycle)
-
-	log.Debugf("Index dao proposals at height %d", block.Height)
-	i.proposalIndexer.Index(txs)
-
-	log.Debugf("Index dao payment requests at height %d", block.Height)
-	i.paymentRequestIndexer.Index(txs)
-
-	log.Debugf("Index dao votes requests at height %d", block.Height)
+	i.cfundIndexer.Index(header)
 	i.voteIndexer.IndexVotes(txs, block, header)
+	i.proposalIndexer.Update(block.BlockCycle, block)
+	i.paymentRequestIndexer.Update(block.BlockCycle, block)
+	i.consultationIndexer.Update(block.BlockCycle, block)
 
-	if blockCycle.IsEnd() {
-		log.WithFields(log.Fields{"Quorum": blockCycle.Quorum, "height": block.Height}).Debug("Dao - End of voting cycle")
-		i.proposalIndexer.Update(blockCycle, block)
-		i.paymentRequestIndexer.Update(blockCycle, block)
-		_ = i.consensusIndexer.Index()
+	if block.BlockCycle.IsEnd() {
+		log.WithFields(log.Fields{
+			"size":   block.BlockCycle.Size,
+			"height": block.Height,
+		}).Infof("Blockcycle %d complete", block.BlockCycle.Cycle)
+		i.consensusIndexer.Update(block)
 	}
 }

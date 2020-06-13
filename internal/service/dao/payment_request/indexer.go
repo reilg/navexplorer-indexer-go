@@ -2,7 +2,9 @@ package payment_request
 
 import (
 	"context"
+	"fmt"
 	"github.com/NavExplorer/navcoind-go"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	"github.com/getsentry/raven-go"
@@ -30,14 +32,13 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
 			index := elastic_cache.PaymentRequestIndex.Get()
 			_, err := i.elastic.Client.Index().
 				Index(index).
-				Id(paymentRequest.Slug()).
+				Id(fmt.Sprintf("%s-%s", config.Get().Network, paymentRequest.Slug())).
 				BodyJson(paymentRequest).
 				Do(context.Background())
 			if err != nil {
 				raven.CaptureError(err, nil)
 				log.WithError(err).Fatal("Failed to save new payment request")
 			}
-
 			PaymentRequests = append(PaymentRequests, paymentRequest)
 		}
 	}
@@ -58,10 +59,10 @@ func (i *Indexer) Update(blockCycle *explorer.BlockCycle, block *explorer.Block)
 		UpdatePaymentRequest(navP, block.Height, p)
 		if p.UpdatedOnBlock == block.Height {
 			log.Debugf("Payment Request %s updated on block %d", p.Hash, block.Height)
-			i.elastic.AddUpdateRequest(elastic_cache.PaymentRequestIndex.Get(), p.Slug(), p)
+			i.elastic.AddUpdateRequest(elastic_cache.PaymentRequestIndex.Get(), p)
 		}
 
-		if p.Status == explorer.PaymentRequestPaid || p.Status == explorer.PaymentRequestExpired || p.Status == explorer.PaymentRequestRejected {
+		if p.Status == explorer.PaymentRequestPaid.Status || p.Status == explorer.PaymentRequestExpired.Status || p.Status == explorer.PaymentRequestRejected.Status {
 			if block.Height-p.UpdatedOnBlock >= uint64(blockCycle.Size) {
 				PaymentRequests.Delete(p.Hash)
 			}

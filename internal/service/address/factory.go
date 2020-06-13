@@ -10,8 +10,21 @@ func CreateAddress(hash string) *explorer.Address {
 	return &explorer.Address{Hash: hash}
 }
 
-func ResetAddress(address *explorer.Address) *explorer.Address {
-	return &explorer.Address{Hash: address.Hash}
+func ResetAddress(address *explorer.Address) {
+	address.ColdBalance = 0
+	address.ColdReceived = 0
+	address.ColdReceivedCount = 0
+	address.ColdSent = 0
+	address.ColdSentCount = 0
+	address.ColdStaked = 0
+	address.ColdStakedCount = 0
+	address.Balance = 0
+	address.Received = 0
+	address.ReceivedCount = 0
+	address.Sent = 0
+	address.SentCount = 0
+	address.Staked = 0
+	address.StakedCount = 0
 }
 
 func ApplyTxToAddress(address *explorer.Address, tx *explorer.AddressTransaction) {
@@ -19,13 +32,13 @@ func ApplyTxToAddress(address *explorer.Address, tx *explorer.AddressTransaction
 
 	if tx.Cold == true {
 		if explorer.IsColdStake(tx.Type) {
-			address.ColdStaked = address.ColdStaked + tx.Total
+			address.ColdStaked += tx.Total
 			address.ColdStakedCount++
 		} else if tx.Type == explorer.TransferSend {
-			address.ColdSent += int64(tx.Input)
+			address.ColdSent += tx.Total
 			address.ColdSentCount++
 		} else if tx.Type == explorer.TransferReceive {
-			address.ColdReceived += int64(tx.Output)
+			address.ColdReceived += tx.Total
 			address.ColdReceivedCount++
 		}
 	} else {
@@ -33,16 +46,22 @@ func ApplyTxToAddress(address *explorer.Address, tx *explorer.AddressTransaction
 			address.Staked += tx.Total
 			address.StakedCount++
 		} else if tx.Type == explorer.TransferSend {
-			address.Sent += int64(tx.Input)
+			address.Sent += tx.Total
 			address.SentCount++
 		} else if tx.Type == explorer.TransferReceive {
-			address.Received += int64(tx.Output)
+			address.Received += tx.Total
+			address.ReceivedCount++
+		} else if tx.Type == explorer.TransferCommunityFundPayout {
+			address.Received += tx.Total
 			address.ReceivedCount++
 		} else if tx.Type == explorer.TransferPoolFee {
 			address.Staked += tx.Total
 			address.StakedCount++
 		}
 	}
+
+	log.WithFields(log.Fields{"address": address.Hash, "staked": address.StakedCount, "sent": address.SentCount, "received": address.ReceivedCount}).
+		Debugf("Tx count at height %d", tx.Height)
 
 	log.WithFields(log.Fields{"address": address.Hash, "tx": tx.Txid}).
 		Debugf("Balance at height %d: %d", tx.Height, tx.Balance)
@@ -53,10 +72,6 @@ func CreateAddressTransaction(tx *explorer.BlockTransaction, block *explorer.Blo
 	for _, address := range tx.GetAllAddresses() {
 		if tx.HasColdInput(address) || tx.HasColdStakeStake(address) || tx.HasColdStakeReceive(address) {
 			if coldAddressTx := createColdTransaction(address, tx); coldAddressTx != nil {
-				if address == "NhBwtXLdiXt6jpUwetFAZUao25dN652uwj" && tx.Txid == "1e69e85891afe5d3a2baf1a3bc63e3625844059d7a2d4246651ed65e1d070e90" {
-					log.WithField("tx", coldAddressTx).
-						Debugf("NhBwtXLdiXt6jpUwetFAZUao25dN652uwj has a cold TX at height %d", block.Height)
-				}
 				addressTxs = append(addressTxs, coldAddressTx)
 			}
 		}
@@ -88,11 +103,7 @@ func createTransaction(address string, tx *explorer.BlockTransaction, block *exp
 	}
 
 	if tx.IsStaking() {
-		if tx.Vin.HasAddress(address) {
-			addressTransaction.Type = explorer.TransferStake
-		} else {
-			addressTransaction.Type = explorer.TransferDelegateStake
-		}
+		addressTransaction.Type = explorer.TransferStake
 	} else if tx.IsCoinbase() {
 		if block.StakedBy == address {
 			// POW block_indexer
@@ -160,13 +171,14 @@ func createColdTransaction(address string, tx *explorer.BlockTransaction) *explo
 			addressTransaction.Type = explorer.TransferReceive
 		}
 	} else if tx.IsColdStaking() {
-		if tx.Vin.HasAddress(address) {
-			addressTransaction.Type = explorer.TransferColdStake
-		} else {
-			addressTransaction.Type = explorer.TransferColdDelegateStake
-		}
+		addressTransaction.Type = explorer.TransferColdStake
 	} else {
-		log.WithFields(log.Fields{"tx.type": tx.Type}).Fatal("WE FOUND SOMETHING ELSE IN COLD TX")
+		bt, _ := json.Marshal(tx)
+		log.WithFields(log.Fields{
+			"address": address,
+			"tx":      string(bt),
+			"type":    tx.Type,
+		}).Fatal("WE FOUND SOMETHING ELSE IN COLD TX")
 	}
 
 	return addressTransaction

@@ -2,6 +2,7 @@ package softfork
 
 import (
 	"context"
+	"fmt"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/softfork/signal"
@@ -14,10 +15,10 @@ type Rewinder struct {
 	elastic       *elastic_cache.Index
 	signalRepo    *signal.Repository
 	blocksInCycle uint
-	quorum        uint
+	quorum        int
 }
 
-func NewRewinder(elastic *elastic_cache.Index, signalRepo *signal.Repository, blocksInCycle uint, quorum uint) *Rewinder {
+func NewRewinder(elastic *elastic_cache.Index, signalRepo *signal.Repository, blocksInCycle uint, quorum int) *Rewinder {
 	return &Rewinder{elastic, signalRepo, blocksInCycle, quorum}
 }
 
@@ -29,6 +30,11 @@ func (r *Rewinder) Rewind(height uint64) error {
 	}
 
 	for idx, s := range SoftForks {
+		if s.ActivationHeight > height {
+			log.Infof("Softfork %s activated before %d", s.Name, height)
+			continue
+		}
+
 		SoftForks[idx] = &explorer.SoftFork{
 			Name:      s.Name,
 			SignalBit: s.SignalBit,
@@ -54,12 +60,12 @@ func (r *Rewinder) Rewind(height uint64) error {
 				if softFork.IsOpen() {
 					softFork.SignalHeight = end
 					softFork.State = explorer.SoftForkStarted
-					cycleIndex := explorer.GetCycleForHeight(s.Height, r.blocksInCycle)
+					blockCycle := GetSoftForkBlockCycle(r.blocksInCycle, s.Height)
 
 					var cycle *explorer.SoftForkCycle
-					if cycle = softFork.GetCycle(cycleIndex); cycle == nil {
-						softFork.Cycles = append(softFork.Cycles, explorer.SoftForkCycle{Cycle: cycleIndex, BlocksSignalling: 0})
-						cycle = softFork.GetCycle(cycleIndex)
+					if cycle = softFork.GetCycle(blockCycle.Cycle); cycle == nil {
+						softFork.Cycles = append(softFork.Cycles, explorer.SoftForkCycle{Cycle: blockCycle.Cycle, BlocksSignalling: 0})
+						cycle = softFork.GetCycle(blockCycle.Cycle)
 					}
 					cycle.BlocksSignalling++
 				}
@@ -91,7 +97,7 @@ func (r *Rewinder) Rewind(height uint64) error {
 	for _, sf := range SoftForks {
 		bulk.Add(elastic.NewBulkUpdateRequest().
 			Index(elastic_cache.SoftForkIndex.Get()).
-			Id(sf.Slug()).
+			Id(fmt.Sprintf("%s-%s", config.Get().Network, sf.Slug())).
 			Doc(sf))
 	}
 

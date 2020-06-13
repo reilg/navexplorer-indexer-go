@@ -9,24 +9,26 @@ import (
 
 func CreateProposal(proposal navcoind.Proposal, height uint64) *explorer.Proposal {
 	return &explorer.Proposal{
-		RawProposal: explorer.RawProposal{
-			Version:             proposal.Version,
-			Hash:                proposal.Hash,
-			BlockHash:           proposal.BlockHash,
-			Description:         proposal.Description,
-			RequestedAmount:     convertStringToFloat(proposal.RequestedAmount),
-			NotPaidYet:          convertStringToFloat(proposal.RequestedAmount),
-			NotRequestedYet:     convertStringToFloat(proposal.RequestedAmount),
-			UserPaidFee:         convertStringToFloat(proposal.UserPaidFee),
-			PaymentAddress:      proposal.PaymentAddress,
-			ProposalDuration:    proposal.ProposalDuration,
-			ExpiresOn:           proposal.ExpiresOn,
-			Status:              "pending",
-			State:               proposal.State,
-			StateChangedOnBlock: proposal.StateChangedOnBlock,
-		},
-		Height:         height,
-		UpdatedOnBlock: height,
+		Version:             proposal.Version,
+		Hash:                proposal.Hash,
+		BlockHash:           proposal.BlockHash,
+		Description:         proposal.Description,
+		RequestedAmount:     convertStringToFloat(proposal.RequestedAmount),
+		NotPaidYet:          convertStringToFloat(proposal.RequestedAmount),
+		NotRequestedYet:     convertStringToFloat(proposal.RequestedAmount),
+		UserPaidFee:         convertStringToFloat(proposal.UserPaidFee),
+		PaymentAddress:      proposal.PaymentAddress,
+		ProposalDuration:    proposal.ProposalDuration,
+		ExpiresOn:           proposal.ExpiresOn,
+		State:               proposal.State,
+		Status:              explorer.GetProposalStatusByState(proposal.State).Status,
+		StateChangedOnBlock: proposal.StateChangedOnBlock,
+		Height:              height,
+		UpdatedOnBlock:      height,
+		VotesYes:            proposal.VotesYes,
+		VotesAbs:            proposal.VotesAbs,
+		VotesNo:             proposal.VotesNo,
+		VotingCycle:         proposal.VotingCycle,
 	}
 }
 
@@ -41,18 +43,34 @@ func UpdateProposal(proposal navcoind.Proposal, height uint64, p *explorer.Propo
 		p.UpdatedOnBlock = height
 	}
 
-	if p.Status != explorer.ProposalStatus(proposal.Status) {
-		p.Status = explorer.ProposalStatus(proposal.Status)
-		p.UpdatedOnBlock = height
-	}
-
 	if p.State != proposal.State {
 		p.State = proposal.State
+		p.Status = explorer.GetProposalStatusByState(p.State).Status
 		p.UpdatedOnBlock = height
 	}
 
 	if p.StateChangedOnBlock != proposal.StateChangedOnBlock {
 		p.StateChangedOnBlock = proposal.StateChangedOnBlock
+		p.UpdatedOnBlock = height
+	}
+
+	if p.VotesYes != proposal.VotesYes {
+		p.VotesYes = proposal.VotesYes
+		p.UpdatedOnBlock = height
+	}
+
+	if p.VotesAbs != proposal.VotesAbs {
+		p.VotesAbs = proposal.VotesAbs
+		p.UpdatedOnBlock = height
+	}
+
+	if p.VotesNo != proposal.VotesNo {
+		p.VotesNo = proposal.VotesNo
+		p.UpdatedOnBlock = height
+	}
+
+	if p.VotingCycle != proposal.VotingCycle {
+		p.VotingCycle = proposal.VotingCycle
 		p.UpdatedOnBlock = height
 	}
 }

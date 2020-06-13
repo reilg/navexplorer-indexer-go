@@ -2,7 +2,9 @@ package softfork
 
 import (
 	"context"
+	"fmt"
 	"github.com/NavExplorer/navcoind-go"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	log "github.com/sirupsen/logrus"
@@ -20,8 +22,8 @@ func New(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, repo *Reposit
 	return &Service{navcoin, elastic, repo}
 }
 
-func (i *Service) LoadSoftForks() {
-	log.Info("Load SoftForks")
+func (i *Service) InitSoftForks() {
+	log.Info("Init SoftForks")
 
 	info, err := i.navcoin.GetBlockchainInfo()
 	if err != nil {
@@ -39,7 +41,7 @@ func (i *Service) LoadSoftForks() {
 			_, err := i.elastic.Client.
 				Index().
 				Index(elastic_cache.SoftForkIndex.Get()).
-				Id(softFork.Slug()).
+				Id(fmt.Sprintf("%s-%s", config.Get().Network, softFork.Slug())).
 				BodyJson(softFork).
 				Do(context.Background())
 			if err != nil {
@@ -49,5 +51,15 @@ func (i *Service) LoadSoftForks() {
 			log.Info("Saving new softfork ", name)
 			SoftForks = append(SoftForks, softFork)
 		}
+	}
+}
+
+func GetSoftForkBlockCycle(size uint, height uint64) *explorer.BlockCycle {
+	cycle := (uint(height) / size) + 1
+
+	return &explorer.BlockCycle{
+		Size:  size,
+		Cycle: cycle,
+		Index: uint(height) - ((cycle * size) - size),
 	}
 }

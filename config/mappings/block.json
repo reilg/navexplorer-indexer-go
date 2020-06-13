@@ -130,6 +130,20 @@
       "cfundPayout": {
         "type": "long"
       },
+      "block_cycle": {
+        "type": "nested",
+        "properties": {
+          "size": {
+            "type": "integer"
+          },
+          "cycle": {
+            "type": "integer"
+          },
+          "index": {
+            "type": "integer"
+          }
+        }
+      },
       "tx_count": {
         "type": "integer"
       },
@@ -150,9 +164,10 @@
       }
     }
   },
-  "settings": {
-    "index": {
-      "max_result_window": "50000000"
+  "settings":{
+    "index":{
+      "max_result_window":"50000000",
+      "number_of_replicas": 1
     }
   }
 }

@@ -14,10 +14,8 @@ func NewService(repo *Repository) *Service {
 	return &Service{repo}
 }
 
-func (s *Service) LoadVotingPaymentRequests(block *explorer.Block, blockCycle *explorer.BlockCycle) {
-	log.Info("Load Voting Payment Requests")
-
-	excludeOlderThan := block.Height - (uint64(blockCycle.Size * 2))
+func (s *Service) LoadVotingPaymentRequests(block *explorer.Block) {
+	excludeOlderThan := block.Height - (uint64(block.BlockCycle.Size * 2))
 	if excludeOlderThan < 0 {
 		excludeOlderThan = 0
 	}
@@ -27,6 +25,8 @@ func (s *Service) LoadVotingPaymentRequests(block *explorer.Block, blockCycle *e
 		raven.CaptureError(err, nil)
 		log.WithError(err).Error("Failed to load pending proposals")
 	}
+
+	log.Infof("Load Voting Payment Requests (%d)", len(paymentRequests))
 
 	PaymentRequests = paymentRequests
 }

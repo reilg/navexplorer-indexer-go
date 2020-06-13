@@ -4,17 +4,20 @@ import (
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/event"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/address"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/block"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/cfund"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/consensus"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/consultation"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/payment_request"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/proposal"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/vote"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/softfork"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/softfork/signal"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/zeromq"
+	"github.com/NavExplorer/subscriber"
 	"github.com/sarulabs/dingo/v3"
 	log "github.com/sirupsen/logrus"
 )
@@ -70,13 +73,14 @@ var Definitions = []dingo.Def{
 		Name: "indexer",
 		Build: func(
 			elastic *elastic_cache.Index,
+			publisher *event.Publisher,
 			blockIndexer *block.Indexer,
 			addressIndexer *address.Indexer,
 			softForkIndexer *softfork.Indexer,
 			daoIndexer *dao.Indexer,
 			rewinder *indexer.Rewinder,
 		) (*indexer.Indexer, error) {
-			return indexer.NewIndexer(elastic, blockIndexer, addressIndexer, softForkIndexer, daoIndexer, rewinder), nil
+			return indexer.NewIndexer(elastic, publisher, blockIndexer, addressIndexer, softForkIndexer, daoIndexer, rewinder), nil
 		},
 	},
 	{
@@ -92,9 +96,15 @@ var Definitions = []dingo.Def{
 		},
 	},
 	{
+		Name: "block.service",
+		Build: func(repository *block.Repository) (*block.Service, error) {
+			return block.NewService(repository), nil
+		},
+	},
+	{
 		Name: "block.indexer",
-		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, orphanedService *block.OrphanService, repository *block.Repository) (*block.Indexer, error) {
-			return block.NewIndexer(navcoin, elastic, orphanedService, repository), nil
+		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, orphanedService *block.OrphanService, repository *block.Repository, service *block.Service) (*block.Indexer, error) {
+			return block.NewIndexer(navcoin, elastic, orphanedService, repository, service), nil
 		},
 	},
 	{
@@ -124,13 +134,13 @@ var Definitions = []dingo.Def{
 	{
 		Name: "softfork.indexer",
 		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, repo *softfork.Repository) (*softfork.Indexer, error) {
-			return softfork.NewIndexer(elastic, config.Get().SoftForkBlockCycle, config.Get().SoftForkQuorum), nil
+			return softfork.NewIndexer(elastic, uint(config.Get().SoftForkBlockCycle), config.Get().SoftForkQuorum), nil
 		},
 	},
 	{
 		Name: "softfork.rewinder",
 		Build: func(elastic *elastic_cache.Index, signalRepo *signal.Repository) (*softfork.Rewinder, error) {
-			return softfork.NewRewinder(elastic, signalRepo, config.Get().SoftForkBlockCycle, config.Get().SoftForkQuorum), nil
+			return softfork.NewRewinder(elastic, signalRepo, uint(config.Get().SoftForkBlockCycle), config.Get().SoftForkQuorum), nil
 		},
 	},
 	{
@@ -141,10 +151,12 @@ var Definitions = []dingo.Def{
 	},
 	{
 		Name: "dao.Indexer",
-		Build: func(proposalIndexer *proposal.Indexer, paymentRequestIndexer *payment_request.Indexer, voteIndexer *vote.Indexer, consensusIndexer *consensus.Indexer, navcoin *navcoind.Navcoind) (*dao.Indexer, error) {
+		Build: func(cfundIndexer *cfund.Indexer, proposalIndexer *proposal.Indexer, paymentRequestIndexer *payment_request.Indexer, consultationIndexer *consultation.Indexer, voteIndexer *vote.Indexer, consensusIndexer *consensus.Indexer, navcoin *navcoind.Navcoind) (*dao.Indexer, error) {
 			return dao.NewIndexer(
+				cfundIndexer,
 				proposalIndexer,
 				paymentRequestIndexer,
+				consultationIndexer,
 				voteIndexer,
 				consensusIndexer,
 				navcoin,
@@ -153,14 +165,20 @@ var Definitions = []dingo.Def{
 	},
 	{
 		Name: "dao.consensus.Indexer",
-		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, repo *consensus.Repository) (*consensus.Indexer, error) {
-			return consensus.NewIndexer(navcoin, elastic, repo), nil
+		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, repo *consensus.Repository, service *consensus.Service) (*consensus.Indexer, error) {
+			return consensus.NewIndexer(navcoin, elastic, repo, service), nil
 		},
 	},
 	{
 		Name: "dao.consensus.Rewinder",
-		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, repo *consensus.Repository) (*consensus.Rewinder, error) {
-			return consensus.NewRewinder(navcoin, elastic, repo), nil
+		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, repo *consensus.Repository, service *consensus.Service, consultationRepo *consultation.Repository) (*consensus.Rewinder, error) {
+			return consensus.NewRewinder(navcoin, elastic, repo, service), nil
+		},
+	},
+	{
+		Name: "dao.cfund.Indexer",
+		Build: func(elastic *elastic_cache.Index) (*cfund.Indexer, error) {
+			return cfund.NewIndexer(elastic), nil
 		},
 	},
 	{
@@ -176,6 +194,12 @@ var Definitions = []dingo.Def{
 		},
 	},
 	{
+		Name: "dao.consultation.Indexer",
+		Build: func(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, blockRepo *block.Repository) (*consultation.Indexer, error) {
+			return consultation.NewIndexer(navcoin, elastic, blockRepo), nil
+		},
+	},
+	{
 		Name: "dao.vote.Indexer",
 		Build: func(elastic *elastic_cache.Index) (*vote.Indexer, error) {
 			return vote.NewIndexer(elastic), nil
@@ -183,8 +207,20 @@ var Definitions = []dingo.Def{
 	},
 	{
 		Name: "dao.Rewinder",
-		Build: func(elastic *elastic_cache.Index, consensusRewinder *consensus.Rewinder) (*dao.Rewinder, error) {
-			return dao.NewRewinder(elastic, consensusRewinder), nil
+		Build: func(elastic *elastic_cache.Index, consensusRewinder *consensus.Rewinder, repository *consultation.Repository) (*dao.Rewinder, error) {
+			return dao.NewRewinder(elastic, consensusRewinder, repository), nil
+		},
+	},
+	{
+		Name: "dao.consultation.Service",
+		Build: func(repo *consultation.Repository) (*consultation.Service, error) {
+			return consultation.NewService(repo), nil
+		},
+	},
+	{
+		Name: "dao.consensus.Service",
+		Build: func(elastic *elastic_cache.Index, repo *consensus.Repository) (*consensus.Service, error) {
+			return consensus.NewService(config.Get().Network, elastic, repo), nil
 		},
 	},
 	{
@@ -206,6 +242,12 @@ var Definitions = []dingo.Def{
 		},
 	},
 	{
+		Name: "dao.consultation.repo",
+		Build: func(elastic *elastic_cache.Index) (*consultation.Repository, error) {
+			return consultation.NewRepo(elastic.Client), nil
+		},
+	},
+	{
 		Name: "dao.consensus.repo",
 		Build: func(elastic *elastic_cache.Index) (*consensus.Repository, error) {
 			return consensus.NewRepo(elastic.Client), nil
@@ -219,8 +261,20 @@ var Definitions = []dingo.Def{
 	},
 	{
 		Name: "subscriber",
-		Build: func(indexer *indexer.Indexer) (*zeromq.Subscriber, error) {
-			return zeromq.New(config.Get().ZeroMq.Address, indexer), nil
+		Build: func() (*subscriber.Subscriber, error) {
+			return subscriber.NewSubscriber(config.Get().ZeroMq.Address), nil
+		},
+	},
+	{
+		Name: "event.publisher",
+		Build: func() (*event.Publisher, error) {
+			return event.NewPublisher(
+				config.Get().Network,
+				config.Get().RabbitMq.User,
+				config.Get().RabbitMq.Password,
+				config.Get().RabbitMq.Host,
+				config.Get().RabbitMq.Port,
+			), nil
 		},
 	},
 }

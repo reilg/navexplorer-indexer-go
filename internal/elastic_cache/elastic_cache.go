@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
+	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	"github.com/getsentry/raven-go"
 	"github.com/olivere/elastic/v7"
 	"github.com/sirupsen/logrus"
@@ -17,14 +18,14 @@ import (
 type Index struct {
 	Client        *elastic.Client
 	requests      []*Request
-	bulkIndexSize uint
+	bulkIndexSize uint64
 }
 
 type Request struct {
 	Height uint64
 	Index  string
 	Id     string
-	Doc    interface{}
+	Entity explorer.Entity
 	Type   RequestType
 }
 
@@ -94,23 +95,29 @@ func (i *Index) InstallMappings() {
 	}
 }
 
-func (i *Index) AddIndexRequest(index string, id string, doc interface{}) {
-	i.AddRequest(index, id, doc, IndexRequest)
+func (i *Index) AddIndexRequest(index string, entity explorer.Entity) {
+	i.AddRequest(index, entity, IndexRequest)
 }
 
-func (i *Index) AddUpdateRequest(index string, id string, doc interface{}) {
-	i.AddRequest(index, id, doc, UpdateRequest)
+func (i *Index) AddUpdateRequest(index string, entity explorer.Entity) {
+	i.AddRequest(index, entity, UpdateRequest)
 }
 
-func (i *Index) AddRequest(index string, id string, doc interface{}, reqType RequestType) {
-	if request := i.GetRequest(index, id); request != nil {
-		request.Doc = doc
+func (i *Index) AddRequest(index string, entity explorer.Entity, reqType RequestType) {
+	logrus.WithFields(logrus.Fields{
+		"index": index,
+		"type":  reqType,
+		"slug":  entity.Slug(),
+	}).Debugf("AddRequest")
+
+	if request := i.GetRequest(index, networkId(entity)); request != nil {
+		request.Entity = entity
 	} else {
 		i.requests = append(i.requests, &Request{
-			Index: index,
-			Id:    id,
-			Doc:   doc,
-			Type:  reqType,
+			Index:  index,
+			Id:     networkId(entity),
+			Entity: entity,
+			Type:   reqType,
 		})
 	}
 }
@@ -118,8 +125,7 @@ func (i *Index) AddRequest(index string, id string, doc interface{}, reqType Req
 func (i *Index) GetRequest(index string, id string) *Request {
 	for _, r := range i.requests {
 		if r == nil {
-			logrus.WithFields(logrus.Fields{"index": index, "id": id}).Error("Request not found")
-			return nil
+			continue
 		}
 
 		if r.Index == index && r.Id == id {
@@ -130,45 +136,46 @@ func (i *Index) GetRequest(index string, id string) *Request {
 	return nil
 }
 
-func (i *Index) BatchPersist(height uint64) {
-	if height%uint64(i.bulkIndexSize) != 0 || len(i.requests) == 0 {
-		return
+func (i *Index) BatchPersist(height uint64) bool {
+	if height%i.bulkIndexSize != 0 || len(i.requests) == 0 {
+		return false
 	}
 
-	actions := i.Persist()
-	logrus.WithField("actions", actions).Info("Indexed height ", height)
+	i.Persist()
+	return true
 }
 
 func (i *Index) Persist() int {
 	bulk := i.Client.Bulk()
 	for _, r := range i.requests {
 		if r.Type == IndexRequest {
-			bulk.Add(elastic.NewBulkIndexRequest().Index(r.Index).Id(r.Id).Doc(r.Doc))
+			bulk.Add(elastic.NewBulkIndexRequest().Index(r.Index).Id(r.Id).Doc(r.Entity))
 		} else if r.Type == UpdateRequest {
-			bulk.Add(elastic.NewBulkUpdateRequest().Index(r.Index).Id(r.Id).Doc(r.Doc))
+			bulk.Add(elastic.NewBulkUpdateRequest().Index(r.Index).Id(r.Id).Doc(r.Entity))
 		}
 	}
 
 	actions := bulk.NumberOfActions()
 	if actions != 0 {
-		response, err := bulk.Do(context.Background())
-		if err != nil {
-			raven.CaptureError(err, nil)
-			logrus.WithError(err).Fatal("Failed to persist requests")
-		}
-		if response.Errors == true {
-			for _, failed := range response.Failed() {
-				raven.CaptureMessage(failed.Error.Reason, nil)
-				logrus.WithField("error", failed.Error).Fatal(failed.Error.Reason)
-			}
-		}
+		go i.persist(bulk)
 	}
-
-	logrus.Debug("Persisted requests")
 
 	i.requests = make([]*Request, 0)
 
 	return actions
+}
+
+func (i *Index) persist(bulk *elastic.BulkService) {
+	response, err := bulk.Do(context.Background())
+	if err != nil {
+		logrus.WithError(err).Fatal("Failed to persist requests")
+	}
+
+	if response.Errors == true {
+		for _, failed := range response.Failed() {
+			logrus.WithField("error", failed.Error).Fatal("Failed to persist to ES")
+		}
+	}
 }
 
 func (i *Index) DeleteHeightGT(height uint64, indices ...string) error {
@@ -221,4 +228,8 @@ func (i *Index) createIndex(index string, mapping []byte) error {
 	}
 
 	return nil
+}
+
+func networkId(entity explorer.Entity) string {
+	return fmt.Sprintf("%s-%s", config.Get().Network, entity.Slug())
 }

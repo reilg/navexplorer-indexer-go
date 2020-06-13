@@ -26,7 +26,7 @@ type SoftForkCycles []SoftForkCycle
 
 type SoftForkCycle struct {
 	Cycle            uint `json:"cycle"`
-	BlocksSignalling uint `json:"blocks"`
+	BlocksSignalling int  `json:"blocks"`
 }
 
 func (s *SoftFork) LatestCycle() *SoftForkCycle {
@@ -42,6 +42,13 @@ func (s *SoftFork) IsOpen() bool {
 		log.Fatal("State cannot be null")
 	}
 	return s.State == SoftForkDefined || s.State == SoftForkStarted || s.State == SoftForkFailed
+}
+
+func (s *SoftFork) IsActive() bool {
+	if s.State == "" {
+		log.Fatal("State cannot be null")
+	}
+	return s.State == SoftForkActive
 }
 
 func (s *SoftFork) GetCycle(cycle uint) *SoftForkCycle {
@@ -61,4 +68,14 @@ func (s SoftForks) GetSoftFork(name string) *SoftFork {
 	}
 
 	return nil
+}
+
+func (s SoftForks) HasSoftFork(name string) bool {
+	for i, _ := range s {
+		if s[i].Name == name {
+			return true
+		}
+	}
+
+	return false
 }

@@ -2,7 +2,9 @@ package proposal
 
 import (
 	"context"
+	"fmt"
 	"github.com/NavExplorer/navcoind-go"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	"github.com/getsentry/raven-go"
@@ -30,14 +32,13 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
 
 			_, err := i.elastic.Client.Index().
 				Index(elastic_cache.ProposalIndex.Get()).
-				Id(proposal.Slug()).
+				Id(fmt.Sprintf("%s-%s", config.Get().Network, proposal.Slug())).
 				BodyJson(proposal).
 				Do(context.Background())
 			if err != nil {
 				raven.CaptureError(err, nil)
 				log.WithError(err).Fatal("Failed to save new proposal")
 			}
-
 			Proposals = append(Proposals, proposal)
 		}
 	}
@@ -57,10 +58,10 @@ func (i *Indexer) Update(blockCycle *explorer.BlockCycle, block *explorer.Block)
 
 		UpdateProposal(navP, block.Height, p)
 		if p.UpdatedOnBlock == block.Height {
-			i.elastic.AddUpdateRequest(elastic_cache.ProposalIndex.Get(), p.Slug(), p)
+			i.elastic.AddUpdateRequest(elastic_cache.ProposalIndex.Get(), p)
 		}
 
-		if p.Status == explorer.ProposalExpired || p.Status == explorer.ProposalRejected {
+		if p.Status == explorer.ProposalExpired.Status || p.Status == explorer.ProposalRejected.Status {
 			if block.Height-p.UpdatedOnBlock >= uint64(blockCycle.Size) {
 				Proposals.Delete(p.Hash)
 			}

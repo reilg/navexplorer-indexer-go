@@ -4,6 +4,7 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/generated/dic"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/block"
 	"github.com/getsentry/raven-go"
 	"github.com/sarulabs/dingo/v3"
 	log "github.com/sirupsen/logrus"
@@ -16,42 +17,47 @@ func Execute() {
 
 	container, _ = dic.NewContainer(dingo.App)
 	container.GetElastic().InstallMappings()
-	container.GetSoftforkService().LoadSoftForks()
+	container.GetSoftforkService().InitSoftForks()
+	container.GetDaoConsensusService().InitConsensusParameters()
 
-	if config.Get().Sentry.Active {
-		_ = raven.SetDSN(config.Get().Sentry.DSN)
-	}
 	indexer.LastBlockIndexed = getHeight()
-
-	log.Infof("Rewind from %d to %d", indexer.LastBlockIndexed+uint64(config.Get().BulkIndexSize), indexer.LastBlockIndexed)
-	if err := container.GetRewinder().RewindToHeight(indexer.LastBlockIndexed); err != nil {
-		log.WithError(err).Fatal("Failed to rewind index")
-	}
-
 	if indexer.LastBlockIndexed != 0 {
-		if block, err := container.GetBlockRepo().GetBlockByHeight(indexer.LastBlockIndexed); err != nil {
-			log.WithError(err).Fatal("Failed to get block at height: ", indexer.LastBlockIndexed)
-		} else {
-			consensus, err := container.GetDaoConsensusRepo().GetConsensus()
-			if err == nil {
-				blockCycle := block.BlockCycle(consensus.BlocksPerVotingCycle, consensus.MinSumVotesPerVotingCycle)
-				container.GetDaoProposalService().LoadVotingProposals(block, blockCycle)
-				container.GetDaoPaymentRequestService().LoadVotingPaymentRequests(block, blockCycle)
-			}
+		log.Infof("Rewind from %d to %d", indexer.LastBlockIndexed+config.Get().BulkIndexSize, indexer.LastBlockIndexed)
+		if err := container.GetRewinder().RewindToHeight(indexer.LastBlockIndexed); err != nil {
+			log.WithError(err).Fatal("Failed to rewind index")
 		}
+
+		b, err := container.GetBlockRepo().GetBlockByHeight(indexer.LastBlockIndexed)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to get block at height: ", indexer.LastBlockIndexed)
+		}
+
+		log.Debug("Get block cycle")
+		container.GetDaoProposalService().LoadVotingProposals(b)
+		container.GetDaoPaymentRequestService().LoadVotingPaymentRequests(b)
+		container.GetDaoConsultationService().LoadOpenConsultations(b)
 	}
 
 	container.GetIndexer().BulkIndex()
-	container.GetSubscriber().Subscribe()
+
+	err := container.GetSubscriber().Subscribe(container.GetIndexer().SingleIndex)
+	if err != nil {
+		raven.CaptureErrorAndWait(err, nil)
+		log.WithError(err).Fatal("Failed to subscribe to ZMQ")
+	}
 }
 
 func getHeight() uint64 {
-	if height, err := container.GetBlockRepo().GetHeight(); err != nil {
-		log.WithError(err).Fatal("Failed to get block height")
-	} else {
-		if height >= uint64(config.Get().BulkIndexSize) {
-			return height - uint64(config.Get().BulkIndexSize)
+	height, err := container.GetBlockRepo().GetHeight()
+	if err != nil {
+		if err == block.ErrBlockNotFound {
+			return 0
 		}
+		log.WithError(err).Fatal("Failed to get block height")
+	}
+
+	if height >= config.Get().ReindexSize {
+		return height - config.Get().ReindexSize
 	}
 
 	return 0

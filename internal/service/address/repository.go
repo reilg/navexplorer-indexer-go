@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	"github.com/getsentry/raven-go"
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"strings"
 )
 
@@ -106,7 +109,6 @@ func (r *Repository) GetOrCreateAddress(hash string) (*explorer.Address, error) 
 		Size(1).
 		Do(context.Background())
 	if err != nil || results == nil {
-		raven.CaptureError(err, nil)
 		return nil, err
 	}
 
@@ -116,7 +118,7 @@ func (r *Repository) GetOrCreateAddress(hash string) (*explorer.Address, error) 
 		_, err := r.Client.
 			Index().
 			Index(elastic_cache.AddressIndex.Get()).
-			Id(address.Slug()).
+			Id(fmt.Sprintf("%s-%s", config.Get().Network, address.Slug())).
 			BodyJson(address).
 			Do(context.Background())
 		if err != nil {
@@ -138,7 +140,7 @@ func (r *Repository) GetAddress(hash string) (*explorer.Address, error) {
 
 	results, err := r.Client.
 		Search(elastic_cache.AddressIndex.Get()).
-		Query(elastic.NewTermQuery("hash", hash)).
+		Query(elastic.NewMatchQuery("hash", hash)).
 		Size(1).
 		Do(context.Background())
 	if err != nil {
@@ -165,25 +167,26 @@ func (r *Repository) GetTxsRangeForAddress(hash string, from uint64, to uint64) 
 	query = query.Must(elastic.NewMatchQuery("hash", hash))
 	query = query.Must(elastic.NewRangeQuery("height").Gt(from).Lte(to))
 
-	results, err := r.Client.
-		Search(elastic_cache.AddressTransactionIndex.Get()).
-		Query(query).
-		Size(50000000).
-		Sort("height", true).
-		Do(context.Background())
-	if err != nil {
-		raven.CaptureError(err, nil)
-		return nil, err
-	}
-
+	service := r.Client.Scroll(elastic_cache.AddressTransactionIndex.Get()).Query(query).Size(10000).Sort("height", true)
 	txs := make([]*explorer.AddressTransaction, 0)
-	for _, hit := range results.Hits.Hits {
-		var tx *explorer.AddressTransaction
-		if err = json.Unmarshal(hit.Source, &tx); err != nil {
-			raven.CaptureError(err, nil)
-			return nil, err
+
+	for {
+		results, err := service.Do(context.Background())
+		if err == io.EOF {
+			break
 		}
-		txs = append(txs, tx)
+		if err != nil || results == nil {
+			log.Fatal(err)
+		}
+
+		for _, hit := range results.Hits.Hits {
+			var tx *explorer.AddressTransaction
+			if err = json.Unmarshal(hit.Source, &tx); err != nil {
+				raven.CaptureError(err, nil)
+				return nil, err
+			}
+			txs = append(txs, tx)
+		}
 	}
 
 	return txs, nil
@@ -214,4 +217,28 @@ func (r *Repository) GetTxsForAddress(hash string) ([]*explorer.AddressTransacti
 	}
 
 	return txs, nil
+}
+
+func (r *Repository) GetAddressesByValidateAtDesc(size int) ([]*explorer.Address, error) {
+	log.Debug("ValidateAddresses()")
+
+	results, err := r.Client.Search(elastic_cache.AddressIndex.Get()).
+		Size(size).
+		Sort("validatedAt", true).
+		TrackTotalHits(true).
+		Do(context.Background())
+	if err != nil || results == nil {
+		return nil, err
+	}
+
+	addresses := make([]*explorer.Address, 0)
+	for _, hit := range results.Hits.Hits {
+		var address *explorer.Address
+		if err = json.Unmarshal(hit.Source, &address); err != nil {
+			return nil, err
+		}
+		addresses = append(addresses, address)
+	}
+
+	return addresses, nil
 }

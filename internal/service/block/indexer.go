@@ -4,6 +4,7 @@ import (
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer/IndexOption"
+	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/consensus"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	"github.com/getsentry/raven-go"
 	log "github.com/sirupsen/logrus"
@@ -14,23 +15,32 @@ type Indexer struct {
 	elastic       *elastic_cache.Index
 	orphanService *OrphanService
 	repository    *Repository
+	service       *Service
 }
 
-func NewIndexer(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, orphanService *OrphanService, repository *Repository) *Indexer {
-	return &Indexer{navcoin, elastic, orphanService, repository}
+func NewIndexer(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, orphanService *OrphanService, repository *Repository, service *Service) *Indexer {
+	return &Indexer{navcoin, elastic, orphanService, repository, service}
 }
 
 func (i *Indexer) Index(height uint64, option IndexOption.IndexOption) (*explorer.Block, []*explorer.BlockTransaction, error) {
 	navBlock, err := i.getBlockAtHeight(height)
 	if err != nil {
-		raven.CaptureError(err, nil)
+		if err.Error() != "-8: Block height out of range" {
+			raven.CaptureError(err, nil)
+			log.WithFields(log.Fields{"height": height}).WithError(err).Error("Failed to GetBlockHash")
+		}
 		return nil, nil, err
 	}
 
-	block := CreateBlock(navBlock)
+	block := CreateBlock(navBlock, i.service.GetLastBlockIndexed(), uint(consensus.Parameters.Get(consensus.VOTING_CYCLE_LENGTH).Value))
+	LastBlockIndexed = block
+
 	if option == IndexOption.SingleIndex {
+		log.Info("Indexing in single block mode")
 		orphan, err := i.orphanService.IsOrphanBlock(block)
 		if orphan == true || err != nil {
+			log.WithFields(log.Fields{"block": block, "orphan": orphan}).WithError(err).Info("Orphan Block Found")
+
 			return nil, nil, ErrOrphanBlockFound
 		}
 	}
@@ -51,14 +61,14 @@ func (i *Indexer) Index(height uint64, option IndexOption.IndexOption) (*explore
 		i.indexPreviousTxData(*tx)
 
 		txs = append(txs, tx)
-		i.elastic.AddIndexRequest(elastic_cache.BlockTransactionIndex.Get(), tx.Slug(), tx)
+		i.elastic.AddIndexRequest(elastic_cache.BlockTransactionIndex.Get(), tx)
 	}
 
 	if option == IndexOption.SingleIndex {
 		i.updateNextHashOfPreviousBlock(block)
 	}
 
-	i.elastic.AddIndexRequest(elastic_cache.BlockIndex.Get(), block.Slug(), block)
+	i.elastic.AddIndexRequest(elastic_cache.BlockIndex.Get(), block)
 
 	return block, txs, err
 }
@@ -90,7 +100,7 @@ func (i *Indexer) indexPreviousTxData(tx explorer.BlockTransaction) {
 		vin[vdx].PreviousOutput.Height = prevTx.Height
 	}
 
-	i.elastic.AddIndexRequest(elastic_cache.BlockTransactionIndex.Get(), tx.Slug(), tx)
+	i.elastic.AddIndexRequest(elastic_cache.BlockTransactionIndex.Get(), &tx)
 }
 
 func (i *Indexer) getBlockAtHeight(height uint64) (*navcoind.Block, error) {
@@ -117,6 +127,6 @@ func (i *Indexer) updateNextHashOfPreviousBlock(block *explorer.Block) {
 	if prevBlock, err := i.repository.GetBlockByHeight(block.Height - 1); err == nil {
 		log.Debugf("Update NextHash of PreviousBlock: %s", block.Hash)
 		prevBlock.Nextblockhash = block.Hash
-		i.elastic.AddUpdateRequest(elastic_cache.BlockIndex.Get(), prevBlock.Slug(), prevBlock)
+		i.elastic.AddUpdateRequest(elastic_cache.BlockIndex.Get(), prevBlock)
 	}
 }
