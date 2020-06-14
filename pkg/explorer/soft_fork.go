@@ -41,7 +41,7 @@ func (s *SoftFork) IsOpen() bool {
 	if s.State == "" {
 		log.Fatal("State cannot be null")
 	}
-	return s.State == SoftForkDefined || s.State == SoftForkStarted || s.State == SoftForkFailed
+	return s.State == SoftForkDefined || s.State == SoftForkStarted || s.State == SoftForkFailed || s.State == SoftForkLockedIn
 }
 
 func (s *SoftFork) IsActive() bool {
