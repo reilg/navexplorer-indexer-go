@@ -22,15 +22,22 @@ func (i *Indexer) Index(block *explorer.Block) {
 		i.updateSoftForks(signal, block)
 	}
 
-	i.updateState(block)
+	if block.BlockCycle.IsEnd() {
+		i.updateState(block)
+	}
 
 	for _, softFork := range SoftForks {
+		if softFork.State == explorer.SoftForkStarted {
+			softFork.LockedInHeight = new(explorer.SoftFork).LockedInHeight
+			softFork.ActivationHeight = new(explorer.SoftFork).ActivationHeight
+			softFork.SignalHeight = block.Height
+		}
 		i.elastic.AddUpdateRequest(elastic_cache.SoftForkIndex.Get(), softFork)
 	}
 
 	if signal != nil {
 		for _, s := range signal.SoftForks {
-			if SoftForks.GetSoftFork(s) != nil && SoftForks.GetSoftFork(s).State == explorer.SoftForkLockedIn {
+			if SoftForks.GetSoftFork(s) != nil && SoftForks.GetSoftFork(s).State == explorer.SoftForkActive {
 				signal.DeleteSoftFork(s)
 			}
 		}
@@ -53,9 +60,14 @@ func (i *Indexer) updateSoftForks(signal *explorer.Signal, block *explorer.Block
 			continue
 		}
 
-		softFork.SignalHeight = signal.Height
 		if softFork.State == explorer.SoftForkDefined {
 			softFork.State = explorer.SoftForkStarted
+		}
+
+		if softFork.State == explorer.SoftForkStarted {
+			softFork.LockedInHeight = new(explorer.SoftFork).LockedInHeight
+			softFork.ActivationHeight = new(explorer.SoftFork).ActivationHeight
+			softFork.SignalHeight = block.Height
 		}
 
 		var cycle *explorer.SoftForkCycle

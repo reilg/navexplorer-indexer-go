@@ -37,7 +37,7 @@ func (i *Service) InitSoftForks() {
 
 	for name, bip9fork := range info.Bip9SoftForks {
 		if SoftForks.GetSoftFork(name) == nil {
-			softFork := &explorer.SoftFork{Name: name, SignalBit: bip9fork.Bit, State: explorer.SoftForkDefined}
+			softFork := &explorer.SoftFork{Name: name, SignalBit: bip9fork.Bit, State: explorer.SoftForkStarted, ActivationHeight: 0, LockedInHeight: 0}
 			_, err := i.elastic.Client.
 				Index().
 				Index(elastic_cache.SoftForkIndex.Get()).
@@ -48,7 +48,6 @@ func (i *Service) InitSoftForks() {
 				log.WithError(err).Fatal("Failed to save new softfork")
 			}
 
-			log.Info("Saving new softfork ", name)
 			SoftForks = append(SoftForks, softFork)
 		}
 	}

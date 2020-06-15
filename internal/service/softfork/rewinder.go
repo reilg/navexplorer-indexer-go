@@ -30,15 +30,10 @@ func (r *Rewinder) Rewind(height uint64) error {
 	}
 
 	for idx, s := range SoftForks {
-		if s.ActivationHeight > height {
-			log.Infof("Softfork %s activated before %d", s.Name, height)
-			continue
-		}
-
 		SoftForks[idx] = &explorer.SoftFork{
 			Name:      s.Name,
 			SignalBit: s.SignalBit,
-			State:     explorer.SoftForkDefined,
+			State:     explorer.SoftForkStarted,
 		}
 	}
 
@@ -73,7 +68,7 @@ func (r *Rewinder) Rewind(height uint64) error {
 		}
 
 		for _, s := range SoftForks {
-			if s.State == explorer.SoftForkStarted && s.LatestCycle().BlocksSignalling >= explorer.GetQuorum(r.blocksInCycle, r.quorum) {
+			if s.State == explorer.SoftForkStarted && s.LatestCycle() != nil && s.LatestCycle().BlocksSignalling >= explorer.GetQuorum(r.blocksInCycle, r.quorum) {
 				s.State = explorer.SoftForkLockedIn
 				s.LockedInHeight = end
 				s.ActivationHeight = end + uint64(r.blocksInCycle)
