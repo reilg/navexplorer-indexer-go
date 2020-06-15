@@ -22,7 +22,7 @@ func Execute() {
 
 	indexer.LastBlockIndexed = getHeight()
 	if indexer.LastBlockIndexed != 0 {
-		log.Infof("Rewind from %d to %d", indexer.LastBlockIndexed+config.Get().BulkIndexSize, indexer.LastBlockIndexed)
+		log.Infof("Rewind from %d to %d", indexer.LastBlockIndexed+config.Get().ReindexSize, indexer.LastBlockIndexed)
 		if err := container.GetRewinder().RewindToHeight(indexer.LastBlockIndexed); err != nil {
 			log.WithError(err).Fatal("Failed to rewind index")
 		}
