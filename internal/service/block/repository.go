@@ -7,6 +7,8 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	"github.com/getsentry/raven-go"
 	"github.com/olivere/elastic/v7"
+	"io"
+	"log"
 )
 
 type Repository struct {
@@ -114,4 +116,36 @@ func (r *Repository) GetTransactionsWithCfundPayment() error {
 	}
 
 	return nil
+}
+
+func (r *Repository) GetAllTransactionsThatIncludeAddress(hash string) ([]*explorer.BlockTransaction, error) {
+	query := elastic.NewBoolQuery()
+	query = query.Should(elastic.NewNestedQuery("vin",
+		elastic.NewBoolQuery().Must(elastic.NewMatchQuery("vin.addresses.keyword", hash))))
+	query = query.Should(elastic.NewNestedQuery("vout",
+		elastic.NewBoolQuery().Must(elastic.NewMatchQuery("vout.scriptPubKey.addresses.keyword", hash))))
+
+	service := r.Client.Scroll(elastic_cache.BlockTransactionIndex.Get()).Query(query).Size(10000).Sort("height", true)
+	txs := make([]*explorer.BlockTransaction, 0)
+
+	for {
+		results, err := service.Do(context.Background())
+		if err == io.EOF {
+			break
+		}
+		if err != nil || results == nil {
+			log.Fatal(err)
+		}
+
+		for _, hit := range results.Hits.Hits {
+			var tx *explorer.BlockTransaction
+			if err = json.Unmarshal(hit.Source, &tx); err != nil {
+				raven.CaptureError(err, nil)
+				return nil, err
+			}
+			txs = append(txs, tx)
+		}
+	}
+
+	return txs, nil
 }

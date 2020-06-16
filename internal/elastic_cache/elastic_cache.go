@@ -173,7 +173,7 @@ func (i *Index) persist(bulk *elastic.BulkService) {
 
 	if response.Errors == true {
 		for _, failed := range response.Failed() {
-			logrus.WithField("error", failed.Error).Fatal("Failed to persist to ES")
+			logrus.WithField("error", failed.Error).Error("Failed to persist to ES")
 		}
 	}
 }

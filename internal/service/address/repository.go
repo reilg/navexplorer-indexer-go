@@ -242,3 +242,29 @@ func (r *Repository) GetAddressesByValidateAtDesc(size int) ([]*explorer.Address
 
 	return addresses, nil
 }
+
+func (r *Repository) GetAllAddresses() ([]*explorer.Address, error) {
+	service := r.Client.Scroll(elastic_cache.AddressIndex.Get()).Size(10000).Sort("hash.keyword", true)
+	addresses := make([]*explorer.Address, 0)
+
+	for {
+		results, err := service.Do(context.Background())
+		if err == io.EOF {
+			break
+		}
+		if err != nil || results == nil {
+			log.Fatal(err)
+		}
+
+		for _, hit := range results.Hits.Hits {
+			var a *explorer.Address
+			if err = json.Unmarshal(hit.Source, &a); err != nil {
+				raven.CaptureError(err, nil)
+				return nil, err
+			}
+			addresses = append(addresses, a)
+		}
+	}
+
+	return addresses, nil
+}

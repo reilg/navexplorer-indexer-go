@@ -16,6 +16,24 @@ func NewIndexer(elastic *elastic_cache.Index, repo *Repository) *Indexer {
 	return &Indexer{elastic, repo}
 }
 
+func (i *Indexer) GenerateAddressTransactions(address *explorer.Address, tx *explorer.BlockTransaction, block *explorer.Block) []*explorer.AddressTransaction {
+	txs := make([]*explorer.AddressTransaction, 0)
+	for _, tx := range CreateAddressTransaction(tx, block) {
+		if tx.Hash != address.Hash {
+			continue
+		}
+		if tx.Cold == true {
+			address.ColdBalance += tx.Total
+			tx.Balance = uint64(address.ColdBalance)
+		} else {
+			address.Balance += tx.Total
+			tx.Balance = uint64(address.Balance)
+		}
+		txs = append(txs, tx)
+	}
+	return txs
+}
+
 func (i *Indexer) Index(txs []*explorer.BlockTransaction, block *explorer.Block) {
 	if len(txs) == 0 {
 		return
@@ -33,14 +51,11 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction, block *explorer.Block)
 				Addresses[addressTx.Hash] = address
 			}
 
-			previousBalance := Addresses[addressTx.Hash].Balance
 			if addressTx.Cold == true {
 				addressTx.Balance = uint64(Addresses[addressTx.Hash].ColdBalance + addressTx.Total)
 			} else {
 				addressTx.Balance = uint64(Addresses[addressTx.Hash].Balance + addressTx.Total)
 			}
-
-			log.WithField("address", addressTx.Hash).Debug("PreviousBalance: ", previousBalance)
 
 			i.elastic.AddIndexRequest(elastic_cache.AddressTransactionIndex.Get(), addressTx)
 
