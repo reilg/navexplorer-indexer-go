@@ -12,7 +12,6 @@ var (
 	AddressTransactionIndex Indices = "addresstransaction"
 	BlockIndex              Indices = "block"
 	BlockTransactionIndex   Indices = "blocktransaction"
-	CfundIndex              Indices = "cfund"
 	ConsensusIndex          Indices = "consensus"
 	ProposalIndex           Indices = "proposal"
 	DaoVoteIndex            Indices = "daovote"
@@ -24,7 +23,7 @@ var (
 
 // Sets the network and returns the full string
 func (i *Indices) Get() string {
-	return fmt.Sprintf("%s.%s", config.Get().Network, string(*i))
+	return fmt.Sprintf("%s.%s.%s", config.Get().Network, config.Get().Index, string(*i))
 }
 
 func All() []Indices {
@@ -33,7 +32,6 @@ func All() []Indices {
 		AddressTransactionIndex,
 		BlockIndex,
 		BlockTransactionIndex,
-		CfundIndex,
 		ConsensusIndex,
 		ProposalIndex,
 		DaoVoteIndex,
