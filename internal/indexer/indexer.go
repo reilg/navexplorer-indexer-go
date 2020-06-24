@@ -127,15 +127,5 @@ func (i *Indexer) index(height uint64, option IndexOption.IndexOption) error {
 		i.elastic.Persist()
 	}
 
-	//if height >= 4253759 {
-	//	i.elastic.Persist()
-	//	log.Infof("Stopped Indexing at height %d", height)
-	//	for {
-	//		switch {
-	//
-	//		}
-	//	}
-	//}
-
 	return i.index(height+1, option)
 }
