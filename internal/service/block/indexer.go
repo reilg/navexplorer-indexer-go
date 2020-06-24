@@ -26,10 +26,6 @@ func NewIndexer(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, orphan
 func (i *Indexer) Index(height uint64, option IndexOption.IndexOption) (*explorer.Block, []*explorer.BlockTransaction, *navcoind.BlockHeader, error) {
 	navBlock, err := i.getBlockAtHeight(height)
 	if err != nil {
-		if err.Error() != "-8: Block height out of range" {
-			raven.CaptureError(err, nil)
-			log.WithFields(log.Fields{"height": height}).WithError(err).Error("Failed to GetBlockHash")
-		}
 		return nil, nil, nil, err
 	}
 	header, err := i.navcoin.GetBlockheader(navBlock.Hash)
@@ -75,9 +71,8 @@ func (i *Indexer) Index(height uint64, option IndexOption.IndexOption) (*explore
 		applySpend(tx, block)
 		applyCFundPayout(tx, block)
 
-		i.elastic.AddIndexRequest(elastic_cache.BlockTransactionIndex.Get(), tx)
-
 		i.indexPreviousTxData(tx)
+		i.elastic.AddIndexRequest(elastic_cache.BlockTransactionIndex.Get(), tx)
 
 		txs = append(txs, tx)
 	}
@@ -111,12 +106,12 @@ func (i *Indexer) indexPreviousTxData(tx *explorer.BlockTransaction) {
 		tx.Vin[vdx].PreviousOutput.Height = prevTx.Height
 
 		prevTx.Vout[*tx.Vin[vdx].Vout].RedeemedIn = &explorer.RedeemedIn{
-			Hash:   *tx.Vin[vdx].Txid,
+			Hash:   tx.Txid,
 			Height: tx.Height,
 		}
+
 		i.elastic.AddUpdateRequest(elastic_cache.BlockTransactionIndex.Get(), prevTx)
 	}
-	i.elastic.AddUpdateRequest(elastic_cache.BlockTransactionIndex.Get(), tx)
 }
 
 func (i *Indexer) getBlockAtHeight(height uint64) (*navcoind.Block, error) {
