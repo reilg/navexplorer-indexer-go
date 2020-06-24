@@ -29,11 +29,11 @@ func (o *OrphanService) IsOrphanBlock(block *explorer.Block) (bool, error) {
 		return o.repository.GetBlockByHeight(height - 1)
 	}
 
-	previousBlock, err := getPreviousBlock(block.Height - 1)
+	previousBlock, err := getPreviousBlock(block.Height)
 	if err != nil {
 		log.Info("Retry get previous block in 5 seconds")
 		time.Sleep(5 * time.Second)
-		previousBlock, err = getPreviousBlock(block.Height - 1)
+		previousBlock, err = getPreviousBlock(block.Height)
 		if err != nil {
 			log.WithError(err).WithField("height", block.Height-1).Fatal("Failed to get previous block")
 		}
@@ -42,7 +42,7 @@ func (o *OrphanService) IsOrphanBlock(block *explorer.Block) (bool, error) {
 	orphan := previousBlock.Hash != block.Previousblockhash
 	if orphan == true {
 		raven.CaptureError(err, nil)
-		log.WithFields(log.Fields{"height": block.Height, "hash": block.Hash}).Info("Orphan block found")
+		log.WithFields(log.Fields{"height": block.Height, "block": block.Hash, "previous": previousBlock.Hash}).Info("Orphan block found")
 	}
 
 	return orphan, nil
