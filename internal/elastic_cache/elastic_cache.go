@@ -8,25 +8,26 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
 	"github.com/getsentry/raven-go"
 	"github.com/olivere/elastic/v7"
+	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"log"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type Index struct {
 	Client        *elastic.Client
-	requests      []*Request
+	cache         *cache.Cache
 	bulkIndexSize uint64
 }
 
 type Request struct {
-	Height uint64
-	Index  string
-	Id     string
-	Entity explorer.Entity
-	Type   RequestType
+	Index     string
+	Entity    explorer.Entity
+	Type      RequestType
+	Persisted bool
 }
 
 type RequestType string
@@ -66,7 +67,7 @@ func New() (*Index, error) {
 
 	return &Index{
 		Client:        client,
-		requests:      make([]*Request, 0),
+		cache:         cache.New(5*time.Minute, 10*time.Minute),
 		bulkIndexSize: config.Get().BulkIndexSize,
 	}, err
 }
@@ -110,66 +111,88 @@ func (i *Index) AddRequest(index string, entity explorer.Entity, reqType Request
 		"slug":  entity.Slug(),
 	}).Debugf("AddRequest")
 
-	if request := i.GetRequest(index, entity.Slug()); request != nil {
-		request.Entity = entity
+	request := Request{
+		Index:     index,
+		Entity:    entity,
+		Type:      reqType,
+		Persisted: false,
+	}
+
+	cached, found := i.cache.Get(entity.Slug())
+	if found == true {
+		logrus.WithField("persisted", cached.(Request).Persisted).Debugf("Found in cache %s: %s", cached.(Request).Index, cached.(Request).Entity.Slug())
+		if cached.(Request).Persisted == false && reqType == UpdateRequest {
+			logrus.Debugf("Switch update to index as not previously persisted %s", entity.Slug())
+			request.Type = IndexRequest
+		}
+		request.Persisted = false
+	}
+	i.cache.Set(entity.Slug(), request, cache.DefaultExpiration)
+}
+
+func (i *Index) GetRequests() []Request {
+	requests := make([]Request, 0)
+
+	for _, item := range i.cache.Items() {
+		requests = append(requests, item.Object.(Request))
+	}
+
+	return requests
+}
+
+func (i *Index) GetPendingRequests() []Request {
+	requests := make([]Request, 0)
+
+	for _, r := range i.GetRequests() {
+		if r.Persisted != true {
+			requests = append(requests, r)
+		}
+	}
+
+	return requests
+}
+
+func (i *Index) GetRequest(id string) *Request {
+	if item, found := i.cache.Get(id); found == true {
+		req := item.(Request)
+		return &req
 	} else {
-		i.requests = append(i.requests, &Request{
-			Index:  index,
-			Id:     entity.Slug(),
-			Entity: entity,
-			Type:   reqType,
-		})
+		return nil
 	}
-}
-
-func (i *Index) GetRequests() []*Request {
-	return i.requests
-}
-
-func (i *Index) GetRequest(index string, id string) *Request {
-	for _, r := range i.requests {
-		if r == nil {
-			continue
-		}
-
-		if r.Index == index && r.Id == id {
-			return r
-		}
-	}
-
-	return nil
 }
 
 func (i *Index) BatchPersist(height uint64) bool {
-	if height%i.bulkIndexSize != 0 || len(i.requests) == 0 {
+	if height%i.bulkIndexSize != 0 {
 		return false
 	}
 
+	logrus.Infof("Persisting data at height   %d", height)
 	i.Persist()
 	return true
 }
 
 func (i *Index) Persist() int {
 	bulk := i.Client.Bulk()
-	for _, r := range i.requests {
-		logrus.Debugf("Persisting %s %s %s", r.Type, r.Index, r.Id)
+	for _, r := range i.GetPendingRequests() {
 		if r.Type == IndexRequest {
-			bulk.Add(elastic.NewBulkIndexRequest().Index(r.Index).Id(r.Id).Doc(r.Entity))
+			bulk.Add(elastic.NewBulkIndexRequest().Index(r.Index).Id(r.Entity.Slug()).Doc(r.Entity))
 		} else if r.Type == UpdateRequest {
-			bulk.Add(elastic.NewBulkUpdateRequest().Index(r.Index).Id(r.Id).Doc(r.Entity))
+			bulk.Add(elastic.NewBulkUpdateRequest().Index(r.Index).Id(r.Entity.Slug()).Doc(r.Entity))
 		}
+		r.Persisted = true
+		i.cache.Set(r.Entity.Slug(), r, cache.DefaultExpiration)
 	}
 
 	actions := bulk.NumberOfActions()
 	if actions != 0 {
-		go i.persist(bulk)
+		i.persist(bulk)
 	}
-	i.requests = make([]*Request, 0)
 
 	return actions
 }
 
 func (i *Index) persist(bulk *elastic.BulkService) {
+	actions := bulk.NumberOfActions()
 	response, err := bulk.Do(context.Background())
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to persist requests")
@@ -177,9 +200,15 @@ func (i *Index) persist(bulk *elastic.BulkService) {
 
 	if response.Errors == true {
 		for _, failed := range response.Failed() {
-			logrus.WithField("error", failed.Error).Error("Failed to persist to ES")
+			logrus.WithFields(logrus.Fields{"error": failed.Error}).Error("Failed to persist to ES")
+			for {
+				switch {
+
+				}
+			}
 		}
 	}
+	logrus.Infof("Persisted %d actions", actions)
 }
 
 func (i *Index) DeleteHeightGT(height uint64, indices ...string) error {
