@@ -32,7 +32,7 @@ func (r *Rewinder) Rewind(height uint64) error {
 		SoftForks[idx] = &explorer.SoftFork{
 			Name:      s.Name,
 			SignalBit: s.SignalBit,
-			State:     explorer.SoftForkStarted,
+			State:     explorer.SoftForkDefined,
 		}
 	}
 

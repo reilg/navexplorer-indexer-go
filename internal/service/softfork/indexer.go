@@ -4,6 +4,7 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/softfork/signal"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	log "github.com/sirupsen/logrus"
 )
 
 type Indexer struct {
@@ -77,30 +78,32 @@ func (i *Indexer) updateSoftForks(signal *explorer.Signal, block *explorer.Block
 		}
 
 		cycle.BlocksSignalling++
+		i.elastic.AddUpdateRequest(elastic_cache.SoftForkIndex.Get(), softFork)
 	}
 }
 
 func (i *Indexer) updateState(block *explorer.Block) {
-	for idx, s := range SoftForks {
-		if s.Cycles == nil {
+	log.Info("Update Softfork State at height ", block.Height)
+	for idx, _ := range SoftForks {
+		if SoftForks[idx].Cycles == nil {
 			continue
 		}
 
-		if s.State == explorer.SoftForkStarted && s.LatestCycle().BlocksSignalling >= explorer.GetQuorum(i.blocksInCycle, i.quorum) {
+		if SoftForks[idx].State == explorer.SoftForkStarted && block.Height >= SoftForks[idx].LockedInHeight {
+			log.Info("Moved softfork to locked in")
+			SoftForks[idx].State = explorer.SoftForkLockedIn
 			SoftForks[idx].LockedInHeight = uint64(i.blocksInCycle * GetSoftForkBlockCycle(i.blocksInCycle, block.Height).Cycle)
 			SoftForks[idx].ActivationHeight = SoftForks[idx].LockedInHeight + uint64(i.blocksInCycle)
+			if SoftForks[idx].Cycles[len(SoftForks[idx].Cycles)-1].BlocksSignalling == 1 {
+				SoftForks[idx].Cycles = SoftForks[idx].Cycles[:len(SoftForks[idx].Cycles)-1]
+			}
+			i.elastic.AddUpdateRequest(elastic_cache.SoftForkIndex.Get(), SoftForks[idx])
 		}
 
-		if s.LockedInHeight != 0 && s.ActivationHeight != 0 {
-			if s.State == explorer.SoftForkStarted && block.Height >= s.LockedInHeight {
-				SoftForks[idx].State = explorer.SoftForkLockedIn
-				if SoftForks[idx].Cycles[len(SoftForks[idx].Cycles)-1].BlocksSignalling == 1 {
-					SoftForks[idx].Cycles = SoftForks[idx].Cycles[:len(SoftForks[idx].Cycles)-1]
-				}
-			}
-			if s.State == explorer.SoftForkLockedIn && block.Height >= s.ActivationHeight {
-				SoftForks[idx].State = explorer.SoftForkActive
-			}
+		if SoftForks[idx].State == explorer.SoftForkLockedIn && block.Height >= SoftForks[idx].ActivationHeight-1 {
+			log.Info("Moved softfork to Active")
+			SoftForks[idx].State = explorer.SoftForkActive
+			i.elastic.AddUpdateRequest(elastic_cache.SoftForkIndex.Get(), SoftForks[idx])
 		}
 	}
 }
