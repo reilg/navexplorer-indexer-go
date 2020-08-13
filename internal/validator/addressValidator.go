@@ -50,6 +50,5 @@ func (v *AddressValidator) Execute() {
 			BodyJson(a).
 			Id(a.Slug()).
 			Do(context.Background())
-		}
 	}
 }
