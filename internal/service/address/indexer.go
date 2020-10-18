@@ -1,37 +1,20 @@
 package address
 
 import (
+	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
-	"github.com/getsentry/raven-go"
 	log "github.com/sirupsen/logrus"
 )
 
 type Indexer struct {
+	navcoin *navcoind.Navcoind
 	elastic *elastic_cache.Index
 	repo    *Repository
 }
 
-func NewIndexer(elastic *elastic_cache.Index, repo *Repository) *Indexer {
-	return &Indexer{elastic, repo}
-}
-
-func (i *Indexer) GenerateAddressTransactions(address *explorer.Address, tx *explorer.BlockTransaction, block *explorer.Block) []*explorer.AddressTransaction {
-	txs := make([]*explorer.AddressTransaction, 0)
-	for _, tx := range CreateAddressTransaction(tx, block) {
-		if tx.Hash != address.Hash {
-			continue
-		}
-		if tx.Cold == true {
-			address.ColdBalance += tx.Total
-			tx.Balance = uint64(address.ColdBalance)
-		} else {
-			address.Balance += tx.Total
-			tx.Balance = uint64(address.Balance)
-		}
-		txs = append(txs, tx)
-	}
-	return txs
+func NewIndexer(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, repo *Repository) *Indexer {
+	return &Indexer{navcoin, elastic, repo}
 }
 
 func (i *Indexer) Index(txs []*explorer.BlockTransaction, block *explorer.Block) {
@@ -39,41 +22,71 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction, block *explorer.Block)
 		return
 	}
 
-	hashes := make([]string, 0)
+	for _, addressHistory := range i.generateAddressHistory(block, txs) {
+		i.elastic.AddIndexRequest(elastic_cache.AddressHistoryIndex.Get(), addressHistory)
+
+		err := i.updateAddress(addressHistory, block)
+		if err != nil {
+			log.WithError(err).Fatalf("Could not update address: %s", addressHistory.Hash)
+		}
+	}
+}
+
+func (i *Indexer) generateAddressHistory(block *explorer.Block, txs []*explorer.BlockTransaction) []*explorer.AddressHistory {
+	addressHistory := make([]*explorer.AddressHistory, 0)
+
+	addresses := getAddressesForTxs(txs)
+	history, err := i.navcoin.GetAddressHistory(&block.Height, &block.Height, addresses...)
+	if err != nil {
+		log.WithError(err).Errorf("Could not get address history for height: %d", block.Height)
+		return addressHistory
+	}
+
+	for _, h := range history {
+		addressHistory = append(addressHistory, CreateAddressHistory(h, getTxsById(h.TxId, txs), block))
+	}
+
+	return addressHistory
+}
+
+func (i *Indexer) updateAddress(history *explorer.AddressHistory, block *explorer.Block) error {
+	address := Addresses.GetByHash(history.Hash)
+	if address == nil {
+		var err error
+		address, err = i.repo.GetOrCreateAddress(history.Hash, block)
+		if err != nil {
+			return err
+		}
+	}
+
+	address.Height = history.Height
+	address.Spendable = history.Balance.Spendable
+	address.Stakable = history.Balance.Stakable
+	address.VotingWeight = history.Balance.VotingWeight
+
+	Addresses[address.Hash] = address
+
+	i.elastic.AddUpdateRequest(elastic_cache.AddressIndex.Get(), address)
+	return nil
+}
+
+func getAddressesForTxs(txs []*explorer.BlockTransaction) []string {
+	addresses := make([]string, 0)
 	for _, tx := range txs {
-		for _, addressTx := range CreateAddressTransaction(tx, block) {
-			if Addresses.GetByHash(addressTx.Hash) == nil {
-				address, err := i.repo.GetOrCreateAddress(addressTx.Hash)
-				if err != nil {
-					raven.CaptureError(err, nil)
-					log.WithError(err).Fatalf("Could not get or create address: %s", addressTx.Hash)
-				}
-				Addresses[addressTx.Hash] = address
-			}
-
-			if addressTx.Cold == true {
-				addressTx.Balance = uint64(Addresses[addressTx.Hash].ColdBalance + addressTx.Total)
-			} else {
-				addressTx.Balance = uint64(Addresses[addressTx.Hash].Balance + addressTx.Total)
-			}
-
-			i.elastic.AddIndexRequest(elastic_cache.AddressTransactionIndex.Get(), addressTx)
-
-			ApplyTxToAddress(Addresses[addressTx.Hash], addressTx)
-			if addressTx.Cold == true {
-				Addresses[addressTx.Hash].ColdBalance += addressTx.Total
-			} else {
-				Addresses[addressTx.Hash].Balance += addressTx.Total
-			}
-
-			i.elastic.AddUpdateRequest(elastic_cache.AddressIndex.Get(), Addresses[addressTx.Hash])
+		for _, address := range tx.GetAllAddresses() {
+			addresses = append(addresses, address)
 		}
 	}
 
-	if len(hashes) > 0 {
-		if _, err := i.repo.GetAddresses(hashes); err != nil {
-			raven.CaptureError(err, nil)
-			log.WithError(err).Fatalf("Could not get addresses for txs at height %d", txs[0].Height)
+	return addresses
+}
+
+func getTxsById(txid string, txs []*explorer.BlockTransaction) *explorer.BlockTransaction {
+	for _, tx := range txs {
+		if tx.Txid == txid {
+			return tx
 		}
 	}
+	log.Fatal("Could not match tx")
+	return nil
 }

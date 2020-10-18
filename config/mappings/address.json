@@ -1,5 +1,8 @@
 {
   "mappings": {
+    "_source": {
+      "excludes": ["rich_list"]
+    },
     "properties": {
       "hash": {
         "type": "text",
@@ -11,47 +14,15 @@
         }
       },
       "height": {"type": "long"},
-      "balance": {"type": "long"},
-      "received": {
-        "type": "long"
+      "spendable": {"type": "long"},
+      "stakabout": {"type": "long"},
+      "voting_weight": {"type": "long"},
+      "created_time": {
+        "type": "date"
       },
-      "receivedCount": {
+      "created_block": {
         "type": "long"
-      },
-      "sent": {
-        "type": "long"
-      },
-      "sentCount": {
-        "type": "long"
-      },
-      "staked": {
-        "type": "long"
-      },
-      "stakedCount": {
-        "type": "long"
-      },
-      "coldReceived": {
-        "type": "long"
-      },
-      "coldReceivedCount": {
-        "type": "long"
-      },
-      "coldSent": {
-        "type": "long"
-      },
-      "coldSentCount": {
-        "type": "long"
-      },
-      "coldStaked": {
-        "type": "long"
-      },
-      "coldStakedCount": {
-        "type": "long"
-      },
-      "coldBalance": {
-        "type": "long"
-      },
-      "position": {"type": "long"}
+      }
     }
   },
   "settings": {

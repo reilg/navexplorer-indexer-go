@@ -3,31 +3,28 @@ package explorer
 import (
 	"fmt"
 	"github.com/gosimple/slug"
+	"time"
 )
 
 type Address struct {
 	Hash   string `json:"hash"`
 	Height uint64 `json:"height"`
 
-	Received      int64 `json:"received"`
-	ReceivedCount uint  `json:"receivedCount"`
-	Sent          int64 `json:"sent"`
-	SentCount     uint  `json:"sentCount"`
-	Staked        int64 `json:"staked"`
-	StakedCount   uint  `json:"stakedCount"`
-	Balance       int64 `json:"balance"`
+	Spendable    int64 `json:"spendable"`
+	Stakable     int64 `json:"stakable"`
+	VotingWeight int64 `json:"voting_weight"`
 
-	ColdReceived      int64 `json:"coldReceived"`
-	ColdReceivedCount uint  `json:"coldReceivedCount"`
-	ColdSent          int64 `json:"coldSent"`
-	ColdSentCount     uint  `json:"coldSentCount"`
-	ColdStaked        int64 `json:"coldStaked"`
-	ColdStakedCount   uint  `json:"coldStakedCount"`
-	ColdBalance       int64 `json:"coldBalance"`
+	CreatedTime  time.Time `json:"created_time"`
+	CreatedBlock uint64    `json:"created_block"`
 
-	ValidatedAt uint64 `json:"validatedAt"`
+	// Transient
+	RichList RichList `json:"rich_list,omitempty"`
+}
 
-	Position uint `json:"position"`
+type RichList struct {
+	Spending uint64 `json:"spending"`
+	Staking  uint64 `json:"staking"`
+	Voting   uint64 `json:"voting"`
 }
 
 func (a *Address) Slug() string {

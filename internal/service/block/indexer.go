@@ -26,10 +26,12 @@ func NewIndexer(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, orphan
 func (i *Indexer) Index(height uint64, option IndexOption.IndexOption) (*explorer.Block, []*explorer.BlockTransaction, *navcoind.BlockHeader, error) {
 	navBlock, err := i.getBlockAtHeight(height)
 	if err != nil {
+		log.Error("Failed to get block at height ", height)
 		return nil, nil, nil, err
 	}
 	header, err := i.navcoin.GetBlockheader(navBlock.Hash)
 	if err != nil {
+		log.Error("Failed to get header at height ", height)
 		return nil, nil, nil, err
 	}
 
@@ -39,23 +41,26 @@ func (i *Indexer) Index(height uint64, option IndexOption.IndexOption) (*explore
 	if err != nil {
 		log.WithError(err).Errorf("Failed to parse header.NcfSupply: %s", header.NcfSupply)
 	}
+
 	locked, err := strconv.ParseFloat(header.NcfLocked, 64)
 	if err != nil {
 		log.WithError(err).Errorf("Failed to parse header.NcfLocked: %s", header.NcfLocked)
 	}
-	block.Cfund = &explorer.Cfund{Available: available, Locked: locked}
 
-	LastBlockIndexed = block
+	block.Cfund = &explorer.Cfund{Available: available, Locked: locked}
 
 	if option == IndexOption.SingleIndex {
 		log.Info("Indexing in single block mode")
-		orphan, err := i.orphanService.IsOrphanBlock(block)
+		orphan, err := i.orphanService.IsOrphanBlock(block, LastBlockIndexed)
 		if orphan == true || err != nil {
 			log.WithFields(log.Fields{"block": block, "orphan": orphan}).WithError(err).Info("Orphan Block Found")
-
+			LastBlockIndexed = nil
 			return nil, nil, nil, ErrOrphanBlockFound
 		}
 	}
+	LastBlockIndexed = block
+
+	i.elastic.AddIndexRequest(elastic_cache.BlockIndex.Get(), block)
 
 	var txs = make([]*explorer.BlockTransaction, 0)
 	for idx, txHash := range block.Tx {

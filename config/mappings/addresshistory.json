@@ -1,0 +1,64 @@
+{
+  "mappings": {
+    "properties": {
+      "height": {
+        "type": "long"
+      },
+      "txindex": {
+        "type": "integer"
+      },
+      "time": {
+        "type": "date"
+      },
+      "txid": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "address": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "changes": {
+        "type": "nested",
+        "properties": {
+          "spendable": {"type": "long"},
+          "stakable": {"type": "long"},
+          "voting_weight": {"type": "long"}
+        }
+      },
+      "balance": {
+        "type": "nested",
+        "properties": {
+          "spendable": {"type": "long"},
+          "stakable": {"type": "long"},
+          "voting_weight": {"type": "long"}
+        }
+      },
+      "is_stake": {
+        "type": "boolean"
+      },
+      "is_cfund_payout": {
+        "type": "boolean"
+      },
+      "is_stake_payout": {
+        "type": "boolean"
+      }
+    }
+  },
+  "settings":{
+    "index":{
+      "max_result_window":"50000000",
+      "number_of_replicas": 1
+    }
+  }
+}
