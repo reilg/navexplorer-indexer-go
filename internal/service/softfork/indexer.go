@@ -1,9 +1,9 @@
 package softfork
 
 import (
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/softfork/signal"
-	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/elastic_cache"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/softfork/signal"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
 	log "github.com/sirupsen/logrus"
 )
 

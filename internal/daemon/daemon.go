@@ -1,10 +1,10 @@
 package daemon
 
 import (
-	"github.com/NavExplorer/navexplorer-indexer-go/generated/dic"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/config"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/indexer"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/block"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/generated/dic"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/config"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/indexer"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/block"
 	"github.com/getsentry/raven-go"
 	"github.com/sarulabs/dingo/v3"
 	log "github.com/sirupsen/logrus"

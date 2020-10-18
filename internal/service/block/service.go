@@ -2,7 +2,7 @@ package block
 
 import (
 	"errors"
-	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
 )
 
 type Service struct {

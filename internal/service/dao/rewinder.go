@@ -1,9 +1,9 @@
 package dao
 
 import (
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/consensus"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/consultation"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/elastic_cache"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/dao/consensus"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/dao/consultation"
 	"github.com/getsentry/raven-go"
 	log "github.com/sirupsen/logrus"
 )

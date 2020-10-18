@@ -2,7 +2,7 @@ package payment_request
 
 import (
 	"github.com/NavExplorer/navcoind-go"
-	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
 	log "github.com/sirupsen/logrus"
 	"strconv"
 )

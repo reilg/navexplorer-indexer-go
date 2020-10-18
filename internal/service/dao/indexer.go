@@ -2,12 +2,12 @@ package dao
 
 import (
 	"github.com/NavExplorer/navcoind-go"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/consensus"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/consultation"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/payment_request"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/proposal"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/vote"
-	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/dao/consensus"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/dao/consultation"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/dao/payment_request"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/dao/proposal"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/dao/vote"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
 	log "github.com/sirupsen/logrus"
 	"sync"
 )

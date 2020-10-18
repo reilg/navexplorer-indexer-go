@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/cli"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/cli"
 	log "github.com/sirupsen/logrus"
 )
 

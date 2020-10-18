@@ -1,7 +1,7 @@
 package payment_request
 
 import (
-	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
 	"github.com/getsentry/raven-go"
 	log "github.com/sirupsen/logrus"
 )

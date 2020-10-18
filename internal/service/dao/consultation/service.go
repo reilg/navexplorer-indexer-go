@@ -1,8 +1,8 @@
 package consultation
 
 import (
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao/consensus"
-	"github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/dao/consensus"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
 	"github.com/getsentry/raven-go"
 	log "github.com/sirupsen/logrus"
 	"math"

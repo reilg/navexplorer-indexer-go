@@ -1,11 +1,11 @@
 package indexer
 
 import (
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/elastic_cache"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/address"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/block"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/dao"
-	"github.com/NavExplorer/navexplorer-indexer-go/internal/service/softfork"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/elastic_cache"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/address"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/block"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/dao"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/softfork"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -1,6 +1,6 @@
 package address
 
-import "github.com/NavExplorer/navexplorer-indexer-go/pkg/explorer"
+import "github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
 
 var Addresses = make(addresses)
 
