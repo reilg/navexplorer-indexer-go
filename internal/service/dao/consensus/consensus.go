@@ -45,7 +45,7 @@ func (p *consensusParameters) Get(parameter Parameter) *explorer.ConsensusParame
 		}
 	}
 
-	log.Fatalf("Failed to get consensus parameter %s", string(parameter))
+	log.Fatalf("Get: Failed to get consensus parameter %s", string(parameter))
 
 	return nil
 }
@@ -57,7 +57,7 @@ func (p *consensusParameters) GetById(id int) *explorer.ConsensusParameter {
 		}
 	}
 
-	log.Fatalf("Failed to get consensus parameter %d", id)
+	log.Fatalf("GetById: Failed to get consensus parameter %d", id)
 
 	return nil
 }

@@ -49,6 +49,15 @@
           }
         }
       },
+      "vchTxSig": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
       "anonDestination": {
         "type": "text",
         "fields": {
@@ -137,6 +146,9 @@
                 }
               }
             }
+          },
+          "private": {
+            "type": "boolean"
           }
         }
       },
@@ -204,6 +216,51 @@
               }
             }
           },
+          "spendingKey": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "outputKey": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "ephemeralKey": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "rangeProof": {
+            "type": "boolean"
+          },
+          "spentTxId": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "spentIndex": {
+            "type": "integer"
+          },
+          "spentHeight": {
+            "type": "integer"
+          },
           "redeemedIn": {
             "properties": {
               "hash": {
@@ -217,8 +274,14 @@
               },
               "height": {
                 "type": "long"
+              },
+              "index": {
+                "type": "integer"
               }
             }
+          },
+          "private": {
+            "type": "boolean"
           }
         }
       },

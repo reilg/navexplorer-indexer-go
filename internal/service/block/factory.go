@@ -3,11 +3,16 @@ package block
 import (
 	"fmt"
 	"github.com/NavExplorer/navcoind-go"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/softfork"
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
+	"github.com/sirupsen/logrus"
 	"time"
 )
 
+var STATIC_REWARD uint64 = 200000000
+
 func CreateBlock(block *navcoind.Block, previousBlock *explorer.Block, cycleSize uint) *explorer.Block {
+	logrus.Debugf("Create Block %s", block.Hash)
 	return &explorer.Block{
 		RawBlock: explorer.RawBlock{
 			Hash:              block.Hash,
@@ -64,27 +69,27 @@ func createBlockCycle(size uint, previousBlock *explorer.Block) *explorer.BlockC
 	return bc
 }
 
-func CreateBlockTransaction(navTx navcoind.RawTransaction, index uint) *explorer.BlockTransaction {
+func CreateBlockTransaction(rawTx navcoind.RawTransaction, index uint) *explorer.BlockTransaction {
 	tx := &explorer.BlockTransaction{
 		RawBlockTransaction: explorer.RawBlockTransaction{
-			Hex:             navTx.Hex,
-			Txid:            navTx.Txid,
-			Hash:            navTx.Hash,
-			Size:            navTx.Size,
-			VSize:           navTx.VSize,
-			Version:         navTx.Version,
-			LockTime:        navTx.LockTime,
-			Strdzeel:        navTx.Strdzeel,
-			AnonDestination: navTx.AnonDestination,
-			BlockHash:       navTx.BlockHash,
-			Height:          navTx.Height,
-			Confirmations:   navTx.Confirmations,
-			Time:            time.Unix(navTx.Time, 0),
-			BlockTime:       time.Unix(navTx.BlockTime, 0),
+			Hex:             rawTx.Hex,
+			Txid:            rawTx.Txid,
+			Hash:            rawTx.Hash,
+			Size:            rawTx.Size,
+			VSize:           rawTx.VSize,
+			Version:         rawTx.Version,
+			LockTime:        rawTx.LockTime,
+			Strdzeel:        rawTx.Strdzeel,
+			AnonDestination: rawTx.AnonDestination,
+			BlockHash:       rawTx.BlockHash,
+			Height:          rawTx.Height,
+			Confirmations:   rawTx.Confirmations,
+			Time:            time.Unix(rawTx.Time, 0),
+			BlockTime:       time.Unix(rawTx.BlockTime, 0),
 		},
 		Index: index,
-		Vin:   createVin(navTx.Vin),
-		Vout:  createVout(navTx.Vout),
+		Vin:   createVin(rawTx.Vin),
+		Vout:  createVout(rawTx.Vout),
 	}
 
 	return tx
@@ -135,6 +140,13 @@ func createVout(vouts []navcoind.Vout) []explorer.Vout {
 					Addresses: o.ScriptPubKey.Addresses,
 					Hash:      o.ScriptPubKey.Hash,
 				},
+				SpendingKey:  o.SpendingKey,
+				OutputKey:    o.OutputKey,
+				EphemeralKey: o.EphemeralKey,
+				RangeProof:   o.RangeProof,
+				SpentTxId:    o.SpentTxId,
+				SpentIndex:   o.SpentIndex,
+				SpentHeight:  uint64(o.SpentHeight),
 			},
 		})
 	}
@@ -145,14 +157,42 @@ func createVout(vouts []navcoind.Vout) []explorer.Vout {
 func applyType(tx *explorer.BlockTransaction) {
 	if tx.IsCoinbase() {
 		tx.Type = explorer.TxCoinbase
-	} else if tx.Vout.GetAmount() <= tx.Vin.GetAmount() {
+	} else if !isStakingTx(tx) {
 		tx.Type = explorer.TxSpend
-	} else if len(tx.Vout) > 1 && tx.Vout[1].ScriptPubKey.Type == explorer.VoutColdStaking {
+	} else if tx.Vout.OutputAtIndexIsOfType(1, explorer.VoutColdStaking) {
 		tx.Type = explorer.TxColdStaking
-	} else if len(tx.Vout) > 1 && tx.Vout[1].ScriptPubKey.Type == explorer.VoutColdStakingV2 {
+	} else if tx.Vout.OutputAtIndexIsOfType(1, explorer.VoutColdStakingV2) {
 		tx.Type = explorer.TxColdStakingV2
 	} else {
 		tx.Type = explorer.TxStaking
+	}
+}
+
+func isStakingTx(tx *explorer.BlockTransaction) bool {
+	return tx.Vout.OutputAtIndexIsOfType(0, explorer.VoutNonstandard) &&
+		tx.Vout.GetOutput(0).ScriptPubKey.Hex == ""
+}
+
+func applyPrivateStatus(tx *explorer.BlockTransaction) {
+	if tx.IsCoinbase() {
+		return
+	}
+
+	var idx int
+	for idx = range tx.Vin {
+		if tx.Vin[idx].PreviousOutput.Type == explorer.VoutNonstandard && len(tx.Vin[idx].Addresses) == 0 {
+			tx.Vin[idx].Private = true
+			tx.Private = true
+		}
+	}
+	for idx = range tx.Vout {
+		if idx == len(tx.Vout)-1 && tx.Vout[idx].ScriptPubKey.Asm == "OP_RETURN" && tx.Vout[idx].ScriptPubKey.Type == "nulldata" {
+			tx.Private = true
+		}
+		if tx.Vout[idx].RangeProof == true || (idx == len(tx.Vout)-1 && tx.Vout[idx].ScriptPubKey.Asm == "OP_RETURN" && tx.Vout[idx].ScriptPubKey.Type == "nulldata") {
+			tx.Vout[idx].Private = true
+			tx.Private = true
+		}
 	}
 }
 
@@ -162,13 +202,14 @@ func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
 	}
 
 	if tx.IsAnyStaking() {
-		if tx.Height >= 2761920 {
-			tx.Stake = 200000000 // hard coded to 2 as static rewards arrived after block_indexer 2761920
-			block.Stake += tx.Stake
+		if softfork.SoftForks.StaticRewards().IsActive() {
+			tx.Stake = STATIC_REWARD
+			block.Stake = STATIC_REWARD
 		} else {
 			tx.Stake = tx.Vout.GetSpendableAmount() - tx.Vin.GetAmount()
-			block.Stake += tx.Stake
+			block.Stake = tx.Vout.GetSpendableAmount() - tx.Vin.GetAmount()
 		}
+
 	} else if tx.IsCoinbase() {
 		for _, o := range tx.Vout {
 			if o.ScriptPubKey.Type == explorer.VoutPubkey {
@@ -182,12 +223,6 @@ func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
 	vinsWithAddresses := tx.Vin.FilterWithAddresses()
 
 	if tx.IsColdStaking() {
-		for _, vout := range tx.Vout {
-			if vout.ScriptPubKey.Type == explorer.VoutColdStaking {
-				block.StakedBy = vout.ScriptPubKey.Addresses[0]
-				break
-			}
-		}
 		block.StakedBy = voutsWithAddresses[0].ScriptPubKey.Addresses[0]
 	} else if len(vinsWithAddresses) != 0 {
 		block.StakedBy = vinsWithAddresses[0].Addresses[0]
@@ -197,12 +232,27 @@ func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
 }
 
 func applySpend(tx *explorer.BlockTransaction, block *explorer.Block) {
-	if tx.Type == explorer.TxSpend {
-		tx.Spend = tx.Vout.GetAmount()
-		tx.Fees = tx.Vin.GetAmount() - tx.Vout.GetAmount()
-		block.Spend += tx.Spend
-		block.Fees += tx.Fees
+	if tx.Type != explorer.TxSpend {
+		return
 	}
+
+	block.Spend += tx.Vin.GetAmount()
+	tx.Spend = tx.Vin.GetAmount()
+}
+
+func applyFees(tx *explorer.BlockTransaction, block *explorer.Block) {
+	if tx.Type != explorer.TxSpend {
+		return
+	}
+
+	if tx.Private == true {
+		tx.Fees = tx.Vout.PrivateFees()
+		logrus.Infof("Fees for PRIVATE|%s %d %d %d", tx.Hash, tx.Vin.GetAmount(), tx.Vout.GetAmount(), tx.Fees)
+	} else {
+		tx.Fees = tx.Vin.GetAmount() - tx.Vout.GetAmount()
+		logrus.Infof("Fees for %s %d %d %d", tx.Hash, tx.Vin.GetAmount(), tx.Vout.GetAmount(), tx.Fees)
+	}
+	block.Fees += tx.Fees
 }
 
 func applyCFundPayout(tx *explorer.BlockTransaction, block *explorer.Block) {

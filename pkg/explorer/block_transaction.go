@@ -15,12 +15,14 @@ type RawBlockTransaction struct {
 	Version         uint32    `json:"version"`
 	LockTime        uint32    `json:"locktime"`
 	Strdzeel        string    `json:"strdzeel"`
+	VchTxSig        string    `json:"vchTxSig,omitempty"`
+	VchBalanceSig   string    `json:"vchBalanceSig,omitempty"`
 	AnonDestination string    `json:"anon-destination"`
-	BlockHash       string    `json:"blockhash, omitempty"`
+	BlockHash       string    `json:"blockhash,omitempty"`
 	Height          uint64    `json:"height"`
-	Confirmations   uint64    `json:"confirmations, omitempty"`
-	Time            time.Time `json:"time, omitempty"`
-	BlockTime       time.Time `json:"blocktime, omitempty"`
+	Confirmations   uint64    `json:"confirmations,omitempty"`
+	Time            time.Time `json:"time,omitempty"`
+	BlockTime       time.Time `json:"blocktime,omitempty"`
 
 	Vin  RawVins  `json:"vin"`
 	Vout RawVouts `json:"vout"`
@@ -34,10 +36,11 @@ type BlockTransaction struct {
 	Vin   Vins  `json:"vin"`
 	Vout  Vouts `json:"vout"`
 
-	Type  BlockTransactionType `json:"type"`
-	Stake uint64               `json:"stake"`
-	Spend uint64               `json:"spend"`
-	Fees  uint64               `json:"fees"`
+	Type    BlockTransactionType `json:"type"`
+	Stake   uint64               `json:"stake"`
+	Spend   uint64               `json:"spend"`
+	Fees    uint64               `json:"fees"`
+	Private bool                 `json:"private"`
 }
 
 func (b *BlockTransaction) Id() string {
@@ -108,19 +111,19 @@ func (tx *BlockTransaction) IsSpend() bool {
 }
 
 func (tx *BlockTransaction) IsAnyStaking() bool {
-	return tx.Type == TxColdStaking || tx.Type == TxColdStakingV2 || tx.Type == TxStaking || tx.Type == TxPoolStaking
+	return tx.Vout.OutputAtIndexIsOfType(0, VoutNonstandard) && tx.Vout.GetOutput(0).ScriptPubKey.Hex == ""
 }
 
 func (tx *BlockTransaction) IsStaking() bool {
-	return tx.Type == TxStaking
+	return tx.IsAnyStaking() && tx.Type == TxStaking
 }
 
 func (tx *BlockTransaction) IsColdStaking() bool {
-	return tx.Type == TxColdStaking || tx.Type == TxColdStakingV2
+	return tx.IsAnyStaking() && (tx.Type == TxColdStaking || tx.Type == TxColdStakingV2)
 }
 
 func (tx *BlockTransaction) IsPoolStaking() bool {
-	return tx.Type == TxPoolStaking
+	return tx.IsAnyStaking() && tx.Type == TxPoolStaking
 }
 
 func (tx *BlockTransaction) HasColdInput(address string) bool {
