@@ -5,61 +5,111 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/config"
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
-	log "github.com/sirupsen/logrus"
+	"github.com/patrickmn/go-cache"
+	"go.uber.org/zap"
 )
 
-type Service struct {
-	network string
-	elastic *elastic_cache.Index
-	repo    *Repository
+type Service interface {
+	GetConsensusParameters() explorer.ConsensusParameters
+	GetConsensusParameter(parameter explorer.Parameter) (bool, explorer.ConsensusParameter)
+	Update(parameters explorer.ConsensusParameters, persist bool)
+	InitConsensusParameters()
+	InitialState() explorer.ConsensusParameters
 }
 
-func NewService(network string, elastic *elastic_cache.Index, repo *Repository) *Service {
-	return &Service{network, elastic, repo}
+type service struct {
+	network    string
+	elastic    elastic_cache.Index
+	cache      *cache.Cache
+	repository Repository
 }
 
-func (s *Service) InitConsensusParameters() {
-	parameters, err := s.repo.GetConsensusParameters()
-	if err != nil && err != elastic_cache.ErrRecordNotFound {
-		log.WithError(err).Fatal("Failed to load consensus parameters")
-		return
+var (
+	cacheKey = "explorer.ConsensusParameters"
+)
+
+func NewService(network string, elastic elastic_cache.Index, cache *cache.Cache, repository Repository) Service {
+	return service{network, elastic, cache, repository}
+}
+
+func (s service) GetConsensusParameters() explorer.ConsensusParameters {
+	parameters, exists := s.cache.Get(cacheKey)
+	if exists == false {
+		return explorer.ConsensusParameters{}
 	}
 
-	if len(parameters) != 0 {
-		log.Info("Consensus parameters initialised")
-		for idx := range parameters {
-			log.WithField("slug", parameters[idx].Slug()).Debugf("Parameter %s", parameters[idx].Description)
+	return parameters.(explorer.ConsensusParameters)
+}
+
+func (s service) GetConsensusParameter(parameter explorer.Parameter) (bool, explorer.ConsensusParameter) {
+	parameters := s.GetConsensusParameters()
+	for _, p := range parameters.All() {
+		zap.L().
+			With(zap.String("desc", p.Description), zap.Int("id", p.Id), zap.Int("id", p.Value)).
+			Debug("Consensus Parameter found")
+		if p.Id == int(parameter) {
+			return true, p
 		}
-		Parameters = parameters
+	}
+
+	return false, explorer.ConsensusParameter{}
+}
+
+func (s service) Update(parameters explorer.ConsensusParameters, persist bool) {
+	s.cache.Set(cacheKey, parameters, cache.NoExpiration)
+
+	for _, parameter := range parameters.All() {
+		if persist {
+			s.elastic.Save(elastic_cache.ConsensusIndex.Get(), parameter)
+		} else {
+			s.elastic.AddUpdateRequest(elastic_cache.ConsensusIndex.Get(), parameter)
+		}
+	}
+}
+
+func (s service) InitConsensusParameters() {
+	parameters, err := s.repository.GetConsensusParameters()
+	if err != nil {
+		zap.L().With(zap.Error(err)).Fatal("ConsensusService: Failed to load consensus parameters")
 		return
 	}
 
-	initialParams, _ := s.InitialState()
-	for _, initialParam := range initialParams {
-		log.WithField("slug", initialParam.Slug()).Info("Saving new consensus parameter: ", initialParam.Description)
-		initialParam.UpdatedOnBlock = 0
-		s.elastic.Save(elastic_cache.ConsensusIndex, initialParam)
+	if len(parameters.All()) == 0 {
+		parameters = s.InitialState()
+		for _, parameter := range parameters.All() {
+			parameter.UpdatedOnBlock = 0
+		}
 	}
 
-	Parameters = initialParams
+	for _, p := range parameters.All() {
+		zap.L().With(
+			zap.String("name", p.Description),
+			zap.Int("value", p.Value),
+		).Info("ConsensusService: Parameter initialised")
+	}
+
+	s.Update(parameters, true)
 }
 
-func (s *Service) InitialState() ([]*explorer.ConsensusParameter, error) {
-	parameters := make([]*explorer.ConsensusParameter, 0)
+func (s service) InitialState() explorer.ConsensusParameters {
 	var byteParams []byte
 	if config.Get().SoftForkBlockCycle != 20160 {
-		log.Info("Initialising Testnet Consensus parameters")
+		zap.L().Info("ConsensusService: Initialising Testnet Consensus parameters")
 		byteParams = []byte(testnet)
 	} else {
-		log.Info("Initialising Mainnet Consensus parameters")
+		zap.L().Info("ConsensusService: Initialising Mainnet Consensus parameters")
 		byteParams = []byte(mainnet)
 	}
 
-	err := json.Unmarshal(byteParams, &parameters)
-	if err != nil {
-		log.WithError(err).Fatalf("Failed to load consensus parameters from JSON")
-		return nil, err
+	parameterSlice := make([]explorer.ConsensusParameter, 0)
+	if err := json.Unmarshal(byteParams, &parameterSlice); err != nil {
+		zap.L().With(zap.Error(err)).Fatal("ConsensusService: Failed to load consensus parameters from JSON")
 	}
 
-	return parameters, nil
+	parameters := explorer.ConsensusParameters{}
+	for idx := range parameterSlice {
+		parameters.Add(parameterSlice[idx])
+	}
+
+	return parameters
 }

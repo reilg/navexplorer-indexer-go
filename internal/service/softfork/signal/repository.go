@@ -8,18 +8,22 @@ import (
 	"github.com/olivere/elastic/v7"
 )
 
-type Repository struct {
-	Client *elastic.Client
+type Repository interface {
+	GetSignals(start uint64, end uint64) []explorer.Signal
 }
 
-func NewRepo(client *elastic.Client) *Repository {
-	return &Repository{client}
+type repository struct {
+	elastic elastic_cache.Index
 }
 
-func (r *Repository) GetSignals(start uint64, end uint64) []*explorer.Signal {
-	signals := make([]*explorer.Signal, 0)
+func NewRepo(elastic elastic_cache.Index) Repository {
+	return repository{elastic}
+}
 
-	results, err := r.Client.Search(elastic_cache.SignalIndex.Get()).
+func (r repository) GetSignals(start uint64, end uint64) []explorer.Signal {
+	signals := make([]explorer.Signal, 0)
+
+	results, err := r.elastic.GetClient().Search(elastic_cache.SignalIndex.Get()).
 		Sort("height", true).
 		Query(elastic.NewRangeQuery("height").Gte(start).Lte(end)).
 		Size(int(end - start + 1)).
@@ -27,7 +31,7 @@ func (r *Repository) GetSignals(start uint64, end uint64) []*explorer.Signal {
 
 	if err == nil && results != nil && results.Hits != nil {
 		for _, hit := range results.Hits.Hits {
-			var signal *explorer.Signal
+			var signal explorer.Signal
 			if err := json.Unmarshal(hit.Source, &signal); err == nil {
 				signals = append(signals, signal)
 			}

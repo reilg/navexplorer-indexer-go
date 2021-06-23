@@ -1,5 +1,10 @@
 package explorer
 
+import (
+	"fmt"
+	"strings"
+)
+
 type RawVout struct {
 	Value        float64      `json:"value"`
 	ValueSat     uint64       `json:"valuesat"`
@@ -16,14 +21,24 @@ type RawVout struct {
 
 type Vout struct {
 	RawVout
+	Redeemed   bool        `json:"redeemed"`
 	RedeemedIn *RedeemedIn `json:"redeemedIn,omitempty"`
+	MultiSig   *MultiSig   `json:"multisig,omitempty"`
 	Private    bool        `json:"private"`
+	Wrapped    bool        `json:"wrapped"`
 }
 
 type RedeemedIn struct {
 	Hash   string `json:"hash,omitempty"`
 	Index  int    `json:"index,omitempty"`
 	Height uint64 `json:"height,omitempty"`
+}
+
+type MultiSig struct {
+	Hash       string   `json:"hash,omitempty"`
+	Signatures []string `json:"signatures"`
+	Required   int      `json:"required"`
+	Total      int      `json:"total"`
 }
 
 func (o *Vout) HasAddress(hash string) bool {
@@ -34,6 +49,14 @@ func (o *Vout) HasAddress(hash string) bool {
 	}
 
 	return false
+}
+
+func (o *Vout) IsMultiSig() bool {
+	return o.MultiSig != nil
+}
+
+func (o *Vout) IsPrivateFee() bool {
+	return o.ScriptPubKey.Type == VoutNulldata || o.ScriptPubKey.Asm == "OP_RETURN"
 }
 
 func (o *Vout) IsColdStaking() bool {
@@ -58,4 +81,8 @@ func (o *Vout) IsColdSpendingAddress(address string) bool {
 
 func (o *Vout) IsColdVotingAddress(address string) bool {
 	return len(o.ScriptPubKey.Addresses) == 3 && o.ScriptPubKey.Addresses[2] == address
+}
+
+func (m *MultiSig) Key() string {
+	return fmt.Sprintf("%s-%s", m.Hash, strings.Join(m.Signatures, "-"))
 }

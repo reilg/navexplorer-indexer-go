@@ -28,8 +28,6 @@ type RawBlock struct {
 }
 
 type Block struct {
-	id string
-
 	RawBlock
 
 	TxCount     uint   `json:"tx_count"`
@@ -39,22 +37,33 @@ type Block struct {
 	Fees        uint64 `json:"fees"`
 	CFundPayout uint64 `json:"cfundPayout"`
 
-	BlockCycle *BlockCycle `json:"block_cycle"`
-	Cfund      *Cfund      `json:"cfund"`
+	BlockCycle BlockCycle `json:"block_cycle"`
+	Cfund      Cfund      `json:"cfund"`
+
+	SupplyBalance SupplyBalance `json:"supply_balance"`
+	SupplyChange  SupplyChange  `json:"supply_change"`
 
 	// Transient
 	Best bool `json:"best,omitempty"`
 }
 
-func (b *Block) Id() string {
-	return b.id
+type SupplyBalance struct {
+	Public  uint64 `json:"public"`
+	Private uint64 `json:"private"`
+	Wrapped uint64 `json:"wrapped"`
 }
 
-func (b *Block) SetId(id string) {
-	b.id = id
+func (sb SupplyBalance) Total() uint64 {
+	return sb.Public + sb.Private + sb.Wrapped
 }
 
-func (b *Block) Slug() string {
+type SupplyChange struct {
+	Public  int64 `json:"public"`
+	Private int64 `json:"private"`
+	Wrapped int64 `json:"wrapped"`
+}
+
+func (b Block) Slug() string {
 	return slug.Make(fmt.Sprintf("block-%s", b.Hash))
 }
 

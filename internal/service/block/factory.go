@@ -3,16 +3,22 @@ package block
 import (
 	"fmt"
 	"github.com/NavExplorer/navcoind-go"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/softfork"
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
+	"regexp"
+	"strconv"
+	"strings"
 	"time"
 )
 
-var STATIC_REWARD uint64 = 200000000
+const (
+	MULTISIG_ASM = "^OP_COINSTAKE OP_IF OP_DUP OP_HASH160 (?P<hash>[0-9a-f]{40}) OP_EQUALVERIFY OP_CHECKSIG OP_ELSE (?P<signaturesRequired>[1-9]) (?P<signatures>(?:0[0-9a-f]{65} )*)(?P<signaturesTotal>[1-9]) OP_CHECKMULTISIG OP_ENDIF$"
+	WRAPPED_HEX  = "c66376a914a456b36048ce2e732ef729d044a1f744738df5fa88ac6753210277fa3f4f6d447c5914d8d69c259f94c76aa6eae829c5bd54e3cd6fc3f7e12f2f21033a0879f9ab601b4ee20ec9fed77ea1a48e9026b48e0d2a425d874b40ef13d02221034a51aa6aafbd6c6075ecaee0fbcf2c9ffbac05a49007a0f02c9d6680dccee6d42103ad915271a0b327f5379585c00c42a732530f246b60f9bb1c19af7db59363897e54ae68"
+)
 
 func CreateBlock(block *navcoind.Block, previousBlock *explorer.Block, cycleSize uint) *explorer.Block {
-	logrus.Debugf("Create Block %s", block.Hash)
+	zap.L().With(zap.String("hash", block.Hash)).Debug("BlockFactory: Create Block")
+
 	return &explorer.Block{
 		RawBlock: explorer.RawBlock{
 			Hash:              block.Hash,
@@ -36,12 +42,24 @@ func CreateBlock(block *navcoind.Block, previousBlock *explorer.Block, cycleSize
 		},
 		BlockCycle: createBlockCycle(cycleSize, previousBlock),
 		TxCount:    uint(len(block.Tx)),
+		SupplyBalance: func(previousBlock *explorer.Block) explorer.SupplyBalance {
+			if previousBlock == nil {
+				return explorer.SupplyBalance{}
+			}
+			return previousBlock.SupplyBalance
+		}(previousBlock),
+		SupplyChange: func(previousBlock *explorer.Block) explorer.SupplyChange {
+			if previousBlock == nil {
+				return explorer.SupplyChange{}
+			}
+			return previousBlock.SupplyChange
+		}(previousBlock),
 	}
 }
 
-func createBlockCycle(size uint, previousBlock *explorer.Block) *explorer.BlockCycle {
+func createBlockCycle(size uint, previousBlock *explorer.Block) explorer.BlockCycle {
 	if previousBlock == nil {
-		return &explorer.BlockCycle{
+		return explorer.BlockCycle{
 			Size:  size,
 			Cycle: 1,
 			Index: 1,
@@ -49,14 +67,14 @@ func createBlockCycle(size uint, previousBlock *explorer.Block) *explorer.BlockC
 	}
 
 	if !previousBlock.BlockCycle.IsEnd() {
-		return &explorer.BlockCycle{
+		return explorer.BlockCycle{
 			Size:  size,
 			Cycle: previousBlock.BlockCycle.Cycle,
 			Index: previousBlock.BlockCycle.Index + 1,
 		}
 	}
 
-	bc := &explorer.BlockCycle{
+	bc := explorer.BlockCycle{
 		Size:  size,
 		Cycle: previousBlock.BlockCycle.Cycle + 1,
 		Index: uint(previousBlock.Height+1) % size,
@@ -69,8 +87,8 @@ func createBlockCycle(size uint, previousBlock *explorer.Block) *explorer.BlockC
 	return bc
 }
 
-func CreateBlockTransaction(rawTx navcoind.RawTransaction, index uint) *explorer.BlockTransaction {
-	tx := &explorer.BlockTransaction{
+func CreateBlockTransaction(rawTx navcoind.RawTransaction, index uint, block *explorer.Block) explorer.BlockTransaction {
+	tx := explorer.BlockTransaction{
 		RawBlockTransaction: explorer.RawBlockTransaction{
 			Hex:             rawTx.Hex,
 			Txid:            rawTx.Txid,
@@ -87,10 +105,20 @@ func CreateBlockTransaction(rawTx navcoind.RawTransaction, index uint) *explorer
 			Time:            time.Unix(rawTx.Time, 0),
 			BlockTime:       time.Unix(rawTx.BlockTime, 0),
 		},
-		Index: index,
-		Vin:   createVin(rawTx.Vin),
-		Vout:  createVout(rawTx.Vout),
+		TxHeight: float64(block.Height) + (float64(index+1) / 10000),
+		Index:    index,
+		Vin:      createVin(rawTx.Vin),
+		Vout:     createVout(rawTx.Vout),
 	}
+
+	applyType(&tx)
+	applyMultiSigColdStake(&tx)
+	applyWrappedStatus(&tx)
+	applyPrivateStatus(&tx, block)
+	applyStaking(&tx, block)
+	applySpend(&tx, block)
+	applyCFundPayout(&tx, block)
+	applyFees(&tx, block)
 
 	return tx
 }
@@ -103,6 +131,7 @@ func createVin(vins []navcoind.Vin) []explorer.Vin {
 				Coinbase: vins[idx].Coinbase,
 				Sequence: vins[idx].Sequence,
 			},
+			PreviousOutput: nil,
 		}
 		if vins[idx].Txid != "" {
 			input.Txid = &vins[idx].Txid
@@ -148,7 +177,12 @@ func createVout(vouts []navcoind.Vout) []explorer.Vout {
 				SpentIndex:   o.SpentIndex,
 				SpentHeight:  uint64(o.SpentHeight),
 			},
+			Redeemed: false,
 		})
+
+		if o.SpentHeight < 0 {
+			zap.L().With(zap.Int("SpentHeight", o.SpentHeight), zap.String("hash", o.SpentTxId)).Fatal("Spent height less than 0")
+		}
 	}
 
 	return output
@@ -173,23 +207,82 @@ func isStakingTx(tx *explorer.BlockTransaction) bool {
 		tx.Vout.GetOutput(0).ScriptPubKey.Hex == ""
 }
 
-func applyPrivateStatus(tx *explorer.BlockTransaction) {
+func applyMultiSigColdStake(tx *explorer.BlockTransaction) {
+	for idx := range tx.Vout {
+		if matched, err := regexp.MatchString(MULTISIG_ASM, tx.Vout[idx].ScriptPubKey.Asm); err != nil || matched == false {
+			continue
+		}
+
+		multiSigParams := getRegExParams(MULTISIG_ASM, tx.Vout[idx].ScriptPubKey.Asm)
+
+		signaturesRequired, err := strconv.Atoi(multiSigParams["signaturesRequired"])
+		if err != nil {
+			continue
+		}
+
+		signaturesTotal, err := strconv.Atoi(multiSigParams["signaturesTotal"])
+		if err != nil {
+			continue
+		}
+
+		multiSig := &explorer.MultiSig{
+			Hash:       multiSigParams["hash"],
+			Signatures: strings.Split(strings.TrimSpace(multiSigParams["signatures"]), " "),
+			Required:   signaturesRequired,
+			Total:      signaturesTotal,
+		}
+
+		tx.Vout[idx].MultiSig = multiSig
+	}
+}
+
+func getRegExParams(regEx, url string) (paramsMap map[string]string) {
+
+	var compRegEx = regexp.MustCompile(regEx)
+	match := compRegEx.FindStringSubmatch(url)
+
+	paramsMap = make(map[string]string)
+	for i, name := range compRegEx.SubexpNames() {
+		if i > 0 && i <= len(match) {
+			paramsMap[name] = match[i]
+		}
+	}
+	return paramsMap
+}
+
+func applyWrappedStatus(tx *explorer.BlockTransaction) {
 	if tx.IsCoinbase() {
 		return
 	}
 
-	var idx int
-	for idx = range tx.Vin {
-		if tx.Vin[idx].PreviousOutput.Type == explorer.VoutNonstandard && len(tx.Vin[idx].Addresses) == 0 {
-			tx.Vin[idx].Private = true
-			tx.Private = true
+	for idx := range tx.Vout {
+		if outputIsWrapped(tx.Vout[idx]) {
+			tx.Vout[idx].Wrapped = true
+			tx.Wrapped = true
 		}
 	}
-	for idx = range tx.Vout {
+}
+
+func outputIsWrapped(o explorer.Vout) bool {
+	return o.IsMultiSig() && o.ScriptPubKey.Hex == WRAPPED_HEX
+}
+
+func applyPrivateStatus(tx *explorer.BlockTransaction, block *explorer.Block) {
+	if tx.IsCoinbase() || tx.Wrapped {
+		return
+	}
+
+	for idx := range tx.Vout {
 		if idx == len(tx.Vout)-1 && tx.Vout[idx].ScriptPubKey.Asm == "OP_RETURN" && tx.Vout[idx].ScriptPubKey.Type == "nulldata" {
 			tx.Private = true
+			tx.Vout[idx].ScriptPubKey.Addresses = []string{block.StakedBy}
+			tx.Vout[idx].RedeemedIn = &explorer.RedeemedIn{
+				Hash:   block.Tx[1],
+				Height: block.Height,
+				Index:  1,
+			}
 		}
-		if tx.Vout[idx].RangeProof == true || (idx == len(tx.Vout)-1 && tx.Vout[idx].ScriptPubKey.Asm == "OP_RETURN" && tx.Vout[idx].ScriptPubKey.Type == "nulldata") {
+		if tx.Vout[idx].RangeProof == true {
 			tx.Vout[idx].Private = true
 			tx.Private = true
 		}
@@ -202,14 +295,8 @@ func applyStaking(tx *explorer.BlockTransaction, block *explorer.Block) {
 	}
 
 	if tx.IsAnyStaking() {
-		if softfork.SoftForks.StaticRewards().IsActive() {
-			tx.Stake = STATIC_REWARD
-			block.Stake = STATIC_REWARD
-		} else {
-			tx.Stake = tx.Vout.GetSpendableAmount() - tx.Vin.GetAmount()
-			block.Stake = tx.Vout.GetSpendableAmount() - tx.Vin.GetAmount()
-		}
-
+		tx.Stake = tx.Vout.GetSpendableAmount() - tx.Vin.GetAmount()
+		block.Stake = tx.Vout.GetSpendableAmount() - tx.Vin.GetAmount()
 	} else if tx.IsCoinbase() {
 		for _, o := range tx.Vout {
 			if o.ScriptPubKey.Type == explorer.VoutPubkey {
@@ -247,10 +334,8 @@ func applyFees(tx *explorer.BlockTransaction, block *explorer.Block) {
 
 	if tx.Private == true {
 		tx.Fees = tx.Vout.PrivateFees()
-		logrus.Infof("Fees for PRIVATE|%s %d %d %d", tx.Hash, tx.Vin.GetAmount(), tx.Vout.GetAmount(), tx.Fees)
 	} else {
 		tx.Fees = tx.Vin.GetAmount() - tx.Vout.GetAmount()
-		logrus.Infof("Fees for %s %d %d %d", tx.Hash, tx.Vin.GetAmount(), tx.Vout.GetAmount(), tx.Fees)
 	}
 	block.Fees += tx.Fees
 }

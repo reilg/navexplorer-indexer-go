@@ -44,7 +44,18 @@
           "voting_weight": {"type": "long"}
         }
       },
+      "reward": {
+        "type": "nested",
+        "properties": {
+          "spendable": {"type": "float"},
+          "stakable": {"type": "float"},
+          "voting_weight": {"type": "float"}
+        }
+      },
       "is_stake": {
+        "type": "boolean"
+      },
+      "is_cold_stake": {
         "type": "boolean"
       },
       "is_cfund_payout": {
@@ -52,6 +63,12 @@
       },
       "is_stake_payout": {
         "type": "boolean"
+      },
+      "is_multisig": {
+        "type": "boolean"
+      },
+      "order": {
+        "type": "integer"
       }
     }
   },

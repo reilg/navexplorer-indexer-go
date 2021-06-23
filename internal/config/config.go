@@ -2,11 +2,11 @@ package config
 
 import (
 	"fmt"
+	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/log"
 	"github.com/getsentry/raven-go"
 	"github.com/joho/godotenv"
-	log "github.com/sirupsen/logrus"
-	"gopkg.in/natefinch/lumberjack.v2"
-	"io"
+	"go.uber.org/zap"
+	"math/big"
 	"os"
 	"strconv"
 	"strings"
@@ -20,7 +20,11 @@ type Config struct {
 	Debug              bool
 	Reindex            bool
 	ReindexSize        uint64
+	RewindToHeight     uint64
+	BulkIndex          bool
+	BulkTargetHeight   uint64
 	BulkIndexSize      uint64
+	Subscribe          bool
 	SoftForkBlockCycle int
 	SoftForkQuorum     int
 	Navcoind           NavcoindConfig
@@ -36,6 +40,7 @@ type NavcoindConfig struct {
 	User     string
 	Password string
 	Ssl      bool
+	Timeout  int
 }
 
 type ElasticSearchConfig struct {
@@ -67,11 +72,7 @@ type SentryConfig struct {
 func Init() {
 	err := godotenv.Load()
 	if err != nil {
-		log.WithError(err).Fatal("Unable to init config")
-	}
-
-	if Get().Debug {
-		log.SetLevel(log.DebugLevel)
+		zap.L().With(zap.Error(err)).Fatal("Unable to init config")
 	}
 
 	if Get().Sentry.Active {
@@ -82,30 +83,7 @@ func Init() {
 }
 
 func initLogger() {
-	var logger *lumberjack.Logger
-	if Get().Logging {
-		filename := fmt.Sprintf("%s/indexer.log", Get().LogPath)
-		log.Infof("Logging to %s", filename)
-
-		log.SetFormatter(&log.JSONFormatter{})
-		logger = &lumberjack.Logger{
-			Filename:   filename,
-			MaxSize:    500, // megabytes
-			MaxBackups: 3,
-			MaxAge:     28,   // days
-			Compress:   true, // disabled by default
-		}
-		log.SetOutput(io.MultiWriter(os.Stdout, logger))
-
-		log.RegisterExitHandler(func() {
-			if logger == nil {
-				return
-			}
-			log.Info("Indexer is exiting")
-
-			_ = logger.Close()
-		})
-	}
+	log.NewLogger(fmt.Sprintf("%s/indexer.log", Get().LogPath), Get().Debug)
 }
 
 func Get() *Config {
@@ -119,13 +97,18 @@ func Get() *Config {
 		Debug:              getBool("DEBUG", false),
 		Reindex:            getBool("REINDEX", false),
 		ReindexSize:        getUint64("REINDEX_SIZE", 200),
-		BulkIndexSize:      getUint64("BULK_INDEX_SIZE", 200),
+		RewindToHeight:     getUint64("REWIND_TO_HEIGHT", 0),
+		BulkIndex:          getBool("BULK_INDEX", false),
+		BulkTargetHeight:   getUint64("BULK_TARGET_HEIGHT", 0),
+		BulkIndexSize:      getUint64("BULK_INDEX_SIZE", 100),
+		Subscribe:          getBool("SUBSCRIBE", true),
 		Navcoind: NavcoindConfig{
 			Host:     getString("NAVCOIND_HOST", ""),
 			Port:     getInt("NAVCOIND_PORT", 8332),
 			User:     getString("NAVCOIND_USER", "user"),
 			Password: getString("NAVCOIND_PASSWORD", "password"),
 			Ssl:      getBool("NAVCOIND_SSL", false),
+			Timeout:  getInt("NAVCOIND_TIMEOUT", 30),
 		},
 		ElasticSearch: ElasticSearchConfig{
 			Hosts:       getSlice("ELASTIC_SEARCH_HOSTS", make([]string, 0), ","),
@@ -162,11 +145,13 @@ func getString(key string, defaultValue string) string {
 
 func getInt(key string, defaultValue int) int {
 	valStr := getString(key, "")
-	if val, err := strconv.Atoi(valStr); err == nil {
-		return val
+	val, _, err := big.ParseFloat(valStr, 10, 0, big.ToNearestEven)
+	if err != nil {
+		return defaultValue
 	}
 
-	return defaultValue
+	intVal, _ := val.Int64()
+	return int(intVal)
 }
 
 func getUint(key string, defaultValue uint) uint {

@@ -1,105 +1,284 @@
 package address
 
 import (
+	"context"
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/block"
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
-	log "github.com/sirupsen/logrus"
+	"github.com/olivere/elastic/v7"
+	"github.com/patrickmn/go-cache"
+	"go.uber.org/zap"
+	"sort"
+	"sync"
 	"time"
 )
 
-type Indexer struct {
-	navcoin *navcoind.Navcoind
-	elastic *elastic_cache.Index
-	repo    *Repository
+type Indexer interface {
+	bulkPersist(bulk *elastic.BulkService)
+	Index(from, to uint64, txs []explorer.BlockTransaction)
+	ClearCache()
+	indexAddresses(from, to uint64)
+	indexMultiSigs(txs []explorer.BlockTransaction)
+	getAddress(hash string) explorer.Address
+	updateAddress(address explorer.Address, history explorer.AddressHistory) error
+	getAndUpdateAddress(history explorer.AddressHistory) error
+	generateAddressHistory(start, end uint64, addresses []string) ([]explorer.AddressHistory, error)
 }
 
-func NewIndexer(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, repo *Repository) *Indexer {
-	return &Indexer{navcoin, elastic, repo}
+type indexer struct {
+	navcoin           *navcoind.Navcoind
+	elastic           elastic_cache.Index
+	cache             *cache.Cache
+	addressRepository Repository
+	blockService      block.Service
+	blockRepository   block.Repository
 }
 
-func (i *Indexer) BulkIndex(height uint64) {
-	start := time.Now()
+func NewIndexer(
+	navcoin *navcoind.Navcoind,
+	elastic elastic_cache.Index,
+	cache *cache.Cache,
+	addressRepository Repository,
+	blockService block.Service,
+	blockRepository block.Repository,
+) Indexer {
+	return indexer{
+		navcoin,
+		elastic,
+		cache,
+		addressRepository,
+		blockService,
+		blockRepository,
+	}
+}
 
-	addressHistorys := i.generateAddressHistory(
-		block.BlockData.First().Block.Height,
-		block.BlockData.Last().Block.Height,
-		block.BlockData.Addresses(),
-		block.BlockData.Txs())
-	for _, addressHistory := range addressHistorys {
-		i.elastic.AddIndexRequest(elastic_cache.AddressHistoryIndex.Get(), addressHistory)
-
-		err := i.updateAddress(addressHistory)
-		if err != nil {
-			log.WithError(err).Fatalf("Could not update address: %s", addressHistory.Hash)
-		}
+func (i indexer) bulkPersist(bulk *elastic.BulkService) {
+	response, err := bulk.Do(context.Background())
+	if err != nil {
+		zap.L().Fatal("AddressIndexer: Failed to persist requests")
 	}
 
-	elapsed := time.Since(start)
-	log.WithFields(log.Fields{
-		"time":  elapsed,
-		"count": len(addressHistorys),
-	}).Infof("Index address:   %d", height)
-
-	block.BlockData.Reset()
+	if response != nil && response.Errors == true {
+		for _, failed := range response.Failed() {
+			zap.L().With(
+				zap.Any("error", failed.Error),
+				zap.String("index", failed.Index),
+				zap.String("id", failed.Id),
+			).Fatal("AddressIndexer: Failed to persist requests")
+		}
+	}
 }
 
-func (i *Indexer) Index(block *explorer.Block, txs []*explorer.BlockTransaction) {
+func (i indexer) Index(from, to uint64, txs []explorer.BlockTransaction) {
 	if len(txs) == 0 {
 		return
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		i.indexAddresses(from, to)
+	}()
+
+	go func() {
+		defer wg.Done()
+		i.indexMultiSigs(txs)
+	}()
+
+	wg.Wait()
+}
+
+func (i indexer) ClearCache() {
+	i.cache.Flush()
+}
+
+func (i indexer) indexAddresses(from, to uint64) {
+	txs := make([]explorer.BlockTransaction, 0)
+	for _, entity := range i.elastic.GetEntitiesByIndex(elastic_cache.BlockTransactionIndex.Get()) {
+		txs = append(txs, entity.(explorer.BlockTransaction))
+	}
+
+	start := time.Now()
 	addresses := getAddressesForTxs(txs)
 
-	for _, addressHistory := range i.generateAddressHistory(block.Height, block.Height, addresses, txs) {
-		i.elastic.AddIndexRequest(elastic_cache.AddressHistoryIndex.Get(), addressHistory)
+	var wg sync.WaitGroup
+	for _, chunk := range chunkAddresses(getAddressesForTxs(txs), 10) {
+		wg.Add(1)
 
-		err := i.updateAddress(addressHistory)
-		if err != nil {
-			log.WithError(err).Fatalf("Could not update address: %s", addressHistory.Hash)
+		go func(addresses []string) {
+			defer wg.Done()
+			addressHistorys, err := i.generateAddressHistory(from, to, addresses)
+			if err != nil {
+				zap.L().With(zap.Error(err)).Fatal("AddressIndexer: Failed to generate history")
+			}
+
+			sort.Slice(addressHistorys, func(i, j int) bool {
+				return addressHistorys[i].Height < addressHistorys[j].Height
+			})
+
+			zap.L().With(
+				zap.Int("addresses", len(addresses)),
+				zap.Int("histories", len(addressHistorys)),
+				zap.Duration("elapsed", time.Since(start)),
+				zap.Uint64("from", from),
+				zap.Uint64("to", to),
+			).Info("AddressIndexer: Generate Address History")
+
+			for _, history := range addressHistorys {
+				i.elastic.AddIndexRequest(elastic_cache.AddressHistoryIndex.Get(), history)
+
+				err := i.getAndUpdateAddress(history)
+				if err != nil {
+					zap.L().With(
+						zap.Error(err),
+						zap.String("address", history.Hash),
+					).Fatal("AddressIndexer: Could not update address")
+				}
+			}
+		}(chunk)
+	}
+
+	wg.Wait()
+
+	zap.L().With(
+		zap.Int("addresses", len(addresses)),
+		zap.Uint64("from", from),
+		zap.Uint64("to", to),
+		zap.Duration("elapsed", time.Since(start)),
+	).Info("AddressIndexer: Address Index Complete")
+}
+
+func chunkAddresses(addresses []string, chunks int) [][]string {
+	var chunked [][]string
+
+	chunkSize := (len(addresses) + chunks - 1) / chunks
+
+	for i := 0; i < len(addresses); i += chunkSize {
+		end := i + chunkSize
+		if end > len(addresses) {
+			end = len(addresses)
+		}
+
+		chunked = append(chunked, addresses[i:end])
+	}
+
+	return chunked
+}
+
+func (i indexer) indexMultiSigs(txs []explorer.BlockTransaction) {
+	for _, tx := range txs {
+		for _, multiSig := range tx.GetAllMultiSigs() {
+			address := i.getAddress(multiSig.Key())
+			address.MultiSig = &multiSig
+			if len(tx.GetAllMultiSigs()) == 0 {
+				continue
+			}
+
+			addressHistory := CreateMultiSigAddressHistory(tx, address.MultiSig, address)
+			i.elastic.AddIndexRequest(elastic_cache.AddressHistoryIndex.Get(), addressHistory)
+
+			err := i.updateAddress(address, addressHistory)
+			if err != nil {
+				zap.S().With(zap.Error(err), zap.String("hash", addressHistory.Hash)).
+					Fatalf("AddressIndexer: Could not update address")
+			}
 		}
 	}
 }
 
-func (i *Indexer) generateAddressHistory(start, end uint64, addresses []string, txs []*explorer.BlockTransaction) []*explorer.AddressHistory {
-	addressHistory := make([]*explorer.AddressHistory, 0)
+func (i indexer) getAddress(hash string) explorer.Address {
+	address, exists := i.cache.Get(hash)
+	if exists == false {
+		address := i.addressRepository.GetOrCreateAddress(hash)
+		return address
+	}
 
-	history, err := i.navcoin.GetAddressHistory(&start, &end, addresses...)
+	return address.(explorer.Address)
+}
+
+func (i indexer) generateAddressHistory(start, end uint64, addresses []string) ([]explorer.AddressHistory, error) {
+	var err error
+	startTime := time.Now()
+
+	historys, err := i.navcoin.GetAddressHistory(&start, &end, addresses...)
+	addressHistorys := make([]explorer.AddressHistory, len(historys))
+
+	zap.L().With(
+		zap.Duration("elapsed", time.Since(startTime)),
+		zap.Int("count", len(historys)),
+	).Info("AddressIndexer: Get address histories")
+
 	if err != nil {
-		log.WithError(err).Errorf("Could not get address history for height: %d-%d", start, end)
-		return addressHistory
+		zap.L().With(
+			zap.Error(err),
+			zap.Uint64("from", start),
+			zap.Uint64("to", end),
+		).Fatal("AddressIndexer: Could not get address history")
+		return nil, err
 	}
 
-	for _, h := range history {
-		addressHistory = append(addressHistory, CreateAddressHistory(h, getTxById(h.TxId, txs)))
-	}
+	startTime = time.Now()
+	var wg sync.WaitGroup
+	wg.Add(len(historys))
+	for idx, history := range historys {
+		go func(idx int, history *navcoind.AddressHistory) {
+			defer wg.Done()
 
-	return addressHistory
+			tx, err := i.blockRepository.GetTransactionByHash(history.TxId)
+			if err != nil {
+				zap.L().With(
+					zap.Error(err),
+					zap.String("address", history.Address),
+					zap.String("txid", history.TxId),
+				).Fatal("AddressIndexer: TX related to address history is not available")
+			}
+
+			addressHistorys[idx] = CreateAddressHistory(uint(idx), history, tx)
+		}(idx, history)
+	}
+	wg.Wait()
+
+	zap.L().With(
+		zap.Duration("elapsed", time.Since(startTime)),
+		zap.Int("count", len(addressHistorys)),
+	).Info("AddressIndexer: Create Address Histories")
+
+	return addressHistorys, nil
 }
 
-func (i *Indexer) updateAddress(history *explorer.AddressHistory) error {
-	address := Addresses.GetByHash(history.Hash)
-	if address == nil {
-		var err error
-		address, err = i.repo.GetOrCreateAddress(history.Hash)
-		if err != nil {
-			return err
-		}
-	}
+func (i indexer) getAndUpdateAddress(history explorer.AddressHistory) error {
+	start := time.Now()
+	err := i.updateAddress(i.getAddress(history.Hash), history)
 
+	zap.L().With(
+		zap.Duration("elapsed", time.Since(start)),
+		zap.Uint64("height", history.Height),
+		zap.String("address", history.Hash),
+	).Debug("AddressIndexer: Get and Update Address")
+
+	return err
+}
+
+func (i indexer) updateAddress(address explorer.Address, history explorer.AddressHistory) error {
+	if address.CreatedBlock == 0 {
+		address.CreatedBlock = history.Height
+		address.CreatedTime = history.Time
+	}
 	address.Height = history.Height
 	address.Spendable = history.Balance.Spendable
 	address.Stakable = history.Balance.Stakable
 	address.VotingWeight = history.Balance.VotingWeight
 
-	Addresses[address.Hash] = address
-
+	i.cache.Set(address.Hash, address, cache.NoExpiration)
 	i.elastic.AddUpdateRequest(elastic_cache.AddressIndex.Get(), address)
+
 	return nil
 }
 
-func getAddressesForTxs(txs []*explorer.BlockTransaction) []string {
+func getAddressesForTxs(txs []explorer.BlockTransaction) []string {
 	addresses := make([]string, 0)
 	for _, tx := range txs {
 		for _, address := range tx.GetAllAddresses() {
@@ -120,14 +299,4 @@ func unique(stringSlice []string) []string {
 		}
 	}
 	return list
-}
-
-func getTxById(id string, txs []*explorer.BlockTransaction) *explorer.BlockTransaction {
-	for _, tx := range txs {
-		if tx.Txid == id {
-			return tx
-		}
-	}
-	log.Fatal("Could not match tx: ", id)
-	return nil
 }

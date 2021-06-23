@@ -6,25 +6,29 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
 	"github.com/olivere/elastic/v7"
-	log "github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
-type Repository struct {
-	Client *elastic.Client
+type Repository interface {
+	GetPossibleVotingProposals(height uint64) ([]*explorer.Proposal, error)
 }
 
-func NewRepo(client *elastic.Client) *Repository {
-	return &Repository{client}
+type repository struct {
+	elastic elastic_cache.Index
 }
 
-func (r *Repository) GetPossibleVotingProposals(height uint64) ([]*explorer.Proposal, error) {
+func NewRepo(elastic elastic_cache.Index) Repository {
+	return repository{elastic}
+}
+
+func (r repository) GetPossibleVotingProposals(height uint64) ([]*explorer.Proposal, error) {
 	var proposals []*explorer.Proposal
 
 	query := elastic.NewBoolQuery()
 	query = query.Should(elastic.NewMatchQuery("status", "pending accepted pending_voting_preq pending_funds"))
 	query = query.Should(elastic.NewRangeQuery("updatedOnBlock").Gte(height))
 
-	results, err := r.Client.Search(elastic_cache.ProposalIndex.Get()).
+	results, err := r.elastic.GetClient().Search(elastic_cache.ProposalIndex.Get()).
 		Query(query).
 		Size(9999).
 		Sort("updatedOnBlock", false).
@@ -37,9 +41,8 @@ func (r *Repository) GetPossibleVotingProposals(height uint64) ([]*explorer.Prop
 		for _, hit := range results.Hits.Hits {
 			var proposal *explorer.Proposal
 			if err := json.Unmarshal(hit.Source, &proposal); err != nil {
-				log.WithError(err).Fatal("Failed to unmarshall proposal")
+				zap.L().With(zap.Error(err)).Fatal("Failed to unmarshall proposal")
 			}
-			proposal.SetId(hit.Id)
 			proposals = append(proposals, proposal)
 		}
 	}

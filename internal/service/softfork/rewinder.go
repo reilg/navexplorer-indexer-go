@@ -7,28 +7,34 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/softfork/signal"
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
 	"github.com/olivere/elastic/v7"
-	log "github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
-type Rewinder struct {
-	elastic       *elastic_cache.Index
-	signalRepo    *signal.Repository
+type Rewinder interface {
+	Rewind(height uint64) error
+}
+
+type rewinder struct {
+	elastic       elastic_cache.Index
+	signalRepo    signal.Repository
 	blocksInCycle uint
 	quorum        int
 }
 
-func NewRewinder(elastic *elastic_cache.Index, signalRepo *signal.Repository, blocksInCycle uint, quorum int) *Rewinder {
-	return &Rewinder{elastic, signalRepo, blocksInCycle, quorum}
+func NewRewinder(elastic elastic_cache.Index, signalRepo signal.Repository, blocksInCycle uint, quorum int) Rewinder {
+	return rewinder{elastic, signalRepo, blocksInCycle, quorum}
 }
 
-func (r *Rewinder) Rewind(height uint64) error {
-	log.Infof("Rewinding soft fork index to height: %d", height)
+func (r rewinder) Rewind(height uint64) error {
+	zap.L().With(zap.Uint64("height", height)).Info("Rewinding soft fork index")
 
+	zap.L().With(zap.Uint64("height", height)).Info("Delete Signals greater than height")
 	if err := r.elastic.DeleteHeightGT(height, elastic_cache.SignalIndex.Get()); err != nil {
 		return err
 	}
 
 	for idx, s := range SoftForks {
+		zap.L().With(zap.String("softfork", s.Name)).Info("Resetting soft fork")
 		SoftForks[idx] = &explorer.SoftFork{
 			Name:      s.Name,
 			SignalBit: s.SignalBit,
@@ -36,11 +42,10 @@ func (r *Rewinder) Rewind(height uint64) error {
 			StartTime: s.StartTime,
 			Timeout:   s.Timeout,
 		}
-		SoftForks[idx].SetId(s.Id())
 	}
 
-	start := uint64(1)
-	end := uint64(r.blocksInCycle)
+	start := uint64(0)
+	end := uint64(r.blocksInCycle) - 1
 
 	for {
 		if height == 0 || start >= height {
@@ -50,35 +55,18 @@ func (r *Rewinder) Rewind(height uint64) error {
 			end = height
 		}
 
-		signals := r.signalRepo.GetSignals(start, end)
-
-		for _, s := range signals {
-			for _, sf := range s.SoftForks {
-				softFork := SoftForks.GetSoftFork(sf)
-				if softFork.IsOpen() {
-					softFork.SignalHeight = end
-					softFork.State = explorer.SoftForkStarted
-					blockCycle := GetSoftForkBlockCycle(r.blocksInCycle, s.Height)
-
-					var cycle *explorer.SoftForkCycle
-					if cycle = softFork.GetCycle(blockCycle.Cycle); cycle == nil {
-						softFork.Cycles = append(softFork.Cycles, explorer.SoftForkCycle{Cycle: blockCycle.Cycle, BlocksSignalling: 0})
-						cycle = softFork.GetCycle(blockCycle.Cycle)
-					}
-					cycle.BlocksSignalling++
-				}
-			}
+		for _, sig := range r.signalRepo.GetSignals(start, end) {
+			AddSoftForkSignal(&sig, sig.Height, r.blocksInCycle)
 		}
 
-		for _, s := range SoftForks {
-			if s.State == explorer.SoftForkStarted && s.LatestCycle() != nil && s.LatestCycle().BlocksSignalling >= explorer.GetQuorum(r.blocksInCycle, r.quorum) {
-				s.State = explorer.SoftForkLockedIn
-				s.LockedInHeight = end
-				s.ActivationHeight = end + uint64(r.blocksInCycle)
-			}
-			if s.State == explorer.SoftForkLockedIn && height >= s.ActivationHeight {
-				s.State = explorer.SoftForkActive
-			}
+		if end-start == uint64(r.blocksInCycle)-1 {
+			zap.L().With(
+				zap.Uint64("index", end-start),
+				zap.Uint64("height", end),
+				zap.Uint("blocksInCycle", r.blocksInCycle),
+				zap.Int("quorum", r.quorum),
+			).Info("SoftFork: Block cycle end")
+			UpdateSoftForksState(end-1, r.blocksInCycle, r.quorum)
 		}
 
 		start, end = func(start uint64, end uint64, height uint64) (uint64, uint64) {
@@ -91,18 +79,14 @@ func (r *Rewinder) Rewind(height uint64) error {
 		}(start, end, height)
 	}
 
-	bulk := r.elastic.Client.Bulk()
+	bulk := r.elastic.GetClient().Bulk()
 	for _, sf := range SoftForks {
-		log.Info("Updating softFork ", sf.Name)
-		bulk.Add(elastic.NewBulkUpdateRequest().
-			Index(elastic_cache.SoftForkIndex.Get()).
-			Id(sf.Id()).
-			Doc(sf))
+		bulk.Add(elastic.NewBulkUpdateRequest().Index(elastic_cache.SoftForkIndex.Get()).Id(sf.Slug()).Doc(sf))
 	}
 
 	if bulk.NumberOfActions() > 0 {
 		if _, err := bulk.Do(context.Background()); err != nil {
-			log.WithError(err).Fatal("Failed to rewind soft forks")
+			zap.L().With(zap.Error(err)).Fatal("Failed to rewind soft forks")
 		}
 	}
 

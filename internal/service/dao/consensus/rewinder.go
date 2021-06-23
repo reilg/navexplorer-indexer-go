@@ -1,63 +1,49 @@
 package consensus
 
 import (
-	"context"
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
-	log "github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"strconv"
 )
 
-type Rewinder struct {
-	navcoin *navcoind.Navcoind
-	elastic *elastic_cache.Index
-	repo    *Repository
-	service *Service
+type Rewinder interface {
+	Rewind(consultations []*explorer.Consultation) error
 }
 
-func NewRewinder(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index, repo *Repository, service *Service) *Rewinder {
-	return &Rewinder{navcoin, elastic, repo, service}
+type rewinder struct {
+	navcoin    *navcoind.Navcoind
+	elastic    elastic_cache.Index
+	repository Repository
+	service    Service
 }
 
-func (r *Rewinder) Rewind(consultations []*explorer.Consultation) error {
-	log.Debug("Rewind consensus")
+func NewRewinder(navcoin *navcoind.Navcoind, elastic elastic_cache.Index, repository Repository, service Service) Rewinder {
+	return rewinder{navcoin, elastic, repository, service}
+}
 
-	//parameters, err := r.repo.GetConsensusParameters()
-	parameters, err := r.service.InitialState()
-	if err != nil {
-		log.WithError(err).Fatal("Failed to get consensus parameters from repo")
-	}
+func (r rewinder) Rewind(consultations []*explorer.Consultation) error {
+	zap.L().Info("ConsensusRewinder: Rewind on initial state")
+
+	parameters := r.service.InitialState()
 
 	for _, c := range consultations {
-		for _, p := range parameters {
-			if c.Min == p.Uid {
+		for _, p := range parameters.All() {
+			if c.Min == p.Id {
 				value, _ := strconv.Atoi(c.GetPassedAnswer().Answer)
-				log.WithFields(log.Fields{"old": p.Value, "new": value, "desc": p.Description}).Info("Update consensus parameter")
+				zap.L().With(
+					zap.Int("old", p.Value),
+					zap.Int("new", value),
+					zap.String("name", p.Description),
+				).Info("ConsensusRewinder: Update Consensus Parameter")
 				p.Value = value
 				p.UpdatedOnBlock = c.UpdatedOnBlock
 			}
 		}
 	}
 
-	err = r.repo.DeleteAll()
-	if err != nil {
-		log.WithError(err).Fatal("Failed to clear old parameters")
-	}
-	for idx := range parameters {
-		result, err := r.elastic.Client.Index().
-			Index(elastic_cache.ConsensusIndex.Get()).
-			BodyJson(parameters[idx]).
-			Do(context.Background())
-		if err != nil {
-			log.WithError(err).Fatal("Failed to save consensus parameters from repo")
-		}
-		parameters[idx].SetId(result.Id)
-	}
-
-	Parameters = parameters
-
-	log.Info("Rewind consensus success")
+	r.service.Update(parameters, true)
 
 	return nil
 }

@@ -7,21 +7,26 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
 	"github.com/olivere/elastic/v7"
-	log "github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
-type Repository struct {
-	Client *elastic.Client
+type Repository interface {
+	GetSoftForks() (explorer.SoftForks, error)
+	GetSoftFork(name string) (*explorer.SoftFork, error)
 }
 
-func NewRepo(client *elastic.Client) *Repository {
-	return &Repository{client}
+type repository struct {
+	elastic elastic_cache.Index
 }
 
-func (r *Repository) GetSoftForks() (explorer.SoftForks, error) {
+func NewRepo(elastic elastic_cache.Index) Repository {
+	return repository{elastic}
+}
+
+func (r repository) GetSoftForks() (explorer.SoftForks, error) {
 	var softForks []*explorer.SoftFork
 
-	results, err := r.Client.Search(elastic_cache.SoftForkIndex.Get()).
+	results, err := r.elastic.GetClient().Search(elastic_cache.SoftForkIndex.Get()).
 		Size(9999).
 		Do(context.Background())
 	if err != nil {
@@ -34,19 +39,18 @@ func (r *Repository) GetSoftForks() (explorer.SoftForks, error) {
 	for _, hit := range results.Hits.Hits {
 		var softFork *explorer.SoftFork
 		if err := json.Unmarshal(hit.Source, &softFork); err != nil {
-			log.WithError(err).Fatal("Failed to unmarshall soft fork")
+			zap.L().With(zap.Error(err)).Fatal("Failed to unmarshall soft fork")
 		}
-		softFork.SetId(hit.Id)
 		softForks = append(softForks, softFork)
 	}
 
 	return softForks, nil
 }
 
-func (r *Repository) GetSoftFork(name string) (*explorer.SoftFork, error) {
+func (r repository) GetSoftFork(name string) (*explorer.SoftFork, error) {
 	var softfork *explorer.SoftFork
 
-	results, err := r.Client.Search(elastic_cache.SoftForkIndex.Get()).
+	results, err := r.elastic.GetClient().Search(elastic_cache.SoftForkIndex.Get()).
 		Query(elastic.NewTermQuery("name", name)).
 		Size(1).
 		Do(context.Background())
@@ -62,7 +66,6 @@ func (r *Repository) GetSoftFork(name string) (*explorer.SoftFork, error) {
 	if err != nil {
 		return nil, err
 	}
-	softfork.SetId(hit.Id)
 
 	return softfork, nil
 }

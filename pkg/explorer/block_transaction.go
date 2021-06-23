@@ -29,29 +29,23 @@ type RawBlockTransaction struct {
 }
 
 type BlockTransaction struct {
-	id string
-
 	RawBlockTransaction
-	Index uint  `json:"index"`
-	Vin   Vins  `json:"vin"`
-	Vout  Vouts `json:"vout"`
+
+	Index    uint    `json:"index"`
+	TxHeight float64 `json:"txheight"`
+
+	Vin  Vins  `json:"vin"`
+	Vout Vouts `json:"vout"`
 
 	Type    BlockTransactionType `json:"type"`
 	Stake   uint64               `json:"stake"`
 	Spend   uint64               `json:"spend"`
 	Fees    uint64               `json:"fees"`
 	Private bool                 `json:"private"`
+	Wrapped bool                 `json:"wrapped"`
 }
 
-func (b *BlockTransaction) Id() string {
-	return b.id
-}
-
-func (b *BlockTransaction) SetId(id string) {
-	b.id = id
-}
-
-func (tx *BlockTransaction) Slug() string {
+func (tx BlockTransaction) Slug() string {
 	return CreateBlockTxSlug(tx.Hash)
 }
 
@@ -100,6 +94,24 @@ func (tx *BlockTransaction) GetAllAddresses() []string {
 	}
 
 	return addresses
+}
+
+func (tx *BlockTransaction) GetAllMultiSigs() map[string]MultiSig {
+	multiSigs := map[string]MultiSig{}
+
+	for _, vin := range tx.Vin {
+		if vin.PreviousOutput != nil && vin.PreviousOutput.MultiSig != nil {
+			multiSigs[vin.PreviousOutput.MultiSig.Key()] = *vin.PreviousOutput.MultiSig
+		}
+	}
+
+	for _, vout := range tx.Vout {
+		if vout.MultiSig != nil {
+			multiSigs[vout.MultiSig.Key()] = *vout.MultiSig
+		}
+	}
+
+	return multiSigs
 }
 
 func (tx *BlockTransaction) IsCoinbase() bool {

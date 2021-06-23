@@ -4,20 +4,24 @@ import (
 	"github.com/NavExplorer/navcoind-go"
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
-	"github.com/getsentry/raven-go"
-	log "github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
-type Indexer struct {
+type Indexer interface {
+	Index(txs []explorer.BlockTransaction)
+	Update(blockCycle explorer.BlockCycle, block *explorer.Block)
+}
+
+type indexer struct {
 	navcoin *navcoind.Navcoind
-	elastic *elastic_cache.Index
+	elastic elastic_cache.Index
 }
 
-func NewIndexer(navcoin *navcoind.Navcoind, elastic *elastic_cache.Index) *Indexer {
-	return &Indexer{navcoin, elastic}
+func NewIndexer(navcoin *navcoind.Navcoind, elastic elastic_cache.Index) Indexer {
+	return indexer{navcoin, elastic}
 }
 
-func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
+func (i indexer) Index(txs []explorer.BlockTransaction) {
 	for _, tx := range txs {
 		if tx.Version != 5 {
 			continue
@@ -25,13 +29,13 @@ func (i *Indexer) Index(txs []*explorer.BlockTransaction) {
 
 		if navP, err := i.navcoin.GetPaymentRequest(tx.Hash); err == nil {
 			paymentRequest := CreatePaymentRequest(navP, tx.Height)
-			i.elastic.Save(elastic_cache.PaymentRequestIndex, paymentRequest)
+			i.elastic.Save(elastic_cache.PaymentRequestIndex.Get(), paymentRequest)
 			PaymentRequests = append(PaymentRequests, paymentRequest)
 		}
 	}
 }
 
-func (i *Indexer) Update(blockCycle *explorer.BlockCycle, block *explorer.Block) {
+func (i indexer) Update(blockCycle explorer.BlockCycle, block *explorer.Block) {
 	for _, p := range PaymentRequests {
 		if p == nil {
 			continue
@@ -39,13 +43,13 @@ func (i *Indexer) Update(blockCycle *explorer.BlockCycle, block *explorer.Block)
 
 		navP, err := i.navcoin.GetPaymentRequest(p.Hash)
 		if err != nil {
-			raven.CaptureError(err, nil)
-			log.WithError(err).Fatalf("Failed to find active payment request: %s", p.Hash)
+			zap.L().With(zap.Error(err), zap.String("paymentRequest", p.Hash)).Fatal("Failed to find active payment request")
 		}
 
 		UpdatePaymentRequest(navP, block.Height, p)
 		if p.UpdatedOnBlock == block.Height {
-			log.Debugf("Payment Request %s updated on block %d", p.Hash, block.Height)
+			zap.L().With(zap.String("paymentRequest", p.Hash), zap.Uint64("height", block.Height)).
+				Debug("Payment Request updated")
 			i.elastic.AddUpdateRequest(elastic_cache.PaymentRequestIndex.Get(), p)
 		}
 

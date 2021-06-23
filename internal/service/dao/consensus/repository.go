@@ -5,50 +5,42 @@ import (
 	"encoding/json"
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/elastic_cache"
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
-	"github.com/olivere/elastic/v7"
-	log "github.com/sirupsen/logrus"
 )
 
-type Repository struct {
-	Client *elastic.Client
+type Repository interface {
+	GetConsensusParameters() (explorer.ConsensusParameters, error)
 }
 
-func NewRepo(client *elastic.Client) *Repository {
-	return &Repository{client}
+type repository struct {
+	elastic elastic_cache.Index
 }
 
-func (r *Repository) GetConsensusParameters() ([]*explorer.ConsensusParameter, error) {
-	results, err := r.Client.Search(elastic_cache.ConsensusIndex.Get()).
+func NewRepo(elastic elastic_cache.Index) Repository {
+	return repository{elastic}
+}
+
+func (r repository) GetConsensusParameters() (explorer.ConsensusParameters, error) {
+	results, err := r.elastic.GetClient().Search(elastic_cache.ConsensusIndex.Get()).
 		Sort("id", true).
 		Size(10000).
 		Do(context.Background())
 	if err != nil || results == nil {
-		return nil, err
+		return explorer.ConsensusParameters{}, err
 	}
 
 	if len(results.Hits.Hits) == 0 {
-		return nil, elastic_cache.ErrRecordNotFound
+		return explorer.ConsensusParameters{}, nil
 	}
 
-	var consensusParameters []*explorer.ConsensusParameter
+	consensusParameters := explorer.ConsensusParameters{}
 	for _, hit := range results.Hits.Hits {
-		var consensusParameter *explorer.ConsensusParameter
+		var consensusParameter explorer.ConsensusParameter
 		if err = json.Unmarshal(hit.Source, &consensusParameter); err != nil {
-			return nil, err
+			return explorer.ConsensusParameters{}, err
 		}
-		consensusParameter.SetId(hit.Id)
-		consensusParameters = append(consensusParameters, consensusParameter)
+
+		consensusParameters.Add(consensusParameter)
 	}
 
 	return consensusParameters, nil
-}
-
-func (r *Repository) DeleteAll() error {
-	log.Info("Deleting all consensus records")
-	_, err := elastic.NewDeleteByQueryService(r.Client).
-		Index(elastic_cache.ConsensusIndex.Get()).
-		Query(elastic.NewMatchAllQuery()).
-		Do(context.Background())
-
-	return err
 }
