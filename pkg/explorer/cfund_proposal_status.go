@@ -16,7 +16,7 @@ var (
 	ProposalExpired           = ProposalStatus{3, "expired"}
 	ProposalPendingFunds      = ProposalStatus{4, "pending_funds"}
 	ProposalPendingVotingPreq = ProposalStatus{5, "pending_voting_preq"}
-	ProposalPaid              = ProposalStatus{6, "paid"}
+	ProposalAcceptedExpired   = ProposalStatus{16, "accepted_expired"}
 )
 
 var proposalStatus = [7]ProposalStatus{
@@ -26,7 +26,7 @@ var proposalStatus = [7]ProposalStatus{
 	ProposalExpired,
 	ProposalPendingFunds,
 	ProposalPendingVotingPreq,
-	ProposalPaid,
+	ProposalAcceptedExpired,
 }
 
 //noinspection GoUnreachableCode
@@ -35,10 +35,6 @@ func GetProposalStatusByState(state uint) ProposalStatus {
 		if proposalStatus[idx].State == state {
 			return proposalStatus[idx]
 		}
-	}
-
-	if state == 16 {
-		return proposalStatus[3]
 	}
 
 	log.Fatal("ProposalStatus state does not exist", state)
