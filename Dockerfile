@@ -14,7 +14,7 @@ RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/indexerd ./cmd/
 
 RUN chmod u+x /go/bin/*
 
-FROM alpine:latest
+FROM alpine:3.13.5
 
 RUN apk update && apk add --no-cache zeromq
 
