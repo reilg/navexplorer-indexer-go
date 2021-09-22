@@ -17,10 +17,9 @@ func (v DaoVotes) Slug() string {
 }
 
 type Vote struct {
-	Type    VoteType `json:"type"`
-	Hash    string   `json:"hash"`
-	Vote    int      `json:"vote"`
-	Exclude bool     `json:"vote"`
+	Type VoteType `json:"type"`
+	Hash string   `json:"hash"`
+	Vote int      `json:"vote"`
 }
 
 type VoteType string
