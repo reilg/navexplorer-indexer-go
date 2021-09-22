@@ -51,13 +51,13 @@ func CreateAddressHistory(order uint, history *navcoind.AddressHistory, tx *expl
 			}
 			h.Reward = explorer.AddressReward{}
 			if history.Changes.Balance != 0 {
-				h.Reward.Spendable = (float64(history.Result.Balance) / 100000000) / (float64(history.Changes.Balance) / 100000000) / 100
+				h.Reward.Spendable = (float64(history.Changes.Balance) / float64(history.Result.Balance)) * 100
 			}
 			if history.Changes.Stakable != 0 {
-				h.Reward.Stakable = (float64(history.Result.Stakable) / 100000000) / (float64(history.Changes.Stakable) / 100000000) / 100
+				h.Reward.Stakable = (float64(history.Changes.Stakable) / float64(history.Result.Stakable)) * 100
 			}
 			if history.Changes.VotingWeight != 0 {
-				h.Reward.VotingWeight = (float64(history.Result.VotingWeight) / 100000000) / (float64(history.Changes.VotingWeight) / 100000000) / 100
+				h.Reward.VotingWeight = (float64(history.Changes.VotingWeight) / float64(history.Result.VotingWeight)) * 100
 			}
 		}
 	}
