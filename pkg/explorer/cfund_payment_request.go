@@ -19,10 +19,11 @@ type PaymentRequest struct {
 	Height         uint64 `json:"height"`
 	UpdatedOnBlock uint64 `json:"updatedOnBlock"`
 
-	VotesYes    uint `json:"votesYes"`
-	VotesAbs    uint `json:"votesAbs"`
-	VotesNo     uint `json:"votesNo"`
-	VotingCycle uint `json:"votingCycle"`
+	VotesYes      uint `json:"votesYes"`
+	VotesAbs      uint `json:"votesAbs"`
+	VotesNo       uint `json:"votesNo"`
+	VotesExcluded uint `json:"votesExcluded"`
+	VotingCycle   uint `json:"votingCycle"`
 }
 
 func (p PaymentRequest) Slug() string {
