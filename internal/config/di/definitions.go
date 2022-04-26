@@ -18,7 +18,7 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/softfork/signal"
 	"github.com/NavExplorer/subscriber"
 	"github.com/patrickmn/go-cache"
-	"github.com/sarulabs/dingo/v3"
+	"github.com/sarulabs/dingo/v4"
 	"go.uber.org/zap"
 	"time"
 )
