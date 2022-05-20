@@ -303,6 +303,15 @@ func (i index) persist(bulk *elastic.BulkService) {
 
 	response, err := bulk.Do(context.Background())
 	if err != nil {
+		if len(response.Failed()) != 0 {
+			for _, failed := range response.Failed() {
+				zap.L().With(
+					zap.Any("error", failed.Error),
+					zap.String("index", failed.Index),
+					zap.String("id", failed.Id),
+				).Error("ElasticCache: Failed to persist request")
+			}
+		}
 		zap.L().With(zap.Error(err)).Fatal("ElasticCache: Failed to persist requests")
 	}
 
