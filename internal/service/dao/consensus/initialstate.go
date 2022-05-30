@@ -144,6 +144,30 @@ var mainnet = `[
     "desc": "Minimum fee as a fund contribution to submit a DAO vote using a light wallet",
     "type": 2,
     "value": 10000000
+  },
+  {
+    "id": 24,
+    "desc": "Confidential tokens enabled",
+    "type": 3,
+    "value": 0
+  },
+  {
+    "id": 25,
+    "desc": "Length in blocks of a dotNAV registration",
+    "type": 0,
+    "value": 1152000
+  },
+  {
+    "id": 26,
+    "desc": "Max data in bytes attached to a dotNAV name without cost",
+    "type": 0,
+    "value": 1024
+  },
+  {
+    "id": 27,
+    "desc": "Fee for attaching extra data to a name",
+    "type": 2,
+    "value": 300000000
   }
 ]`
 
@@ -291,5 +315,29 @@ var testnet = `[
     "desc": "Minimum fee as a fund contribution to submit a DAO vote using a light wallet",
     "type": 2,
     "value": 10000000
+  },
+  {
+    "id": 24,
+    "desc": "Confidential tokens enabled",
+    "type": 3,
+    "value": 0
+  },
+  {
+    "id": 25,
+    "desc": "Length in blocks of a dotNAV registration",
+    "type": 0,
+    "value": 1152000
+  },
+  {
+    "id": 26,
+    "desc": "Max data in bytes attached to a dotNAV name without cost",
+    "type": 0,
+    "value": 1024
+  },
+  {
+    "id": 27,
+    "desc": "Fee for attaching extra data to a name",
+    "type": 2,
+    "value": 300000000
   }
 ]`

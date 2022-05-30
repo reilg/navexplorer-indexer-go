@@ -10,7 +10,7 @@ fi
 
 echo "Using tag $tag"
 
-dingo -src=./internal/config/di -dest=./generated
+./bin/di
 
 export DOCKER_BUILDKIT=1
 
