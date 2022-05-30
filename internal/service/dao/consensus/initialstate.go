@@ -159,7 +159,7 @@ var mainnet = `[
   },
   {
     "id": 26,
-    "desc": "Max data in byes attached to a dotNAV name without cost",
+    "desc": "Max data in bytes attached to a dotNAV name without cost",
     "type": 0,
     "value": 1024
   },
@@ -330,7 +330,7 @@ var testnet = `[
   },
   {
     "id": 26,
-    "desc": "Max data in byes attached to a dotNAV name without cost",
+    "desc": "Max data in bytes attached to a dotNAV name without cost",
     "type": 0,
     "value": 1024
   },
