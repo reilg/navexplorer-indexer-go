@@ -3,7 +3,7 @@ module github.com/NavExplorer/navexplorer-indexer-go/v2
 go 1.14
 
 require (
-	github.com/NavExplorer/navcoind-go v1.1.4
+	github.com/NavExplorer/navcoind-go v1.1.5-0.20211223172802-c9154e6b2061
 	github.com/NavExplorer/subscriber v1.0.2
 	github.com/certifi/gocertifi v0.0.0-20200922220541-2c3bb06c6054 // indirect
 	github.com/getsentry/raven-go v0.2.0
@@ -16,6 +16,6 @@ require (
 	github.com/sarulabs/dingo/v4 v4.2.0
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v1.1.1 // indirect
-	github.com/streadway/amqp v1.0.0
+	github.com/streadway/amqp v1.0.0 // indirect
 	go.uber.org/zap v1.16.0
 )

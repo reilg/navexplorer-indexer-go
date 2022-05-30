@@ -5,6 +5,7 @@ import (
 	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
 	"go.uber.org/zap"
 	"reflect"
+	"strings"
 )
 
 func CreateConsultation(consultation navcoind.Consultation, tx *explorer.BlockTransaction) explorer.Consultation {
@@ -57,9 +58,17 @@ func createAnswers(navC navcoind.Consultation, c *explorer.Consultation) {
 }
 
 func createAnswer(a *navcoind.Answer) explorer.Answer {
+	var answer string
+	switch a.Answer.(type) {
+	case []string:
+		answer = strings.Join(a.Answer.([]string), ",")
+	case string:
+		answer = a.Answer.(string)
+	}
+
 	return explorer.Answer{
 		Version:             a.Version,
-		Answer:              a.Answer,
+		Answer:              answer,
 		Support:             a.Support,
 		Votes:               a.Votes,
 		State:               a.State,

@@ -41,6 +41,10 @@ var (
 	GENERATION_PER_BLOCK                    Parameter = 21
 	NAVNS_FEE                               Parameter = 22
 	CONSENSUS_PARAMS_DAO_VOTE_LIGHT_MIN_FEE Parameter = 23
+	CONFIDENTIAL_TOKENS_ENABLED             Parameter = 24
+	LENGTH_IN_BLOCKS_OF_A_DOTNAV_REGISTRATION Parameter = 25
+	MAX_DATA_IN_BYTES_ATTACHED_TO_A_DOTNAV_NAME_WITHOUT_FEE Parameter = 26
+	FEE_FOR_ATTACHING_EXTRA_DATA_TO_A_NAME Parameter = 27
 )
 
 type ConsensusParameters struct {
