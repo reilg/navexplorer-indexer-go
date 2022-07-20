@@ -3,8 +3,8 @@ package consensus
 import (
 	"context"
 	"encoding/json"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/elastic_cache"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/elastic_cache"
+	"github.com/navcoin/navexplorer-indexer-go/v2/pkg/explorer"
 )
 
 type Repository interface {

@@ -1,6 +1,6 @@
 package payment_request
 
-import "github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
+import "github.com/navcoin/navexplorer-indexer-go/v2/pkg/explorer"
 
 var PaymentRequests paymentRequests
 

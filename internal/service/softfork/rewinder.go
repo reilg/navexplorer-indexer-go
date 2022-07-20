@@ -2,10 +2,10 @@ package softfork
 
 import (
 	"context"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/config"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/elastic_cache"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/softfork/signal"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/config"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/elastic_cache"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/service/softfork/signal"
+	"github.com/navcoin/navexplorer-indexer-go/v2/pkg/explorer"
 	"github.com/olivere/elastic/v7"
 	"go.uber.org/zap"
 )

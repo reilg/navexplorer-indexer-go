@@ -1,10 +1,10 @@
 package daemon
 
 import (
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/generated/dic"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/config"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/indexer/IndexOption"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
+	"github.com/navcoin/navexplorer-indexer-go/v2/generated/dic"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/config"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/indexer/IndexOption"
+	"github.com/navcoin/navexplorer-indexer-go/v2/pkg/explorer"
 	"go.uber.org/zap"
 	"time"
 )

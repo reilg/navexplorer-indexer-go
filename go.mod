@@ -1,4 +1,4 @@
-module github.com/NavExplorer/navexplorer-indexer-go/v2
+module github.com/navcoin/navexplorer-indexer-go/v2
 
 go 1.14
 

@@ -2,7 +2,7 @@ package block
 
 import (
 	"errors"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
+	"github.com/navcoin/navexplorer-indexer-go/v2/pkg/explorer"
 	"github.com/patrickmn/go-cache"
 )
 

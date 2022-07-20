@@ -2,12 +2,12 @@ package dao
 
 import (
 	"github.com/NavExplorer/navcoind-go"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/dao/consensus"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/dao/consultation"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/dao/payment_request"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/dao/proposal"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/dao/vote"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/service/dao/consensus"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/service/dao/consultation"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/service/dao/payment_request"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/service/dao/proposal"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/service/dao/vote"
+	"github.com/navcoin/navexplorer-indexer-go/v2/pkg/explorer"
 	"go.uber.org/zap"
 	"sync"
 )

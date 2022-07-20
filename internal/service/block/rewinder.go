@@ -1,7 +1,7 @@
 package block
 
 import (
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/elastic_cache"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/elastic_cache"
 	"go.uber.org/zap"
 )
 

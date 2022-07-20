@@ -1,12 +1,12 @@
 package indexer
 
 import (
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/elastic_cache"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/address"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/block"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/dao"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/softfork"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/elastic_cache"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/service/address"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/service/block"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/service/dao"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/service/softfork"
+	"github.com/navcoin/navexplorer-indexer-go/v2/pkg/explorer"
 	"go.uber.org/zap"
 	"time"
 )

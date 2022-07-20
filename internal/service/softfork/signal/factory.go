@@ -1,6 +1,6 @@
 package signal
 
-import "github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
+import "github.com/navcoin/navexplorer-indexer-go/v2/pkg/explorer"
 
 func CreateSignal(block *explorer.Block, softForks *explorer.SoftForks) *explorer.Signal {
 	sig := &explorer.Signal{Address: block.StakedBy, Height: block.Height}

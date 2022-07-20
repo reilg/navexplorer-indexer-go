@@ -2,7 +2,7 @@ package consultation
 
 import (
 	"github.com/NavExplorer/navcoind-go"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
+	"github.com/navcoin/navexplorer-indexer-go/v2/pkg/explorer"
 	"go.uber.org/zap"
 	"reflect"
 	"strings"

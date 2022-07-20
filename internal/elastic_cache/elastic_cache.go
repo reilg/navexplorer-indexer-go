@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/config"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/config"
+	"github.com/navcoin/navexplorer-indexer-go/v2/pkg/explorer"
 	"github.com/getsentry/raven-go"
 	"github.com/olivere/elastic/v7"
 	"github.com/patrickmn/go-cache"

@@ -1,7 +1,7 @@
 package proposal
 
 import (
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
+	"github.com/navcoin/navexplorer-indexer-go/v2/pkg/explorer"
 )
 
 var Proposals proposals

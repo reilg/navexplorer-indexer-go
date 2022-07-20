@@ -2,10 +2,10 @@ package consultation
 
 import (
 	"github.com/NavExplorer/navcoind-go"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/elastic_cache"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/block"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/internal/service/dao/consensus"
-	"github.com/NavExplorer/navexplorer-indexer-go/v2/pkg/explorer"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/elastic_cache"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/service/block"
+	"github.com/navcoin/navexplorer-indexer-go/v2/internal/service/dao/consensus"
+	"github.com/navcoin/navexplorer-indexer-go/v2/pkg/explorer"
 	"go.uber.org/zap"
 	"strconv"
 )
