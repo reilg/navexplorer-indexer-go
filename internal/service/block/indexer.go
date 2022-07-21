@@ -1,7 +1,7 @@
 package block
 
 import (
-	"github.com/NavExplorer/navcoind-go"
+	"github.com/navcoin/navcoind-go"
 	"github.com/navcoin/navexplorer-indexer-go/v2/internal/elastic_cache"
 	"github.com/navcoin/navexplorer-indexer-go/v2/internal/indexer/IndexOption"
 	"github.com/navcoin/navexplorer-indexer-go/v2/internal/service/dao/consensus"

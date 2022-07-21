@@ -1,7 +1,7 @@
 package vote
 
 import (
-	"github.com/NavExplorer/navcoind-go"
+	"github.com/navcoin/navcoind-go"
 	"github.com/navcoin/navexplorer-indexer-go/v2/pkg/explorer"
 	"go.uber.org/zap"
 )

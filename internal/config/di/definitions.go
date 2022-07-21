@@ -1,7 +1,7 @@
 package di
 
 import (
-	"github.com/NavExplorer/navcoind-go"
+	"github.com/navcoin/navcoind-go"
 	"github.com/navcoin/navexplorer-indexer-go/v2/internal/config"
 	"github.com/navcoin/navexplorer-indexer-go/v2/internal/elastic_cache"
 	"github.com/navcoin/navexplorer-indexer-go/v2/internal/indexer"
@@ -15,7 +15,7 @@ import (
 	"github.com/navcoin/navexplorer-indexer-go/v2/internal/service/dao/vote"
 	"github.com/navcoin/navexplorer-indexer-go/v2/internal/service/softfork"
 	"github.com/navcoin/navexplorer-indexer-go/v2/internal/service/softfork/signal"
-	"github.com/NavExplorer/subscriber"
+	"github.com/navcoin/subscriber"
 	"github.com/patrickmn/go-cache"
 	"github.com/sarulabs/dingo/v4"
 	"go.uber.org/zap"
