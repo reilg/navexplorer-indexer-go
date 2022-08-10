@@ -8,7 +8,7 @@ require (
 	github.com/gosimple/slug v1.9.0
 	github.com/joho/godotenv v1.3.0
 	github.com/mattn/go-colorable v0.1.8
-	github.com/navcoin/navcoind-go v1.1.7
+	github.com/navcoin/navcoind-go v1.1.8
 	github.com/navcoin/subscriber v1.0.3
 	github.com/olivere/elastic/v7 v7.0.21
 	github.com/patrickmn/go-cache v2.1.0+incompatible

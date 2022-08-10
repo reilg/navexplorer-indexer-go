@@ -155,8 +155,8 @@ github.com/navcoin/navcoind-go v1.1.5 h1:ga+XFXT0iCC6ia6MCpKxW+w/Gu4eiNDiqKu8zN0
 github.com/navcoin/navcoind-go v1.1.5/go.mod h1:/aW9ke1aSoav+ekjhIETTWMzmUvKkAWAdULa0TzuyVI=
 github.com/navcoin/navcoind-go v1.1.6 h1:cjUySDc7SSmvIdJZmSFDRzDwowsnMX20VEV80C33faI=
 github.com/navcoin/navcoind-go v1.1.6/go.mod h1:/aW9ke1aSoav+ekjhIETTWMzmUvKkAWAdULa0TzuyVI=
-github.com/navcoin/navcoind-go v1.1.7 h1:DZen4MVPfQ7HEYzn7Cz5OMSH/TuxKKLW7y2O0LcFMtQ=
-github.com/navcoin/navcoind-go v1.1.7/go.mod h1:/aW9ke1aSoav+ekjhIETTWMzmUvKkAWAdULa0TzuyVI=
+github.com/navcoin/navcoind-go v1.1.8 h1:Nk2ohnCu0ZVVKkJZZthHQ2p9iobrZDlJ0CQ5cGD8oSY=
+github.com/navcoin/navcoind-go v1.1.8/go.mod h1:/aW9ke1aSoav+ekjhIETTWMzmUvKkAWAdULa0TzuyVI=
 github.com/navcoin/subscriber v1.0.3 h1:lw2J/jH0yjj4t5F625LjZ3R55EKhuC0XNHrcU0Q8itc=
 github.com/navcoin/subscriber v1.0.3/go.mod h1:+/nkyi7J8XeocmPFdMmzo3T5X6oNGVCCryQBjieZuH0=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
