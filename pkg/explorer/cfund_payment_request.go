@@ -22,7 +22,7 @@ type PaymentRequest struct {
 	VotesYes      uint `json:"votesYes"`
 	VotesAbs      uint `json:"votesAbs"`
 	VotesNo       uint `json:"votesNo"`
-	VotesExcluded uint `json:"votesExcluded"`
+	VotesExcluded uint `json:"excludedVotes"`
 	VotingCycle   uint `json:"votingCycle"`
 }
 
