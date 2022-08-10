@@ -85,6 +85,9 @@
       "votesNo": {
         "type": "integer"
       },
+      "votesExcluded": {
+        "type": "integer"
+      },
       "votingCycle": {
         "type": "integer"
       }
