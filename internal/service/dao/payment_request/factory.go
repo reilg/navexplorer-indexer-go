@@ -57,6 +57,11 @@ func UpdatePaymentRequest(paymentRequest navcoind.PaymentRequest, height uint64,
 		p.UpdatedOnBlock = height
 	}
 
+	if p.VotesExcluded != paymentRequest.VotesExcluded {
+		p.VotesExcluded = paymentRequest.VotesExcluded
+		p.UpdatedOnBlock = height
+	}
+
 	if p.VotingCycle != paymentRequest.VotingCycle {
 		p.VotingCycle = paymentRequest.VotingCycle
 		p.UpdatedOnBlock = height

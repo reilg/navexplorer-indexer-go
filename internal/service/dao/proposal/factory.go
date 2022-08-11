@@ -70,6 +70,11 @@ func UpdateProposal(proposal navcoind.Proposal, height uint64, p *explorer.Propo
 		p.UpdatedOnBlock = height
 	}
 
+	if p.VotesExcluded != proposal.VotesExcluded {
+		p.VotesExcluded = proposal.VotesExcluded
+		p.UpdatedOnBlock = height
+	}
+
 	if p.VotingCycle != proposal.VotingCycle {
 		p.VotingCycle = proposal.VotingCycle
 		p.UpdatedOnBlock = height
