@@ -22,10 +22,11 @@ func CreatePaymentRequest(paymentRequest navcoind.PaymentRequest, height uint64)
 		Height:         height,
 		UpdatedOnBlock: height,
 
-		VotesYes:    paymentRequest.VotesYes,
-		VotesAbs:    paymentRequest.VotesAbs,
-		VotesNo:     paymentRequest.VotesNo,
-		VotingCycle: paymentRequest.VotingCycle,
+		VotesYes:      paymentRequest.VotesYes,
+		VotesAbs:      paymentRequest.VotesAbs,
+		VotesNo:       paymentRequest.VotesNo,
+		VotesExcluded: paymentRequest.VotesExcluded,
+		VotingCycle:   paymentRequest.VotingCycle,
 	}
 }
 

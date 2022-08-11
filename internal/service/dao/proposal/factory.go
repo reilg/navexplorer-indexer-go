@@ -28,6 +28,7 @@ func CreateProposal(proposal navcoind.Proposal, height uint64) *explorer.Proposa
 		VotesYes:            proposal.VotesYes,
 		VotesAbs:            proposal.VotesAbs,
 		VotesNo:             proposal.VotesNo,
+		VotesExcluded:       proposal.VotesExcluded,
 		VotingCycle:         proposal.VotingCycle,
 	}
 }
