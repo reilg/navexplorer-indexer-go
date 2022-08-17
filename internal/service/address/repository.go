@@ -197,6 +197,7 @@ func (r repository) GetLatestHistoryByHash(hash string) (*explorer.AddressHistor
 		Search(elastic_cache.AddressHistoryIndex.Get()).
 		Query(query).
 		Sort("height", false).
+		Sort("txindex", false).
 		Size(1).
 		Do(context.Background())
 	if err != nil {
