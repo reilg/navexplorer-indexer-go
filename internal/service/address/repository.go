@@ -15,6 +15,7 @@ type Repository interface {
 	GetBestHeight() (uint64, error)
 	GetAddress(hash string) (*explorer.Address, error)
 	GetAllAddresses() ([]explorer.Address, error)
+	GetAllAddressesWithBalance(query string) ([]explorer.Address, error)
 	GetAddresses(hashes []string) ([]explorer.Address, error)
 	GetAddressesHeightGt(height uint64) ([]explorer.Address, error)
 	GetAddressesHeightLt(height uint64, size int) ([]explorer.Address, error)
@@ -79,6 +80,19 @@ func (r repository) GetAllAddresses() ([]explorer.Address, error) {
 	result, err := r.elastic.GetClient().
 		Search(elastic_cache.AddressIndex.Get()).
 		Size(1000).
+		Do(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	return r.findMany(result)
+}
+
+func (r repository) GetAllAddressesWithBalance(query string) ([]explorer.Address, error) {
+	result, err := r.elastic.GetClient().
+		Search(elastic_cache.AddressIndex.Get()).
+		Size(100000).
+		Query(elastic.NewRangeQuery(query).Gt(0)).
 		Do(context.Background())
 	if err != nil {
 		return nil, err
