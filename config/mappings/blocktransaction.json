@@ -278,6 +278,12 @@
               }
             }
           },
+          "tokenId": {
+            "type": "text"
+          },
+          "tokenNftId": {
+            "type": "integer"
+          },
           "rangeProof": {
             "type": "boolean"
           },
