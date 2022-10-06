@@ -13,6 +13,8 @@ type RawVout struct {
 	SpendingKey  string       `json:"spendingKey,omitempty"`
 	OutputKey    string       `json:"outputKey,omitempty"`
 	EphemeralKey string       `json:"ephemeralKey,omitempty"`
+	TokenId      string       `json:"tokenId,omitempty"`
+	TokenNftId   *int         `json:"tokenNftId,omitempty"`
 	RangeProof   bool         `json:"rangeProof,omitempty"`
 	SpentTxId    string       `json:"spentTxId,omitempty"`
 	SpentIndex   int          `json:"spentIndex,omitempty"`

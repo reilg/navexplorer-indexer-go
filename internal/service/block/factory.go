@@ -2,13 +2,14 @@ package block
 
 import (
 	"fmt"
-	"github.com/navcoin/navcoind-go"
-	"github.com/navcoin/navexplorer-indexer-go/v2/pkg/explorer"
-	"go.uber.org/zap"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/navcoin/navcoind-go"
+	"github.com/navcoin/navexplorer-indexer-go/v2/pkg/explorer"
+	"go.uber.org/zap"
 )
 
 const (
@@ -172,6 +173,8 @@ func createVout(vouts []navcoind.Vout) []explorer.Vout {
 				SpendingKey:  o.SpendingKey,
 				OutputKey:    o.OutputKey,
 				EphemeralKey: o.EphemeralKey,
+				TokenId:      o.TokenId,
+				TokenNftId:   o.TokenNftId,
 				RangeProof:   o.RangeProof,
 				SpentTxId:    o.SpentTxId,
 				SpentIndex:   o.SpentIndex,
