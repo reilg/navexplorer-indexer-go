@@ -1,11 +1,13 @@
 package explorer
 
 type RawVin struct {
-	Coinbase  string     `json:"coinbase,omitempty"`
-	Txid      *string    `json:"txid,omitempty"`
-	Vout      *int       `json:"vout,omitempty"`
-	ScriptSig *ScriptSig `json:"scriptSig,omitempty"`
-	Sequence  uint32     `json:"sequence"`
+	Coinbase   string     `json:"coinbase,omitempty"`
+	Txid       *string    `json:"txid,omitempty"`
+	TokenId    string     `json:"tokenId,omitempty"`
+	TokenNftId *int       `json:"tokenNftId,omitempty"`
+	Vout       *int       `json:"vout,omitempty"`
+	ScriptSig  *ScriptSig `json:"scriptSig,omitempty"`
+	Sequence   uint32     `json:"sequence"`
 }
 
 type Vin struct {
@@ -47,5 +49,5 @@ func (i *Vin) IsColdSpendingAddress(address string) bool {
 }
 
 func (i *Vin) IsPrivate() bool {
-	return i.PreviousOutput.Type == VoutNonstandard && len(i.Addresses) == 0
+	return i.PreviousOutput.Type == VoutNonstandard && len(i.Addresses) == 0 && i.TokenId != "0"
 }

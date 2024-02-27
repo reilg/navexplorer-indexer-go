@@ -259,12 +259,23 @@ func (i indexer) updateSupply(block *explorer.Block, txs []explorer.BlockTransac
 
 				if !vin.PreviousOutput.Private && !vin.PreviousOutput.Wrapped {
 					block.SupplyBalance.Public -= vin.ValueSat
+					zap.L().With(
+						zap.Bool("Public?", true),
+					).Info("BlockIndexer: ")
 				}
 				if tx.Private {
 					block.SupplyBalance.Private += vin.ValueSat
+
+					zap.L().With(
+						zap.Bool("Private?", tx.Private),
+					).Info("BlockIndexer: ")
 				}
 				if tx.Wrapped && vin.PreviousOutput.Wrapped {
 					block.SupplyBalance.Wrapped -= vin.ValueSat
+
+					zap.L().With(
+						zap.Bool("Wrapped?", tx.Wrapped),
+					).Info("BlockIndexer: ")
 				}
 			}
 			for _, vout := range tx.Vout {
@@ -284,6 +295,12 @@ func (i indexer) updateSupply(block *explorer.Block, txs []explorer.BlockTransac
 					block.SupplyBalance.Wrapped += vout.ValueSat
 				}
 			}
+
+			zap.L().With(
+				zap.Uint64("public", block.SupplyBalance.Public),
+				zap.Uint64("wrapped", block.SupplyBalance.Wrapped),
+				zap.Uint64("private", block.SupplyBalance.Private),
+			).Warn("BlockIndexer: SupplyBalance")
 		}
 	}
 

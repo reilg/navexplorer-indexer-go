@@ -148,6 +148,14 @@ func createVin(vins []navcoind.Vin) []explorer.Vin {
 			input.Addresses = []string{vins[idx].Address}
 		}
 
+		if vins[idx].TokenId != "" {
+			input.TokenId = vins[idx].TokenId
+		}
+
+		if vins[idx].TokenNftId != nil {
+			input.TokenNftId = vins[idx].TokenNftId
+		}
+
 		inputs = append(inputs, input)
 	}
 

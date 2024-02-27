@@ -56,8 +56,8 @@ github.com/mattn/go-colorable v0.1.8 h1:c1ghPdyEDarC70ftn0y+A/Ee++9zz8ljHG1b13eJ
 github.com/mattn/go-colorable v0.1.8/go.mod h1:u6P/XSegPjTcexA+o6vUJrdnUu04hMope9wVRipJSqc=
 github.com/mattn/go-isatty v0.0.12 h1:wuysRhFDzyxgEmMf5xjvJ2M9dZoWAXNNr5LSBS7uHXY=
 github.com/mattn/go-isatty v0.0.12/go.mod h1:cbi8OIDigv2wuxKPP5vlRcQ1OAZbq2CE4Kysco4FUpU=
-github.com/navcoin/navcoind-go v1.1.10 h1:o7lm4v5dYpb/6qxolbVVUkfXtM9PrZN/+X04SHjf57A=
-github.com/navcoin/navcoind-go v1.1.10/go.mod h1:/aW9ke1aSoav+ekjhIETTWMzmUvKkAWAdULa0TzuyVI=
+github.com/navcoin/navcoind-go v1.1.11 h1:3c1yFdLKIAnrL0duKyjP82PNnq1P5p2zYvG2I55CB+w=
+github.com/navcoin/navcoind-go v1.1.11/go.mod h1:/aW9ke1aSoav+ekjhIETTWMzmUvKkAWAdULa0TzuyVI=
 github.com/navcoin/subscriber v1.0.3 h1:lw2J/jH0yjj4t5F625LjZ3R55EKhuC0XNHrcU0Q8itc=
 github.com/navcoin/subscriber v1.0.3/go.mod h1:+/nkyi7J8XeocmPFdMmzo3T5X6oNGVCCryQBjieZuH0=
 github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
