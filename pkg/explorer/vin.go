@@ -49,5 +49,5 @@ func (i *Vin) IsColdSpendingAddress(address string) bool {
 }
 
 func (i *Vin) IsPrivate() bool {
-	return i.PreviousOutput.Type == VoutNonstandard && len(i.Addresses) == 0 && i.TokenId != "0"
+	return i.PreviousOutput.Type == VoutNonstandard && len(i.Addresses) == 0 && i.TokenId == "0"
 }
