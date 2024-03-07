@@ -17,6 +17,9 @@
 /vendor
 /.env
 
+# VIM
+*.swp
+
 .idea
 
 main
