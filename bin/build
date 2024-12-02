@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
-if [ $# -eq 0 ]
-  then
-    tag="latest"
-  else
-    tag=$1
+if [ $# -eq 0 ]; then
+  tag="latest"
+else
+  tag=$1
 fi
 
 echo "Using tag $tag"
@@ -15,4 +14,4 @@ echo "Using tag $tag"
 export DOCKER_BUILDKIT=1
 
 docker build -f ./Dockerfile . -t navexplorer/indexer:$tag
-docker push navexplorer/indexer:$tag
+# docker push navexplorer/indexer:$tag
